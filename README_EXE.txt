@@ -1,4 +1,4 @@
-VENTA DE CARTERA - KIT PARA EXE
+VENTA DE CARTERA - KIT PARA EXE :)
 
 La app esta preparada para ejecutarse como:
     Venta_Cartera.exe
