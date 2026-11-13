@@ -1,0 +1,39 @@
+.bit { display: flex; gap: 12px; align-items: flex-start; }
+.bit-izq { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.bit-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.bit-chip { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 120px; cursor: pointer;
+  background: var(--blanco); border: 1px solid var(--borde); border-top: 4px solid var(--tinta); border-radius: var(--radio);
+  padding: 6px 10px; text-align: left; }
+.bit-chip span { font-size: .72rem; font-weight: 700; color: var(--texto-2); text-transform: uppercase; }
+.bit-chip b { font-size: 1.3rem; }
+.bit-chip small { color: var(--texto-2); font-size: .78rem; }
+.bit-chip:hover { background: var(--hover); }
+.bit-chip.activo { border-top-color: var(--rojo); background: var(--rojo-suave); }
+.bit-chip.activo span, .bit-chip.activo b { color: var(--rojo-oscuro); }
+
+.bit-det { flex: 0 0 min(560px, 46vw); background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radio);
+  padding: 12px 14px; position: sticky; top: 76px; max-height: calc(100vh - 92px); overflow: auto; }
+.bit-det[hidden] { display: none; }
+.bit-det-enc { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+.bit-det-enc b { font-size: 1.25rem; }
+.bit-acciones { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.bit-det .kpis { grid-template-columns: repeat(2, 1fr); margin-bottom: 8px; }
+.bit-det h4 { margin: 14px 0 6px; font-size: .85rem; text-transform: uppercase; letter-spacing: .3px; color: var(--rojo-oscuro); }
+.bit-coment { background: var(--fondo); border-radius: 6px; padding: 6px 9px; font-size: .86rem; color: var(--texto-2); }
+.bit-linea { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--borde); margin-left: 10px; }
+.bit-linea li { display: flex; gap: 8px; padding: 4px 0 8px 0; margin-left: -11px; font-size: .88rem; }
+.bit-ico { flex: 0 0 20px; height: 20px; background: var(--blanco); text-align: center; line-height: 20px; }
+.bit-linea small { color: var(--texto-2); }
+.bit-ev-det { color: var(--texto-2); font-size: .82rem; }
+.bit-cargando { color: var(--gris-suave); padding: 30px; text-align: center; }
+@media (max-width: 1000px) {
+  .bit { flex-direction: column; }
+  .bit-det { flex: 1 1 auto; width: 100%; position: static; max-height: none; }
+}
+.bit-izq .nota { white-space: nowrap; }
+.bit-det { flex-basis: min(500px, 40vw); }
+/* con el detalle abierto: tabla compacta */
+.bit.con-detalle .bit-izq .tabla th:nth-child(n+9), .bit.con-detalle .bit-izq .tabla td:nth-child(n+9) { display: none; }
+.bit.con-detalle .bit-chip { min-width: 96px; padding: 4px 8px; }
+.bit.con-detalle .bit-chip b { font-size: 1.05rem; }
+.bit-comprador { margin: 4px 0 2px; font-size: .95rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }

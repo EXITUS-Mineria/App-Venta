@@ -12,6 +12,7 @@ Servicio_Web/
 │   └── modulos/
 │       ├── modulos.json       ← lista de módulos del menú
 │       ├── venta/             ← Armar propuesta + Bitácora + layout Funnel
+│       ├── funnel/            ← avance de cada venta (réplica de la lista SharePoint VENTAS DE CARTERA)
 │       ├── propuesta_ia/      ← estado + municipio + monto → propuesta al instante
 │       ├── restituciones/     ← cambiar crédito/grupo vendido por otro similar (±$5,000)
 │       ├── revision/          ← (validador) revisar, quitar partidas, aprobar/rechazar
@@ -28,7 +29,12 @@ Servicio_Web/
 │       ├── 13_datos_aparte.sql← la fila original de cada crédito en tabla aparte
 │       ├── 14_vista_usuarios.sql ← vista usuarios_app (consulta en Supabase, sin contraseñas)
 │       ├── 15_restituciones.sql  ← restituciones, folio RST-####, créditos bloqueados
-│       └── 16_complementar.sql   ← agregar cartera a una venta existente (ventas parciales)
+│       ├── 16_complementar.sql   ← agregar cartera a una venta existente (ventas parciales)
+│       ├── 17_seguimiento.sql    ← historial de cada propuesta, CSV de propuesta, base final al dueño
+│       ├── 18_comprador.sql      ← nombre del comprador (obligatorio al apartar)
+│       ├── 19_funnel.sql         ← funnel de ventas (MD, control documental, jurídico, cierre, ticket, guía)
+│       ├── 20_funnel_migracion.sql ← campos de la migración SharePoint (mes, ligas, adjuntos)
+│       └── 21_almacenamiento.sql ← una sola copia de la cartera (lee BASE_JYP/BASE_GRUPAL)
 ├── cargar_supabase.py         ← aplica SQL, sube bases, migra apartados, da admin
 ├── CARGAR_SUPABASE.bat
 ├── server.js / package.json   ← servidor para Railway (sin dependencias)
@@ -69,6 +75,19 @@ Estado + municipio (o todos) + monto → arma la propuesta dentro del rango prob
 Bitácora › **➕ Complementar** abre Armar propuesta en modo complemento: lo que selecciones se agrega a
 esa venta (sin regla de rango). Si estaba APROBADA o EN VENTA regresa a EN REVISIÓN.
 
+### Funnel de ventas
+Réplica de la lista SharePoint «VENTAS DE CARTERA». Cada VTA-#### entra sola al apartar (Propuesta) y se
+sincroniza con la propuesta (comprador, capital, monto; Cancelada si se libera/rechaza). Etapas:
+1 Propuesta → 2 MD → 3 Control documental → 4 Jurídico → 5 Cierre → ✔ Cerrada. ⏰ = fecha límite vencida.
+Editan: auxiliar de venta y maestros (todo); el vendedor dueño, la sección Venta y ligas.
+
+### Almacenamiento (mínimo)
+- La cartera vive **una sola vez** en `BASE_JYP` / `BASE_GRUPAL`; la página sólo guarda un índice ligero
+  para buscar (`cartera_jyp` / `cartera_grupal`). La fila completa se copia únicamente para lo apartado.
+- Propuestas liberadas o rechazadas: se borra su copia de filas.
+- CSV de propuesta, base final, bitácora y funnel se **generan al presionar el botón** en el navegador;
+  no se guardan archivos. Las ventas migradas de SharePoint guardan sólo **ligas** a sus adjuntos.
+
 ## Instalación (una vez)
 
 1. `sitio/config.js` ya tiene *Project URL* y *anon key* (Supabase › Project Settings › API).
@@ -96,7 +115,8 @@ Los apartados vigentes se conservan con cualquiera de las dos formas:
 - **Desde Supabase (sin Python):** en *Table Editor* reemplaza el contenido de `BASE_JYP` y
   `BASE_GRUPAL` (Import data from CSV) y luego en *SQL Editor* ejecuta
   `select public.cargar_cartera_desde_tablas();`
-- **Desde tu equipo:** `CARGAR_SUPABASE.bat` → opción 2 (toma `Base JyP.csv` y `Base Grupal.csv`).
+- **Desde tu equipo:** `CARGAR_SUPABASE.bat` → opción 2 (sube `Base JyP.csv` y `Base Grupal.csv` a
+  BASE_JYP / BASE_GRUPAL y arma la cartera; no hace copias).
 
 > Estado actual (13/11/2026): tablas creadas en Supabase y cartera cargada desde BASE_JYP (18,265)
 > y BASE_GRUPAL (84,233). `sitio/config.js` ya trae la URL y la anon key del proyecto.

@@ -87,6 +87,7 @@ export default {
     const inCentavos = h("input", { class: "campo", type: "number", min: 0, step: 0.01, value: est.centavos,
       oninput: () => { est.centavos = Number(inCentavos.value) || 0; actualizarKpis(); } });
     const lblRango = h("div", { class: "pastilla" });
+    const inComprador = h("input", { class: "campo", placeholder: "Nombre del comprador (obligatorio)", autocomplete: "off" });
     const pintarRango = () => { const [a, b] = rango(); lblRango.textContent = `${dinero(a)} a ${dinero(b)}`; };
     const selPrioridad = h("select", { class: "campo", onchange: () => (est.prioridad = selPrioridad.value) },
       ...PRIORIDADES.map((p) => h("option", { value: p }, p)));
@@ -141,6 +142,7 @@ export default {
 
     const panel = h("aside", { class: "venta-panel" },
       h("section", { class: "tarjeta" }, h("h3", {}, "Propuesta"),
+        comp ? null : h("span", { class: "etiqueta" }, "Comprador"), comp ? null : inComprador,
         h("span", { class: "etiqueta" }, "Tipo de venta"), h("div", { class: "segmentado" }, ...segBotones),
         h("div", { class: "fila" },
           h("div", {}, h("span", { class: "etiqueta" }, "Capital objetivo"), inObjetivo),
@@ -169,7 +171,7 @@ export default {
       comp ? `➕ Agregar a ${comp.id_propuesta}` : "✔ Validar y apartar");
     const banner = comp ? h("div", { class: "venta-comp" },
       h("div", {}, h("b", {}, `➕ Complementando ${comp.id_propuesta}`),
-        h("span", {}, ` · ${comp.usuario} · ${comp.tipo_venta || ""} · estatus ${comp.estatus} · capital actual ${dinero(comp.capital)}` +
+        h("span", {}, ` · ${comp.usuario} · comprador ${comp.comprador || "sin capturar"} · ${comp.tipo_venta || ""} · estatus ${comp.estatus} · capital actual ${dinero(comp.capital)}` +
           ` · objetivo original ${dinero(comp.capital_objetivo)}`)),
       h("span", { class: "nota" }, "Selecciona lo que quieres agregar (no aplica el rango). Si ya estaba aprobada o en venta, regresa a revisión."),
       h("button", { class: "btn btn-secundario btn-chico", onclick: () => { location.hash = "#/venta"; } }, "✖ Salir del complemento")) : null;
@@ -321,12 +323,14 @@ export default {
 
     async function apartar() {
       if (comp) return complementar();
+      const comprador = inComprador.value.trim();
+      if (!comprador) { toast("Escribe el nombre del comprador.", "mal"); inComprador.focus(); return; }
       const sel = seleccionadas();
       const cap = sel.reduce((s, f) => s + f.capital, 0);
       const refs = sel.filter((f) => f.tipo === "JyP").map((f) => f.id);
       const grupos = sel.filter((f) => f.tipo === "Grupal").map((f) => f.id);
       const ok = await confirmar("Apartar propuesta",
-        `Usuario: ${ctx.perfil.nombre || ctx.perfil.email}\nCapital: ${dinero(cap)}\nCentavos por peso: ${est.centavos}\n` +
+        `Usuario: ${ctx.perfil.nombre || ctx.perfil.email}\nComprador: ${comprador}\nCapital: ${dinero(cap)}\nCentavos por peso: ${est.centavos}\n` +
         `Valor de venta: ${dinero(cap * est.centavos)}\nPartidas: ${refs.length} JyP + ${grupos.length} grupos\n\n` +
         "Se apartarán y se enviará a revisión del validador.", "Apartar y enviar");
       if (!ok) return;
@@ -334,10 +338,10 @@ export default {
       try {
         const r = await ctx.rpc("apartar", {
           p_tipo_venta: est.tipo, p_capital_objetivo: est.objetivo, p_centavos: est.centavos,
-          p_refs: refs, p_grupos: grupos,
+          p_refs: refs, p_grupos: grupos, p_comprador: comprador,
         });
         await avisar(`Propuesta ${r.id_propuesta}`,
-          `Se apartó y quedó EN REVISIÓN.\nCapital: ${dinero(r.capital)}\nValor de venta: ${dinero(r.valor_venta)}\n\n` +
+          `Se apartó y quedó EN REVISIÓN.\nComprador: ${r.comprador}\nCapital: ${dinero(r.capital)}\nValor de venta: ${dinero(r.valor_venta)}\n\n` +
           "Se avisó a los validadores. Puedes seguir su estatus en la Bitácora.");
         est.seleccion.clear();
       } catch (e) {

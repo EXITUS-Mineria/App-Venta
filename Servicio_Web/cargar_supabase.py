@@ -119,45 +119,45 @@ def aplicar_sql(con):
 
 
 def cargar_bases(con, carpeta, usuario):
+    """Sube Base JyP.csv / Base Grupal.csv a las tablas BASE_JYP / BASE_GRUPAL (una sola copia)
+    y arma la cartera de búsqueda con public.cargar_cartera_desde_tablas()."""
     cur = con.cursor()
-    for cartera, grupal in (("JyP", False), ("Grupal", True)):
+    requeridas = {
+        "JyP": ["vReference", "Estado", "Municipio", "iDays", "nPendingK", "Estatus"],
+        "Grupal": ["vGroupId", "vReference", "iCredId", "Estado", "Municipio", "Diasatraso_hoy", "dias hoy", "nPendingK", "Estatus"],
+    }
+    subidas = 0
+    for cartera in ("JyP", "Grupal"):
         ruta = os.path.join(carpeta, f"Base {cartera}.csv")
         if not os.path.exists(ruta):
-            print(f"   ! No encontré {ruta}; se conserva la cartera {cartera} actual.")
+            print(f"   ! No encontré {ruta}; se conserva BASE_{cartera.upper()} actual.")
             continue
         df = leer_csv(ruta)
-        p = preparar(df, grupal)
-        avisos = []
-        if grupal:
-            n0 = len(p)
-            llave = df[[c for c in ("vGroupId", "vReference", "iCredId") if c in df.columns]].astype(str).agg("|".join, axis=1)
-            p = p[~llave.duplicated().values]
-            if n0 - len(p):
-                avisos.append(f"{n0 - len(p):,} filas repetidas omitidas")
-            p = p.reset_index(drop=True)
-            p.insert(0, "id", range(1, len(p) + 1))
-            cols = ["id", "vgroupid", "vreference", "estado", "municipio", "colonia", "dias", "npendingk", "estatus_base"]
-            llave_datos = "id"
-        else:
-            n0 = len(p)
-            p = p.drop_duplicates("vreference")
-            if n0 - len(p):
-                avisos.append(f"{n0 - len(p):,} vReference repetidas omitidas")
-            cols = ["vreference", "estado", "municipio", "colonia", "dias", "npendingk", "estatus_base"]
-            llave_datos = "vreference"
-        disp = int((p.estatus_base.str.upper() == "DISPONIBLE").sum())
-        if disp == 0:
-            avisos.append("NINGÚN registro tiene Estatus = Disponible")
-        tabla = f"cartera_{cartera.lower()}"
-        # la fila original (datos) va en una tabla aparte para que la búsqueda sea rápida
-        cur.execute(f"truncate public.{tabla}, public.{tabla}_datos restart identity")
-        copiar(cur, tabla, p, cols)
-        copiar(cur, f"{tabla}_datos", p, [llave_datos, "datos"])
-        if grupal:
-            cur.execute("select setval(pg_get_serial_sequence('public.cartera_grupal', 'id'), %s)", (max(len(p), 1),))
-        cur.execute("insert into public.cargas (cartera, archivo, filas, columnas, usuario) values (%s,%s,%s,%s,%s)",
-                    (cartera, os.path.basename(ruta), len(p), list(df.columns), usuario))
-        print(f"   ✔ {cartera}: {len(p):,} filas · {disp:,} Disponible" + (f" · {'; '.join(avisos)}" if avisos else ""))
+        faltan = [c for c in ("vReference", "Estado", "Municipio", "nPendingK", "Estatus") + (("vGroupId",) if cartera == "Grupal" else ())
+                  if c not in df.columns]
+        if faltan:
+            raise ValueError(f"{os.path.basename(ruta)}: faltan columnas {', '.join(faltan)}")
+        c_mora = columna(df, *COLS_MORA)
+        for c in requeridas[cartera]:
+            if c not in df.columns:
+                df[c] = df[c_mora] if (c_mora and c in ("iDays", "Diasatraso_hoy")) else ""
+        disp = int((df["Estatus"].str.strip().str.upper() == "DISPONIBLE").sum())
+        tabla = f"BASE_{cartera.upper()}"
+        columnas = list(df.columns)
+        cur.execute(f'drop table if exists public."{tabla}"')
+        cur.execute(f'create table public."{tabla}" (' + ", ".join(f'"{c}" text' for c in columnas) + ")")
+        cur.execute(f'alter table public."{tabla}" enable row level security')
+        cur.execute(f'revoke all on public."{tabla}" from anon, authenticated')
+        buf = io.StringIO()
+        df.to_csv(buf, index=False, header=False)
+        buf.seek(0)
+        cur.copy_expert(f'copy public."{tabla}" (' + ", ".join(f'"{c}"' for c in columnas) + ") from stdin with (format csv)", buf)
+        subidas += 1
+        print(f"   ✔ {tabla}: {len(df):,} filas · {disp:,} Disponible" + ("" if disp else " · ¡NINGÚN registro Disponible!"))
+    if subidas:
+        cur.execute("select public.cargar_cartera_desde_tablas()")
+        r = cur.fetchone()[0]
+        print(f"   ✔ Cartera de búsqueda: JyP {r['jyp']:,} · Grupal {r['grupal']:,}")
     con.commit()
 
 

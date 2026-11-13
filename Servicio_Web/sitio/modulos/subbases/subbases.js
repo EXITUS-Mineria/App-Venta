@@ -21,6 +21,7 @@ export default {
     const t = tabla([
       { clave: "id_propuesta", titulo: "Id venta" },
       { clave: "usuario", titulo: "Vendedor" },
+      { clave: "comprador", titulo: "Comprador" },
       { clave: "tipo_venta", titulo: "Tipo" },
       { clave: "capital", titulo: "Capital", num: true, formato: (v) => dinero(v) },
       { clave: "centavos", titulo: "Centavos", num: true },
@@ -64,7 +65,7 @@ export default {
 
     async function generar(p) {
       if (p.estatus === "APROBADA" && !(await confirmar("Generar sub base",
-        `${p.id_propuesta} · ${p.usuario}\nCapital: ${dinero(p.capital)}\n\n` +
+        `${p.id_propuesta} · ${p.usuario}\nComprador: ${p.comprador || "sin capturar"}\nCapital: ${dinero(p.capital)}\n\n` +
         "Se descargará el layout para Funnel y la propuesta pasará a EN VENTA.", "Generar"))) return;
       try {
         const r = await ctx.rpc("generar_sub_base", { p_id: p.id_propuesta });
