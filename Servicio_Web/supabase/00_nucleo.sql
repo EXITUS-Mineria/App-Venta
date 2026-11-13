@@ -3,7 +3,6 @@
 -- Idempotente: se puede correr varias veces.
 -- ============================================================
 
-create extension if not exists pgcrypto;
 
 -- ---------- Perfiles (rol de cada usuario de Supabase Auth) ----------
 create table if not exists public.perfiles (
@@ -60,8 +59,7 @@ begin
 end $$;
 
 alter table public.perfiles enable row level security;
-revoke all on public.perfiles from anon;
-revoke insert, update, delete on public.perfiles from authenticated;
+revoke all on public.perfiles from anon, authenticated;
 grant select on public.perfiles to authenticated;
 
 drop policy if exists perfiles_lectura on public.perfiles;
@@ -70,7 +68,7 @@ create policy perfiles_lectura on public.perfiles for select to authenticated
 
 -- Para no confundir "MÉXICO" con "MEXICO": mayúsculas y espacios simples
 create or replace function public.norm(t text) returns text
-language sql immutable as $$ select upper(regexp_replace(trim(coalesce(t, '')), '\s+', ' ', 'g')) $$;
+language sql immutable set search_path = public as $$ select upper(regexp_replace(trim(coalesce(t, '')), '\s+', ' ', 'g')) $$;
 
 create or replace function public._exigir_activo() returns void
 language plpgsql stable security definer set search_path = public as $$
@@ -181,3 +179,13 @@ begin
         execute format('grant execute on function public.%s to authenticated', f);
     end loop;
 end $$;
+
+-- Funciones internas: nadie las llama directo desde la página
+revoke all on function public.tg_nuevo_usuario() from public, anon, authenticated;
+revoke all on function public._exigir_activo() from public, anon, authenticated;
+revoke all on function public._exigir_rol(text[], text) from public, anon, authenticated;
+-- Usadas por las políticas RLS: sólo usuarios con sesión
+revoke all on function public.es_activo() from public, anon;
+revoke all on function public.es_admin() from public, anon;
+grant execute on function public.es_activo() to authenticated;
+grant execute on function public.es_admin() to authenticated;

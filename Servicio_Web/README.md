@@ -19,7 +19,11 @@ Servicio_Web/
 │       └── _plantilla/        ← copia esto para crear un módulo nuevo
 ├── supabase/
 │   ├── 00_nucleo.sql          ← usuarios, roles y notificaciones (campana)
-│   └── modulos/10_venta.sql   ← cartera, propuestas VTA-####, apartar, revisión, sub base
+│   └── modulos/
+│       ├── 10_venta.sql       ← cartera, propuestas VTA-####, apartar, revisión, sub base
+│       ├── 11_carga_desde_tablas.sql ← carga la cartera desde BASE_JYP / BASE_GRUPAL
+│       ├── 12_rendimiento.sql ← columnas normalizadas e índices (búsqueda < 1 s)
+│       └── 13_datos_aparte.sql← la fila original de cada crédito en tabla aparte
 ├── cargar_supabase.py         ← aplica SQL, sube bases, migra apartados, da admin
 ├── CARGAR_SUPABASE.bat
 ├── server.js / package.json   ← servidor para Railway (sin dependencias)
@@ -44,7 +48,7 @@ Servicio_Web/
 
 ## Instalación (una vez)
 
-1. **Supabase › Project Settings › API**: copia *Project URL* y *anon public key* en `sitio/config.js`.
+1. `sitio/config.js` ya tiene *Project URL* y *anon key* (Supabase › Project Settings › API).
 2. **Supabase › Authentication › Sign In / Providers**: desactiva *Allow new users to sign up*
    (sólo entran los usuarios que tú des de alta). Luego, en el módulo **Usuarios**, asigna el rol
    de cada quien (Vendedor, Validador, Auxiliar de venta, Administrador).
@@ -62,9 +66,17 @@ Servicio_Web/
 6. **Supabase › Authentication › URL Configuration**: pon la dirección de Railway en *Site URL*
    (para que funcione "¿Olvidaste tu contraseña?").
 
-## Cada mes
+## Cada mes (actualizar la cartera)
 
-`CARGAR_SUPABASE.bat` → opción 2 (subir bases). Los apartados vigentes se conservan.
+Los apartados vigentes se conservan con cualquiera de las dos formas:
+
+- **Desde Supabase (sin Python):** en *Table Editor* reemplaza el contenido de `BASE_JYP` y
+  `BASE_GRUPAL` (Import data from CSV) y luego en *SQL Editor* ejecuta
+  `select public.cargar_cartera_desde_tablas();`
+- **Desde tu equipo:** `CARGAR_SUPABASE.bat` → opción 2 (toma `Base JyP.csv` y `Base Grupal.csv`).
+
+> Estado actual (13/11/2026): tablas creadas en Supabase y cartera cargada desde BASE_JYP (18,265)
+> y BASE_GRUPAL (84,233). `sitio/config.js` ya trae la URL y la anon key del proyecto.
 
 ## Agregar una funcionalidad nueva (sin tocar lo existente)
 

@@ -117,9 +117,8 @@ alter table public.propuesta_detalle enable row level security;
 alter table public.apartados_activos enable row level security;
 
 revoke all on public.cargas, public.cartera_jyp, public.cartera_grupal,
-              public.propuestas, public.propuesta_detalle, public.apartados_activos from anon;
-revoke insert, update, delete on public.cargas, public.cartera_jyp, public.cartera_grupal,
-              public.propuestas, public.propuesta_detalle, public.apartados_activos from authenticated;
+              public.propuestas, public.propuesta_detalle, public.apartados_activos from anon, authenticated;
+revoke all on sequence public.folio_venta from anon, authenticated;
 grant select on public.cargas, public.propuestas, public.propuesta_detalle to authenticated;
 
 drop policy if exists cargas_lectura on public.cargas;
@@ -155,7 +154,7 @@ end $$;
 
 -- Términos de búsqueda: uno = "contiene", varios = exactos
 create or replace function public._coincide(valor text, terminos text[]) returns boolean
-language sql immutable as $$
+language sql immutable set search_path = public as $$
     select case
         when terminos is null or cardinality(terminos) = 0 then true
         when cardinality(terminos) = 1 then upper(valor) like '%' || upper(terminos[1]) || '%'

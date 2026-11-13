@@ -134,18 +134,27 @@ def cargar_bases(con, carpeta, usuario):
             p = p[~llave.duplicated().values]
             if n0 - len(p):
                 avisos.append(f"{n0 - len(p):,} filas repetidas omitidas")
-            cols = ["vgroupid", "vreference", "estado", "municipio", "colonia", "dias", "npendingk", "estatus_base", "datos"]
+            p = p.reset_index(drop=True)
+            p.insert(0, "id", range(1, len(p) + 1))
+            cols = ["id", "vgroupid", "vreference", "estado", "municipio", "colonia", "dias", "npendingk", "estatus_base"]
+            llave_datos = "id"
         else:
             n0 = len(p)
             p = p.drop_duplicates("vreference")
             if n0 - len(p):
                 avisos.append(f"{n0 - len(p):,} vReference repetidas omitidas")
-            cols = ["vreference", "estado", "municipio", "colonia", "dias", "npendingk", "estatus_base", "datos"]
+            cols = ["vreference", "estado", "municipio", "colonia", "dias", "npendingk", "estatus_base"]
+            llave_datos = "vreference"
         disp = int((p.estatus_base.str.upper() == "DISPONIBLE").sum())
         if disp == 0:
             avisos.append("NINGÚN registro tiene Estatus = Disponible")
-        cur.execute(f"truncate public.cartera_{cartera.lower()} restart identity")
-        copiar(cur, f"cartera_{cartera.lower()}", p, cols)
+        tabla = f"cartera_{cartera.lower()}"
+        # la fila original (datos) va en una tabla aparte para que la búsqueda sea rápida
+        cur.execute(f"truncate public.{tabla}, public.{tabla}_datos restart identity")
+        copiar(cur, tabla, p, cols)
+        copiar(cur, f"{tabla}_datos", p, [llave_datos, "datos"])
+        if grupal:
+            cur.execute("select setval(pg_get_serial_sequence('public.cartera_grupal', 'id'), %s)", (max(len(p), 1),))
         cur.execute("insert into public.cargas (cartera, archivo, filas, columnas, usuario) values (%s,%s,%s,%s,%s)",
                     (cartera, os.path.basename(ruta), len(p), list(df.columns), usuario))
         print(f"   ✔ {cartera}: {len(p):,} filas · {disp:,} Disponible" + (f" · {'; '.join(avisos)}" if avisos else ""))
