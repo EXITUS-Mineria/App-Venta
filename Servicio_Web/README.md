@@ -12,6 +12,8 @@ Servicio_Web/
 │   └── modulos/
 │       ├── modulos.json       ← lista de módulos del menú
 │       ├── venta/             ← Armar propuesta + Bitácora + layout Funnel
+│       ├── propuesta_ia/      ← estado + municipio + monto → propuesta al instante
+│       ├── restituciones/     ← cambiar crédito/grupo vendido por otro similar (±$5,000)
 │       ├── revision/          ← (validador) revisar, quitar partidas, aprobar/rechazar
 │       ├── subbases/          ← (auxiliar de venta) generar la sub base para Funnel
 │       ├── usuarios/          ← (admin) roles y altas
@@ -23,7 +25,10 @@ Servicio_Web/
 │       ├── 10_venta.sql       ← cartera, propuestas VTA-####, apartar, revisión, sub base
 │       ├── 11_carga_desde_tablas.sql ← carga la cartera desde BASE_JYP / BASE_GRUPAL
 │       ├── 12_rendimiento.sql ← columnas normalizadas e índices (búsqueda < 1 s)
-│       └── 13_datos_aparte.sql← la fila original de cada crédito en tabla aparte
+│       ├── 13_datos_aparte.sql← la fila original de cada crédito en tabla aparte
+│       ├── 14_vista_usuarios.sql ← vista usuarios_app (consulta en Supabase, sin contraseñas)
+│       ├── 15_restituciones.sql  ← restituciones, folio RST-####, créditos bloqueados
+│       └── 16_complementar.sql   ← agregar cartera a una venta existente (ventas parciales)
 ├── cargar_supabase.py         ← aplica SQL, sube bases, migra apartados, da admin
 ├── CARGAR_SUPABASE.bat
 ├── server.js / package.json   ← servidor para Railway (sin dependencias)
@@ -43,17 +48,35 @@ Servicio_Web/
 - El vendedor ya **no** descarga el layout; sólo el auxiliar (y validador/admin) desde Sub bases o Bitácora.
 - El vendedor puede liberar su propuesta mientras está EN REVISIÓN; después, sólo un administrador.
 - Las propuestas migradas de la app de escritorio conservan su Id `PV-…` y estatus APARTADA / EN CONFLICTO.
-- Roles (módulo Usuarios): **Vendedor, Validador, Auxiliar de venta, Administrador** (el admin puede todo).
+- Roles: **Vendedor, Validador (maestro), Auxiliar de venta, Administrador**. El **Validador es el usuario
+  maestro**: igual que el Administrador ve todos los módulos, puede todo y **da de alta usuarios** y cambia
+  contraseñas desde el módulo **Usuarios** (sin entrar a Supabase).
 - La campana revisa avisos cada minuto y al cambiar de pantalla.
+
+### Propuesta IA
+Estado + municipio (o todos) + monto → arma la propuesta dentro del rango probando varios criterios
+(mayor mora, mayor capital…). «Otra opción» cambia de criterio. Un clic la aparta y la manda a revisión.
+
+### Restituciones (motivos: Defunción, Liquidado, Venta duplicada, Incidencia en el expediente)
+1. Se escribe la vReference o el grupo; se valida en las bases y que esté vendido/en propuesta
+   (la vReference de un integrante restituye su grupo completo).
+2. Sugiere reemplazos disponibles del mismo tipo con capital ±$5,000 (los más cercanos primero).
+3. Al aplicar: folio **RST-####**; el reemplazo entra a la misma propuesta (si se vendió antes de la
+   página se crea una propuesta RST-#### APROBADA); el original queda **bloqueado** para siempre;
+   se avisa al validador y al auxiliar (regenerar sub base).
+
+### Complementar una venta (ventas parciales)
+Bitácora › **➕ Complementar** abre Armar propuesta en modo complemento: lo que selecciones se agrega a
+esa venta (sin regla de rango). Si estaba APROBADA o EN VENTA regresa a EN REVISIÓN.
 
 ## Instalación (una vez)
 
 1. `sitio/config.js` ya tiene *Project URL* y *anon key* (Supabase › Project Settings › API).
 2. **Supabase › Authentication › Sign In / Providers**: desactiva *Allow new users to sign up*
-   (sólo entran los usuarios que tú des de alta). Luego, en el módulo **Usuarios**, asigna el rol
-   de cada quien (Vendedor, Validador, Auxiliar de venta, Administrador).
-3. **Supabase › Authentication › Users › Add user**: crea tu usuario (correo + contraseña,
-   marca *Auto Confirm User*). Repite para cada vendedor.
+   (sólo entran los usuarios que el Validador o Administrador den de alta).
+3. Los usuarios se dan de alta desde la página (módulo **Usuarios**, con un Validador o Administrador).
+   El primero se crea en **Supabase › Authentication › Users › Add user** (marca *Auto Confirm User*)
+   y se le pone rol validador/admin.
 4. Doble clic en **`CARGAR_SUPABASE.bat`** (necesita Python). Usa el host y usuario de
    **Connect › Session pooler**. Responde:
    - 1) Aplicar SQL → **s**

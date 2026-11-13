@@ -211,3 +211,7 @@ table.tabla { border-collapse: collapse; width: 100%; font-size: .9rem; }
   .enc nav { margin-left: 0; order: 3; width: 100%; overflow-x: auto; flex-wrap: nowrap; }
   .contenido { padding: 10px 16px; }
 }
+
+/* Fila con cambios sin guardar */
+.tabla tr.editado td { background: #FFF6D6 !important; }
+.tabla td .campo { min-width: 120px; }

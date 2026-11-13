@@ -41,7 +41,8 @@ Los cambios se prueban en `Pruebas_v10/` (o en una rama), nunca directo en la ra
 - Seguridad: RLS en todas las tablas; escritura sólo por funciones `security definer` que llaman
   `_exigir_activo()` / `es_admin()`. Nunca exponer la contraseña de la base ni la service key en el sitio.
 - Usuarios: Supabase Auth (correo + contraseña, registro público desactivado); rol en `perfiles`:
-  `vendedor`, `validador`, `auxiliar` (de venta), `admin` (puede todo). Validar con `_exigir_rol(array[...])`.
+  `vendedor`, `validador`, `auxiliar` (de venta), `admin`. **Maestros = validador y admin** (`es_admin()`, ven
+  todos los módulos, alta de usuarios con `admin_crear_usuario` / `admin_cambiar_clave`). Validar con `_exigir_rol(array[...])`.
 - **Flujo de venta:** vendedor aparta → `EN REVISIÓN` (Id `VTA-0300`+, secuencia `folio_venta`) →
   validador `quitar_partidas` / `revisar_propuesta` → `APROBADA` o `RECHAZADA` (libera) →
   auxiliar `generar_sub_base` + `layout_propuesta` → `EN VENTA`. Migradas: `APARTADA` / `EN CONFLICTO` con Id `PV-…`.

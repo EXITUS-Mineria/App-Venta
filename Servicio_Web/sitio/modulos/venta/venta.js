@@ -60,6 +60,15 @@ export default {
     const { h, kpi, tabla, dinero, numero, dias, toast, confirmar, avisar } = ctx.ui;
     ctx.ui.cargarCSS(new URL("./venta.css", import.meta.url).href);
 
+    // Modo complemento: #/venta?complementar=VTA-0300 (agregar cartera a una venta existente)
+    const idComp = new URLSearchParams((location.hash.split("?")[1]) || "").get("complementar");
+    let comp = null;
+    if (idComp) {
+      const { data, error } = await ctx.sb.from("propuestas").select("*").eq("id_propuesta", idComp).maybeSingle();
+      if (error || !data) { toast(`No encontré la propuesta ${idComp}.`, "mal"); }
+      else comp = data;
+    }
+
     // ---------------- estado ----------------
     const est = {
       tipo: "Grupal", objetivo: 200000, centavos: 0.26, prioridad: PRIORIDADES[0],
@@ -156,7 +165,14 @@ export default {
     };
     const lblTabla = h("b", {}, "DETALLE");
     const lblResumen = h("span", {}, "Elige estados o busca una referencia y presiona Aplicar filtros.");
-    const btnApartar = h("button", { class: "btn btn-marca", onclick: () => apartar() }, "✔ Validar y apartar");
+    const btnApartar = h("button", { class: "btn btn-marca", onclick: () => apartar() },
+      comp ? `➕ Agregar a ${comp.id_propuesta}` : "✔ Validar y apartar");
+    const banner = comp ? h("div", { class: "venta-comp" },
+      h("div", {}, h("b", {}, `➕ Complementando ${comp.id_propuesta}`),
+        h("span", {}, ` · ${comp.usuario} · ${comp.tipo_venta || ""} · estatus ${comp.estatus} · capital actual ${dinero(comp.capital)}` +
+          ` · objetivo original ${dinero(comp.capital_objetivo)}`)),
+      h("span", { class: "nota" }, "Selecciona lo que quieres agregar (no aplica el rango). Si ya estaba aprobada o en venta, regresa a revisión."),
+      h("button", { class: "btn btn-secundario btn-chico", onclick: () => { location.hash = "#/venta"; } }, "✖ Salir del complemento")) : null;
     const raiz = h("div", { class: "venta" });
     const t = tabla([], {
       seleccion: est.seleccion, idFila: (f) => f.key, bloqueada: (f) => !f.disponible,
@@ -164,6 +180,7 @@ export default {
     });
 
     const der = h("section", { class: "venta-der" },
+      banner,
       h("div", { class: "venta-acciones" },
         h("button", { class: "btn btn-secundario", onclick: () => raiz.classList.toggle("sin-panel") }, "◀ Panel"),
         h("button", { class: "btn btn-primario", onclick: () => aplicar() }, "🔎 Aplicar filtros"),
@@ -288,7 +305,7 @@ export default {
       const nj = sel.filter((f) => f.tipo === "JyP").length, ng = sel.length - nj;
       const integ = sel.filter((f) => f.tipo === "Grupal").reduce((s, f) => s + f.integrantes, 0);
       K.partidas.set(numero(sel.length), [nj ? `${nj} JyP` : "", ng ? `${ng} grupos · ${integ} integrantes` : ""].filter(Boolean).join(" + ") || "Sin selección");
-      btnApartar.disabled = !(cap >= min && cap <= max && cap > 0);
+      btnApartar.disabled = comp ? !(cap > 0) : !(cap >= min && cap <= max && cap > 0);
     }
 
     function sugerirAccion() {
@@ -303,6 +320,7 @@ export default {
     }
 
     async function apartar() {
+      if (comp) return complementar();
       const sel = seleccionadas();
       const cap = sel.reduce((s, f) => s + f.capital, 0);
       const refs = sel.filter((f) => f.tipo === "JyP").map((f) => f.id);
@@ -328,7 +346,38 @@ export default {
       await aplicar();
     }
 
+    async function complementar() {
+      const sel = seleccionadas();
+      const cap = sel.reduce((s, f) => s + f.capital, 0);
+      const refs = sel.filter((f) => f.tipo === "JyP").map((f) => f.id);
+      const grupos = sel.filter((f) => f.tipo === "Grupal").map((f) => f.id);
+      const ok = await confirmar(`Complementar ${comp.id_propuesta}`,
+        `Se agregan ${refs.length} JyP + ${grupos.length} grupos por ${dinero(cap)}.\n` +
+        `Capital actual: ${dinero(comp.capital)}\nCapital total: ${dinero(Number(comp.capital) + cap)}\n\n` +
+        (["APROBADA", "EN VENTA"].includes(comp.estatus) ? "La propuesta regresará a EN REVISIÓN para que el validador revise el complemento." :
+          "Se avisará al validador."), "Agregar");
+      if (!ok) return;
+      btnApartar.disabled = true;
+      try {
+        const r = await ctx.rpc("complementar_propuesta", { p_id: comp.id_propuesta, p_refs: refs, p_grupos: grupos });
+        await avisar(`${r.id_propuesta} complementada`,
+          `Se agregaron ${dinero(r.agregado)} (${r.partidas} partidas).\nCapital total: ${dinero(r.capital)}\n` +
+          `Valor de venta: ${dinero(r.valor_venta)}\nEstatus: ${r.estatus}`);
+        location.hash = "#/bitacora";
+        return;
+      } catch (e) { toast("No se agregó nada.\n" + e.message, "mal", 9000); }
+      await aplicar();
+    }
+
     // arranque
+    if (comp) {
+      if (["JyP", "Grupal", "Dual"].includes(comp.tipo_venta)) est.tipo = comp.tipo_venta;
+      est.centavos = Number(comp.centavos) || est.centavos;
+      inCentavos.value = est.centavos; inCentavos.disabled = true;
+      const falta = Number(comp.capital_objetivo) - Number(comp.capital);
+      est.objetivo = falta > 0 ? Math.round(falta) : 50000;
+      inObjetivo.value = est.objetivo;
+    }
     pintarSeg(); pintarRango(); selPrioridad.value = est.prioridad;
     t.setColumnas(COLS[est.tipo]);
     actualizarKpis();

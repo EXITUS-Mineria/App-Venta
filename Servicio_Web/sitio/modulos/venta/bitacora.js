@@ -21,6 +21,8 @@ export default {
     const VIGENTES = ["EN REVISIÓN", "APROBADA", "EN VENTA", "APARTADA", "EN CONFLICTO"];
     const puedeLiberar = (p) => VIGENTES.includes(p.estatus) &&
       (ctx.esAdmin || (p.user_id === ctx.perfil.user_id && ["EN REVISIÓN", "APARTADA", "EN CONFLICTO"].includes(p.estatus)));
+    const puedeComplementar = (p) => ["EN REVISIÓN", "APROBADA", "EN VENTA", "APARTADA"].includes(p.estatus) &&
+      (ctx.esAdmin || p.user_id === ctx.perfil.user_id);
     const puedeLayout = (p) => ctx.tieneRol("auxiliar", "validador") && p.estatus !== "LIBERADA" && p.estatus !== "RECHAZADA";
 
     const t = tabla([
@@ -39,6 +41,8 @@ export default {
       { clave: "liberada_por", titulo: "Liberó", formato: (v, p) => (v ? `${v} · ${fecha(p.liberada_en)}` : "") },
       { clave: "acciones", titulo: "", formato: (_, p) => h("span", { class: "fila", style: { gap: "4px" } },
           puedeLayout(p) ? h("button", { class: "btn btn-secundario btn-chico", title: "Descargar layout para Funnel", onclick: () => layout(p) }, "⬇ Layout") : null,
+          puedeComplementar(p) ? h("button", { class: "btn btn-secundario btn-chico", title: "Agregar más cartera a esta venta",
+            onclick: () => { location.hash = `#/venta?complementar=${encodeURIComponent(p.id_propuesta)}`; } }, "➕ Complementar") : null,
           puedeLiberar(p) ? h("button", { class: "btn btn-marca btn-chico", onclick: () => liberar(p) }, "Liberar") : null) },
     ], { idFila: (p) => p.id_propuesta, claseFila: (p) => (p.estatus === "EN CONFLICTO" ? "conflicto" : ["LIBERADA", "RECHAZADA"].includes(p.estatus) ? "bloq" : ""),
          vacio: "Sin propuestas" });

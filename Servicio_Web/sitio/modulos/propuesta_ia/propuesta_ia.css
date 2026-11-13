@@ -1,0 +1,6 @@
+.ia { display: grid; grid-template-columns: minmax(280px, 340px) 1fr; gap: 12px; align-items: start; }
+.ia-panel { }
+.ia-der { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ia-monto { font-size: 1.25rem; font-weight: 700; }
+.ia-generar { width: 100%; padding: 10px; font-size: 1.05rem; }
+@media (max-width: 900px) { .ia { grid-template-columns: 1fr; } .ia-panel { position: static; } }

@@ -14,7 +14,8 @@ create table if not exists public.perfiles (
     creado     timestamptz not null default now()
 );
 
--- Roles: vendedor -> validador -> auxiliar (de venta); admin puede todo
+-- Roles: vendedor -> validador -> auxiliar (de venta).
+-- "Maestros": validador y admin pueden todo (incluye dar de alta usuarios).
 alter table public.perfiles drop constraint if exists perfiles_rol_check;
 alter table public.perfiles add constraint perfiles_rol_check
     check (rol in ('vendedor', 'validador', 'auxiliar', 'admin'));
@@ -38,16 +39,18 @@ language sql stable security definer set search_path = public as $$
     select exists (select 1 from public.perfiles where user_id = auth.uid() and activo)
 $$;
 
+-- Usuario maestro: administrador o validador
 create or replace function public.es_admin() returns boolean
 language sql stable security definer set search_path = public as $$
-    select exists (select 1 from public.perfiles where user_id = auth.uid() and activo and rol = 'admin')
+    select exists (select 1 from public.perfiles where user_id = auth.uid() and activo
+                   and rol in ('admin', 'validador'))
 $$;
 
--- ¿El usuario tiene alguno de estos roles? (admin siempre cuenta)
+-- ¿El usuario tiene alguno de estos roles? (los maestros siempre cuentan)
 create or replace function public.tiene_rol(p_roles text[]) returns boolean
 language sql stable security definer set search_path = public as $$
     select exists (select 1 from public.perfiles where user_id = auth.uid() and activo
-                   and (rol = 'admin' or rol = any (p_roles)))
+                   and (rol in ('admin', 'validador') or rol = any (p_roles)))
 $$;
 
 create or replace function public._exigir_rol(p_roles text[], p_accion text) returns void
@@ -103,10 +106,80 @@ returns void
 language plpgsql volatile security definer set search_path = public as $$
 begin
     if not public.es_admin() then raise exception 'Sólo administradores'; end if;
-    if p_user = auth.uid() and (p_rol <> 'admin' or not p_activo) then
-        raise exception 'No puedes quitarte a ti mismo el rol de administrador';
+    if p_user = auth.uid() and (p_rol not in ('admin', 'validador') or not p_activo) then
+        raise exception 'No puedes quitarte a ti mismo el rol de usuario maestro';
     end if;
     update public.perfiles set nombre = p_nombre, rol = p_rol, activo = p_activo where user_id = p_user;
+end $$;
+
+-- Editar usuario completo, incluido el correo (sólo maestros)
+create or replace function public.admin_editar_usuario(p_user uuid, p_email text, p_nombre text, p_rol text, p_activo boolean)
+returns void
+language plpgsql volatile security definer set search_path = public as $$
+declare v_email text := lower(trim(p_email));
+begin
+    if not public.es_admin() then raise exception 'Sólo el validador o un administrador pueden editar usuarios'; end if;
+    if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'Correo no válido: %', p_email; end if;
+    if p_rol not in ('vendedor', 'validador', 'auxiliar', 'admin') then raise exception 'Rol no válido: %', p_rol; end if;
+    if p_user = auth.uid() and (p_rol not in ('admin', 'validador') or not p_activo) then
+        raise exception 'No puedes quitarte a ti mismo el rol de usuario maestro';
+    end if;
+    if exists (select 1 from auth.users where lower(email) = v_email and id <> p_user) then
+        raise exception 'Ya existe otro usuario con el correo %', v_email;
+    end if;
+    update auth.users set email = v_email, updated_at = now() where id = p_user and email is distinct from v_email;
+    update auth.identities set identity_data = identity_data || jsonb_build_object('email', v_email), updated_at = now()
+     where user_id = p_user and provider = 'email';
+    update public.perfiles
+       set email = v_email, nombre = nullif(trim(p_nombre), ''), rol = p_rol, activo = p_activo
+     where user_id = p_user;
+    if not found then raise exception 'No existe el usuario'; end if;
+end $$;
+
+-- Alta de usuarios desde la página (sólo maestros). Crea la cuenta de Supabase Auth ya confirmada.
+create or replace function public.admin_crear_usuario(p_email text, p_nombre text, p_rol text, p_clave text)
+returns uuid
+language plpgsql volatile security definer set search_path = public as $$
+declare v_id uuid := gen_random_uuid(); v_email text := lower(trim(p_email));
+begin
+    if not public.es_admin() then raise exception 'Sólo el validador o un administrador pueden dar de alta usuarios'; end if;
+    if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'Correo no válido: %', p_email; end if;
+    if p_rol not in ('vendedor', 'validador', 'auxiliar', 'admin') then raise exception 'Rol no válido: %', p_rol; end if;
+    if length(coalesce(p_clave, '')) < 8 then raise exception 'La contraseña debe tener al menos 8 caracteres'; end if;
+    if exists (select 1 from auth.users where lower(email) = v_email) then
+        raise exception 'Ya existe un usuario con el correo %', v_email;
+    end if;
+
+    insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+        raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+        confirmation_token, recovery_token, email_change_token_new, email_change, email_change_token_current,
+        phone_change, phone_change_token, reauthentication_token)
+    values ('00000000-0000-0000-0000-000000000000', v_id, 'authenticated', 'authenticated', v_email,
+        extensions.crypt(p_clave, extensions.gen_salt('bf')), now(),
+        '{"provider":"email","providers":["email"]}', '{}', now(), now(),
+        '', '', '', '', '', '', '', '');
+    insert into auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+    values (gen_random_uuid(), v_id, v_id::text,
+        jsonb_build_object('sub', v_id::text, 'email', v_email, 'email_verified', true),
+        'email', now(), now(), now());
+
+    -- el perfil lo crea el trigger tr_nuevo_usuario; aquí se completa
+    insert into public.perfiles (user_id, email, nombre, rol)
+    values (v_id, v_email, coalesce(nullif(trim(p_nombre), ''), split_part(v_email, '@', 1)), p_rol)
+    on conflict (user_id) do update set nombre = excluded.nombre, rol = excluded.rol, activo = true;
+    return v_id;
+end $$;
+
+-- Cambiar la contraseña de un usuario (sólo maestros)
+create or replace function public.admin_cambiar_clave(p_user uuid, p_clave text)
+returns void
+language plpgsql volatile security definer set search_path = public as $$
+begin
+    if not public.es_admin() then raise exception 'Sólo el validador o un administrador pueden cambiar contraseñas'; end if;
+    if length(coalesce(p_clave, '')) < 8 then raise exception 'La contraseña debe tener al menos 8 caracteres'; end if;
+    update auth.users set encrypted_password = extensions.crypt(p_clave, extensions.gen_salt('bf')), updated_at = now()
+     where id = p_user;
+    if not found then raise exception 'No existe el usuario'; end if;
 end $$;
 
 
@@ -174,7 +247,10 @@ begin
         'mis_notificaciones(integer)',
         'marcar_notificaciones(bigint[])',
         'admin_usuarios()',
-        'admin_actualizar_usuario(uuid,text,text,boolean)'] loop
+        'admin_actualizar_usuario(uuid,text,text,boolean)',
+        'admin_crear_usuario(text,text,text,text)',
+        'admin_editar_usuario(uuid,text,text,text,boolean)',
+        'admin_cambiar_clave(uuid,text)'] loop
         execute format('revoke all on function public.%s from public, anon', f);
         execute format('grant execute on function public.%s to authenticated', f);
     end loop;

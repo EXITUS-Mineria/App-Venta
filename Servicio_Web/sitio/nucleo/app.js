@@ -98,7 +98,7 @@ async function cargarModulos(perfil) {
     try {
       const mod = (await import(new URL(`../modulos/${m.archivo}`, import.meta.url))).default;
       const roles = mod.roles || ["vendedor", "admin"];
-      if (perfil.rol === "admin" || roles.includes(perfil.rol)) cargados.push({ ...mod, id: mod.id || m.id });
+      if (MAESTROS.includes(perfil.rol) || roles.includes(perfil.rol)) cargados.push({ ...mod, id: mod.id || m.id });
     } catch (e) {
       console.error("No se pudo cargar el módulo", m.archivo, e);
       ui.toast(`No se pudo cargar el módulo ${m.id}`, "mal");
@@ -110,7 +110,9 @@ async function cargarModulos(perfil) {
 let moduloActual = null;
 let relojAvisos = null;
 
-export const ROLES = { vendedor: "Vendedor", validador: "Validador", auxiliar: "Auxiliar de venta", admin: "Administrador" };
+export const ROLES = { vendedor: "Vendedor", validador: "Validador (maestro)", auxiliar: "Auxiliar de venta", admin: "Administrador" };
+// Usuarios maestros: ven todos los módulos y pueden todo (incluye dar de alta usuarios)
+const MAESTROS = ["admin", "validador"];
 
 // ---------- Campana de notificaciones ----------
 function campana() {
@@ -173,8 +175,8 @@ async function iniciar() {
   const avisos = campana();
   const ctx = {
     sb, rpc, ui, perfil, config: CONFIG,
-    esAdmin: perfil.rol === "admin",
-    tieneRol: (...roles) => perfil.rol === "admin" || roles.includes(perfil.rol),
+    esAdmin: MAESTROS.includes(perfil.rol),
+    tieneRol: (...roles) => MAESTROS.includes(perfil.rol) || roles.includes(perfil.rol),
     refrescarAvisos: () => avisos.refrescar(),
     ir: (id) => { location.hash = `#/${id}`; },
   };

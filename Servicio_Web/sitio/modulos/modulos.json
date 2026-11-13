@@ -7,8 +7,18 @@
       "activo": true
     },
     {
+      "id": "propuesta_ia",
+      "archivo": "propuesta_ia/propuesta_ia.js",
+      "activo": true
+    },
+    {
       "id": "bitacora",
       "archivo": "venta/bitacora.js",
+      "activo": true
+    },
+    {
+      "id": "restituciones",
+      "archivo": "restituciones/restituciones.js",
       "activo": true
     },
     {
