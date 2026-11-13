@@ -1,0 +1,40 @@
+# ============================================================
+# Venta de Cartera - lo que NUNCA entra al repositorio
+# ============================================================
+
+# Datos de clientes y operación (información sensible)
+*.csv
+*.xlsx
+*.xls
+*.parquet
+!Plantilla_Propuesta_Anterior.csv
+Apartados/
+Liberaciones/
+Propuestas_Registradas/
+Bases Sandibel/
+Venta_Cartera_Instalable/
+
+# Credenciales
+conexion_supabase.ini
+*.ini
+administradores.txt
+
+# Compilados y temporales
+build/
+dist/
+*.exe
+*.spec
+__pycache__/
+*.pyc
+*.tmp
+~*
+
+# Respaldos manuales (el historial ahora vive en Git)
+Respaldo_v6/
+
+# Imágenes de prueba
+*.png
+
+# Claude Code local
+.claude/settings.local.json
+node_modules/

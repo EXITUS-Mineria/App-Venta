@@ -1,0 +1,40 @@
+{
+  "_ayuda": "Lista de módulos del sitio, en el orden del menú. Para agregar uno: crea su carpeta en modulos/ y agrega una línea aquí. activo=false lo oculta sin borrarlo.",
+  "modulos": [
+    {
+      "id": "venta",
+      "archivo": "venta/venta.js",
+      "activo": true
+    },
+    {
+      "id": "bitacora",
+      "archivo": "venta/bitacora.js",
+      "activo": true
+    },
+    {
+      "id": "revision",
+      "archivo": "revision/revision.js",
+      "activo": true
+    },
+    {
+      "id": "subbases",
+      "archivo": "subbases/subbases.js",
+      "activo": true
+    },
+    {
+      "id": "usuarios",
+      "archivo": "usuarios/usuarios.js",
+      "activo": true
+    },
+    {
+      "id": "cargas",
+      "archivo": "cargas/cargas.js",
+      "activo": true
+    },
+    {
+      "id": "ejemplo",
+      "archivo": "_plantilla/plantilla.js",
+      "activo": false
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+# Venta de Cartera · Servicio Web
+
+Página web (HTML + JavaScript) con base de datos en **Supabase** y publicada en **Railway**.
+Reemplaza a la app de escritorio cuando esté validada; hasta entonces la v9 sigue en producción.
+
+```
+Servicio_Web/
+├── sitio/                     ← lo que ve el usuario
+│   ├── index.html
+│   ├── config.js              ← ÚNICO archivo a editar al instalar (URL y anon key)
+│   ├── nucleo/                ← login, menú, tema, utilidades (no se toca)
+│   └── modulos/
+│       ├── modulos.json       ← lista de módulos del menú
+│       ├── venta/             ← Armar propuesta + Bitácora + layout Funnel
+│       ├── revision/          ← (validador) revisar, quitar partidas, aprobar/rechazar
+│       ├── subbases/          ← (auxiliar de venta) generar la sub base para Funnel
+│       ├── usuarios/          ← (admin) roles y altas
+│       ├── cargas/            ← (admin) bases cargadas
+│       └── _plantilla/        ← copia esto para crear un módulo nuevo
+├── supabase/
+│   ├── 00_nucleo.sql          ← usuarios, roles y notificaciones (campana)
+│   └── modulos/10_venta.sql   ← cartera, propuestas VTA-####, apartar, revisión, sub base
+├── cargar_supabase.py         ← aplica SQL, sube bases, migra apartados, da admin
+├── CARGAR_SUPABASE.bat
+├── server.js / package.json   ← servidor para Railway (sin dependencias)
+└── README.md
+```
+
+## Flujo de venta
+
+| Paso | Quién | Qué hace | Estatus | Aviso (🔔) a |
+|---|---|---|---|---|
+| 1 | Vendedor | Arma la propuesta y la aparta. Se le asigna **VTA-0300, VTA-0301…** | EN REVISIÓN | Validadores y admins |
+| 2 | Validador | Revisa; puede **quitar partidas** (regresan a Disponible) | EN REVISIÓN | — |
+| 3a | Validador | **Aprueba** | APROBADA | Auxiliares, admins y el vendedor |
+| 3b | Validador | **Rechaza** con motivo; todo regresa a Disponible | RECHAZADA | El vendedor |
+| 4 | Auxiliar de venta | **Genera la sub base** (layout Funnel Latin-1 `VTA-####.csv`) | EN VENTA | El vendedor |
+
+- El vendedor ya **no** descarga el layout; sólo el auxiliar (y validador/admin) desde Sub bases o Bitácora.
+- El vendedor puede liberar su propuesta mientras está EN REVISIÓN; después, sólo un administrador.
+- Las propuestas migradas de la app de escritorio conservan su Id `PV-…` y estatus APARTADA / EN CONFLICTO.
+- Roles (módulo Usuarios): **Vendedor, Validador, Auxiliar de venta, Administrador** (el admin puede todo).
+- La campana revisa avisos cada minuto y al cambiar de pantalla.
+
+## Instalación (una vez)
+
+1. **Supabase › Project Settings › API**: copia *Project URL* y *anon public key* en `sitio/config.js`.
+2. **Supabase › Authentication › Sign In / Providers**: desactiva *Allow new users to sign up*
+   (sólo entran los usuarios que tú des de alta). Luego, en el módulo **Usuarios**, asigna el rol
+   de cada quien (Vendedor, Validador, Auxiliar de venta, Administrador).
+3. **Supabase › Authentication › Users › Add user**: crea tu usuario (correo + contraseña,
+   marca *Auto Confirm User*). Repite para cada vendedor.
+4. Doble clic en **`CARGAR_SUPABASE.bat`** (necesita Python). Usa el host y usuario de
+   **Connect › Session pooler**. Responde:
+   - 1) Aplicar SQL → **s**
+   - 2) Subir bases → **s** (toma `Base JyP.csv` y `Base Grupal.csv` de la carpeta de arriba)
+   - 3) Migrar propuestas de la app de escritorio → **s** (sólo la primera vez / al salir a producción)
+   - 4) Tu correo → te vuelve **administrador**
+5. **Railway**: *New Project › Deploy from GitHub repo* (carpeta raíz `Servicio_Web`) o, con la CLI,
+   desde esta carpeta: `railway login`, `railway init`, `railway up`. Railway detecta `package.json`
+   y corre `npm start`. En *Settings › Networking › Generate Domain* obtienes la dirección https.
+6. **Supabase › Authentication › URL Configuration**: pon la dirección de Railway en *Site URL*
+   (para que funcione "¿Olvidaste tu contraseña?").
+
+## Cada mes
+
+`CARGAR_SUPABASE.bat` → opción 2 (subir bases). Los apartados vigentes se conservan.
+
+## Agregar una funcionalidad nueva (sin tocar lo existente)
+
+1. Copia `sitio/modulos/_plantilla` a `sitio/modulos/mi_modulo` y edítalo
+   (id, título, ícono, roles y lo que dibuja en `montar`).
+2. Agrega una línea en `sitio/modulos/modulos.json`.
+3. Si necesita datos nuevos: crea `supabase/modulos/20_mi_modulo.sql` (tablas con RLS y funciones
+   `security definer` que llamen `public._exigir_activo()`), y córrelo con `CARGAR_SUPABASE.bat` › 1.
+4. Publica de nuevo en Railway.
+
+## Seguridad
+
+- Nadie lee ni escribe tablas directo: todo pasa por funciones SQL que validan sesión y rol.
+- Apartar es una transacción con candado: dos vendedores no pueden tomar el mismo crédito/grupo.
+- Sólo el dueño de una propuesta o un administrador la pueden liberar.
+- La *anon key* es pública por diseño; la contraseña de la base **nunca** va en el sitio.

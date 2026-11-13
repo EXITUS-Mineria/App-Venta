@@ -1,0 +1,55 @@
+VENTA DE CARTERA v9 - CÓMO COMPARTIR CON LOS VENDEDORES (OneDrive)
+=====================================================================
+
+1. PREPARAR LA CARPETA (Daniel, una vez)
+   a) Ejecuta COMPILAR_EXE.bat. Se actualiza Venta_Cartera_Instalable con:
+        Venta_Cartera.exe
+        Base JyP.csv
+        Base Grupal.csv
+        Apartados\
+        Liberaciones\
+        Propuestas_Registradas\
+   b) Copia las bases VIGENTES dentro de Venta_Cartera_Instalable
+      (el .bat no las reemplaza si ya existen).
+   c) (Opcional) administradores.txt: usuarios de Windows que pueden liberar
+      propuestas de cualquier vendedor, uno por renglón. DanielPalmaHernández ya
+      es administrador.
+
+2. COMPARTIR (Daniel, una vez)
+   En OneDrive web, botón Compartir sobre Venta_Cartera_Instalable:
+      - Vendedores con permiso "Puede editar"
+        (necesitan crear archivos en Apartados, Liberaciones y Propuestas_Registradas).
+   La app NUNCA modifica las bases: sólo agrega archivos nuevos en esas carpetas.
+
+3. CADA VENDEDOR (una vez)
+   a) Abre el enlace que le compartiste.
+   b) Clic en "Agregar acceso directo a Mis archivos".
+   c) En el Explorador de Windows entra a OneDrive > Venta_Cartera_Instalable.
+   d) Clic derecho sobre Venta_Cartera.exe > Mostrar más opciones >
+      Enviar a > Escritorio (crear acceso directo).
+   e) Clic derecho sobre la carpeta > "Mantener siempre en este dispositivo"
+      (así las bases están descargadas y la app abre rápido).
+
+4. USO DIARIO (vendedor)
+   - Abre el acceso directo, filtra, Sugerir propuesta, Validar y apartar.
+   - El archivo para Funnel se guarda donde él elija (por omisión, Documentos).
+   - La app revisa cada minuto lo que apartan los demás.
+   - Si una propuesta sale EN CONFLICTO (otro la apartó instantes antes),
+     NO se manda a Funnel: se libera desde Bitácora y se arma otra.
+
+5. CADA MES (Daniel)
+   - Reemplaza Base JyP.csv y Base Grupal.csv dentro de la carpeta compartida.
+   - Los apartados vigentes se siguen respetando (viven en Apartados\).
+   - Para empezar de cero un mes, mueve el contenido de Apartados y
+     Liberaciones a una carpeta de respaldo fuera de la carpeta compartida.
+
+6. ACTUALIZAR LA APP (Daniel)
+   - Recompila y reemplaza Venta_Cartera.exe en la carpeta compartida.
+     A todos les llega por OneDrive.
+
+IMPORTANTE
+   - No abrir ni editar los CSV de Apartados/Liberaciones en Excel.
+   - No borrar archivos de Apartados: liberar siempre desde la app
+     (queda registro de quién y por qué).
+   - Si OneDrive muestra un ícono de error de sincronización, resolverlo antes
+     de apartar.

@@ -1,0 +1,6 @@
+.rev { display: grid; grid-template-columns: minmax(320px, 440px) 1fr; gap: 12px; align-items: start; }
+.rev-lista .tabla-caja { max-height: calc(100vh - 190px); }
+.rev-lista tbody tr { cursor: pointer; }
+.rev-det { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.rev-det .tabla-caja { max-height: calc(100vh - 400px); min-height: 200px; }
+@media (max-width: 900px) { .rev { grid-template-columns: 1fr; } }

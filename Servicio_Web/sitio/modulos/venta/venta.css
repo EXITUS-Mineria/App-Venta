@@ -1,0 +1,17 @@
+.venta { display: grid; grid-template-columns: minmax(290px, 340px) 1fr; gap: 12px; align-items: start; }
+.venta.sin-panel { grid-template-columns: 1fr; }
+.venta.sin-panel .venta-panel { display: none; }
+.venta-panel { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 76px;
+  max-height: calc(100vh - 90px); overflow: auto; padding-right: 2px; }
+.venta-der { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.venta-acciones { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.venta-acciones .espacio { flex: 1; }
+.venta-tabla { display: flex; flex-direction: column; min-height: 0; }
+.venta-tabla .tabla-caja { height: calc(100vh - 330px); min-height: 280px; }
+.venta-tabla .barra { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+.venta-tabla .barra b { font-size: .95rem; }
+.venta-tabla .barra span { color: var(--texto-2); font-size: .85rem; }
+@media (max-width: 900px) {
+  .venta { grid-template-columns: 1fr; }
+  .venta-panel { position: static; max-height: none; }
+}
