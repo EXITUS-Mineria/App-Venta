@@ -49,6 +49,10 @@ Los cambios se prueban en `Pruebas_v10/` (o en una rama), nunca directo en la ra
 - Avisos: tabla `notificaciones` + campana del núcleo; desde SQL `perform _notificar(roles[], user, titulo, mensaje, modulo)`.
 - Al agregar funciones RPC en Supabase el esquema se recarga solo; en PostgREST local: `notify pgrst, 'reload schema'`.
 - Carga mensual y migración: `cargar_supabase.py`.
+- Pruebas del sitio web: `cd Servicio_Web && npm test` (node:test + jsdom). Viven en
+  `sitio/pruebas/` (`ui.test.mjs`, `cartera.test.mjs`, `modulos.test.mjs`, `estilos.test.mjs`)
+  con el entorno DOM de `pruebas/ayuda.mjs`. Los helpers compartidos están en
+  `sitio/nucleo/ui.js` (UI/CSV/geo) y `sitio/modulos/venta/cartera.js` (rango, optimizador, mapeos).
 - Claude Code: `.mcp.json` (se crea desde `mcp_supabase.json`) conecta el MCP de Supabase del proyecto
   `vwlfxkaxiduvolbvdmmg`; autenticar con `claude /mcp`. Skills en `.agents/skills/` (`npx skills add supabase/agent-skills`).
 - GitHub: `https://github.com/EXITUS-Mineria/App-Venta` (subir con `SUBIR_A_GITHUB.bat`).
