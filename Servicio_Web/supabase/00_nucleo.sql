@@ -18,7 +18,7 @@ create table if not exists public.perfiles (
 -- "Maestros": validador y admin pueden todo (incluye dar de alta usuarios).
 alter table public.perfiles drop constraint if exists perfiles_rol_check;
 alter table public.perfiles add constraint perfiles_rol_check
-    check (rol in ('vendedor', 'validador', 'auxiliar', 'admin'));
+    check (rol in ('vendedor', 'validador', 'auxiliar', 'control_doc', 'admin'));
 
 -- Alta automática del perfil cuando se crea un usuario en Auth
 create or replace function public.tg_nuevo_usuario() returns trigger
@@ -120,7 +120,7 @@ declare v_email text := lower(trim(p_email));
 begin
     if not public.es_admin() then raise exception 'Sólo el validador o un administrador pueden editar usuarios'; end if;
     if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'Correo no válido: %', p_email; end if;
-    if p_rol not in ('vendedor', 'validador', 'auxiliar', 'admin') then raise exception 'Rol no válido: %', p_rol; end if;
+    if p_rol not in ('vendedor', 'validador', 'auxiliar', 'control_doc', 'admin') then raise exception 'Rol no válido: %', p_rol; end if;
     if p_user = auth.uid() and (p_rol not in ('admin', 'validador') or not p_activo) then
         raise exception 'No puedes quitarte a ti mismo el rol de usuario maestro';
     end if;
@@ -144,7 +144,7 @@ declare v_id uuid := gen_random_uuid(); v_email text := lower(trim(p_email));
 begin
     if not public.es_admin() then raise exception 'Sólo el validador o un administrador pueden dar de alta usuarios'; end if;
     if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'Correo no válido: %', p_email; end if;
-    if p_rol not in ('vendedor', 'validador', 'auxiliar', 'admin') then raise exception 'Rol no válido: %', p_rol; end if;
+    if p_rol not in ('vendedor', 'validador', 'auxiliar', 'control_doc', 'admin') then raise exception 'Rol no válido: %', p_rol; end if;
     if length(coalesce(p_clave, '')) < 8 then raise exception 'La contraseña debe tener al menos 8 caracteres'; end if;
     if exists (select 1 from auth.users where lower(email) = v_email) then
         raise exception 'Ya existe un usuario con el correo %', v_email;

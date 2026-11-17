@@ -9,7 +9,7 @@ with (security_invoker = true) as
 select u.email::text                    as correo,
        p.nombre,
        case p.rol when 'validador' then 'Validador (maestro)' when 'auxiliar' then 'Auxiliar de venta'
-                  when 'admin' then 'Administrador' else 'Vendedor' end as rol,
+                  when 'control_doc' then 'Control documental' when 'admin' then 'Administrador' else 'Vendedor' end as rol,
        p.activo,
        u.email_confirmed_at is not null as confirmado,
        u.last_sign_in_at                as ultimo_ingreso,

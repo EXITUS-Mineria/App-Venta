@@ -23,6 +23,7 @@ export default {
       { clave: "id_propuesta", titulo: "Id" },
       { clave: "fecha", titulo: "Fecha", formato: (v) => fecha(v) },
       { clave: "usuario", titulo: "Vendedor" },
+      { clave: "comprador", titulo: "Comprador" },
       { clave: "tipo_venta", titulo: "Tipo" },
       { clave: "capital", titulo: "Capital", num: true, formato: (v) => dinero(v) },
     ], { idFila: (p) => p.id_propuesta, claseFila: (p) => (p.id_propuesta === actual?.id_propuesta ? "sel" : ""),
@@ -97,7 +98,7 @@ export default {
       if (actual?.id_propuesta !== p.id_propuesta) quitar.clear();
       actual = p; tLista.redibujar();
       titulo.textContent = `${p.id_propuesta} · ${p.tipo_venta || ""}`;
-      sub.textContent = `${p.usuario} · ${fecha(p.fecha)}` +
+      sub.textContent = `Comprador: ${p.comprador || "sin capturar"} · vendedor ${p.usuario} · ${fecha(p.fecha)}` +
         (p.partidas_quitadas ? ` · ${p.partidas_quitadas} partidas quitadas (capital original ${dinero(p.capital_original)})` : "");
       let partidas;
       try { partidas = await ctx.rpc("partidas_propuesta", { p_id: p.id_propuesta }); }

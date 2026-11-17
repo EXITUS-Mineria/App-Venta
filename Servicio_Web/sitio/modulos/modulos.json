@@ -17,6 +17,16 @@
       "activo": true
     },
     {
+      "id": "funnel",
+      "archivo": "funnel/funnel.js",
+      "activo": true
+    },
+    {
+      "id": "compradores",
+      "archivo": "compradores/compradores.js",
+      "activo": true
+    },
+    {
       "id": "restituciones",
       "archivo": "restituciones/restituciones.js",
       "activo": true

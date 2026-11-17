@@ -33,6 +33,7 @@ export default {
     const inMonto = h("input", { class: "campo ia-monto", type: "number", min: 1000, step: 1000, placeholder: "200000",
       onkeydown: (e) => { if (e.key === "Enter") generar(); } });
     const inCentavos = h("input", { class: "campo", type: "number", min: 0, step: 0.01, value: 0.26 });
+    const inComprador = h("input", { class: "campo", placeholder: "Nombre del comprador (obligatorio)", autocomplete: "off" });
     const btnGenerar = h("button", { class: "btn btn-marca ia-generar", onclick: () => generar() }, "🤖 Generar propuesta");
 
     const kCap = kpi("💰 Capital"), kVenta = kpi("📈 Valor de venta"), kPart = kpi("☑ Partidas"), kMora = kpi("📅 Mora promedio");
@@ -66,6 +67,7 @@ export default {
           h("button", { class: "btn btn-secundario btn-chico", style: { flex: "0 0 auto" }, onclick: () => todosMunicipios(false) }, "Ninguno")),
         h("span", { class: "etiqueta" }, "Monto (capital objetivo)"), inMonto,
         h("span", { class: "etiqueta" }, "Centavos por peso"), inCentavos,
+        h("span", { class: "etiqueta" }, "Comprador"), inComprador,
         h("div", { style: { marginTop: "12px" } }, btnGenerar)),
       h("div", { class: "ia-der" },
         h("div", { class: "kpis" }, kCap.el, kVenta.el, kPart.el, kMora.el),
@@ -226,20 +228,22 @@ export default {
     }
 
     async function apartar() {
+      const comprador = inComprador.value.trim();
+      if (!comprador) { toast("Escribe el nombre del comprador.", "mal"); inComprador.focus(); return; }
       const monto = Number(inMonto.value);
       const cent = Number(inCentavos.value) || 0;
       const cap = est.elegidos.reduce((s, f) => s + f.capital, 0);
       const refs = est.elegidos.filter((f) => f.tipo === "JyP").map((f) => f.id);
       const grupos = est.elegidos.filter((f) => f.tipo === "Grupal").map((f) => f.id);
       if (!(await confirmar("Apartar propuesta",
-        `${lugar()}\nCapital: ${dinero(cap)}\nValor de venta: ${dinero(cap * cent)}\n` +
+        `${lugar()}\nComprador: ${comprador}\nCapital: ${dinero(cap)}\nValor de venta: ${dinero(cap * cent)}\n` +
         `Partidas: ${refs.length} JyP + ${grupos.length} grupos\n\nSe apartará y se enviará a revisión del validador.`, "Apartar y enviar"))) return;
       btnApartar.disabled = true;
       try {
         const r = await ctx.rpc("apartar", { p_tipo_venta: est.tipo, p_capital_objetivo: monto, p_centavos: cent,
-          p_refs: refs, p_grupos: grupos });
+          p_refs: refs, p_grupos: grupos, p_comprador: comprador });
         await avisar(`Propuesta ${r.id_propuesta}`,
-          `Se apartó y quedó EN REVISIÓN.\nCapital: ${dinero(r.capital)}\nValor de venta: ${dinero(r.valor_venta)}\n\n` +
+          `Se apartó y quedó EN REVISIÓN.\nComprador: ${r.comprador}\nCapital: ${dinero(r.capital)}\nValor de venta: ${dinero(r.valor_venta)}\n\n` +
           "Se avisó a los validadores. Puedes seguirla en la Bitácora.");
         limpiar();
       } catch (e) {
