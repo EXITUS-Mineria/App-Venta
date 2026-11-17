@@ -15,31 +15,81 @@ const SITUACION = {
 const pastilla = (h, s) => h("span", { class: `pt-pill ${(SITUACION[s] || [])[1] || ""}` }, (SITUACION[s] || [s])[0]);
 
 // ---------- Detalle de créditos (propuesta o compra) ----------
-async function verDetalle(ctx, folio, destino) {
+// Con { seleccionable: true } el comprador marca con qué créditos se queda (en Grupal, el grupo completo).
+// Regresa { seleccion() } → null si se queda con todo, o { refs, grupos, n, capital } con lo marcado.
+async function verDetalle(ctx, folio, destino, { seleccionable = false, precio = null, alCambiar = null } = {}) {
   const { h, tabla, dinero, numero, toast } = ctx.ui;
   destino.replaceChildren(h("div", { class: "nota" }, "Cargando créditos…"));
   let filas;
   try { filas = (await ctx.rpc("portal_detalle", { p_folio: folio })).map((f) => ({ ...f, dias: f.dias == null ? null : Number(f.dias), capital: Number(f.capital) })); }
-  catch (e) { destino.replaceChildren(); toast(e.message, "mal", 7000); return; }
+  catch (e) { destino.replaceChildren(); toast(e.message, "mal", 7000); return null; }
+  const clave = (f) => (f.tipo === "Grupal" ? `G:${f.vgroupid}` : `J:${f.vreference}`);
+  const capTotal = filas.reduce((s, f) => s + f.capital, 0);
+  const marcados = new Set(filas.map(clave));
   const buscar = h("input", { class: "campo", placeholder: "🔍 vReference, grupo, colonia, municipio…", style: { maxWidth: "320px" } });
   const resumen = h("span", { class: "nota" });
-  const t = tabla([
+  const resumenSel = h("div", { class: "pt-sel-res" });
+
+  const cols = [
     { clave: "vreference", titulo: "vReference" }, { clave: "vgroupid", titulo: "vGroupId" },
     { clave: "dias", titulo: "Días de atraso", num: true, formato: (v) => (v == null ? "" : numero(v)) },
     { clave: "capital", titulo: "Capital", num: true, formato: (v) => dinero(v) },
     { clave: "colonia", titulo: "Colonia" }, { clave: "cp", titulo: "C.P." },
     { clave: "municipio", titulo: "Municipio" }, { clave: "estado", titulo: "Estado" },
-  ], { idFila: (f) => f.vreference, vacio: "Sin créditos con ese filtro" });
+  ];
+  if (seleccionable) cols.unshift({ clave: "_sel", titulo: "Me quedo", formato: (_, f) => h("input", { type: "checkbox", class: "pt-sel", "data-k": clave(f),
+    checked: marcados.has(clave(f)), title: f.tipo === "Grupal" ? `Grupo ${f.vgroupid} completo` : "",
+    onchange: (e) => { e.target.checked ? marcados.add(clave(f)) : marcados.delete(clave(f)); sincronizar(); } }) });
+  const t = tabla(cols, { idFila: (f) => f.vreference, vacio: "Sin créditos con ese filtro",
+    claseFila: (f) => (seleccionable && !marcados.has(clave(f)) ? "pt-fuera" : "") });
   t.el.style.maxHeight = "420px";
+
+  function sincronizar() {
+    t.el.querySelectorAll("input.pt-sel").forEach((c) => { c.checked = marcados.has(c.dataset.k); c.closest("tr")?.classList.toggle("pt-fuera", !c.checked); });
+    const sel = filas.filter((f) => marcados.has(clave(f)));
+    const cap = sel.reduce((s, f) => s + f.capital, 0);
+    const fuera = filas.length - sel.length;
+    resumenSel.replaceChildren(...[
+      h("b", {}, `Te quedas con ${numero(sel.length)} de ${numero(filas.length)} créditos · capital ${dinero(cap)}`),
+      precio != null ? h("span", {}, ` · precio ${dinero(capTotal ? (precio * cap) / capTotal : 0)}`) : null,
+      fuera ? h("span", { class: "pt-sel-fuera" }, ` · ${numero(fuera)} regresan a la base al aceptar`) : null].filter(Boolean));
+    const conDias = sel.filter((f) => f.dias != null);
+    alCambiar?.({ n: sel.length, total: filas.length, capital: cap,
+      precio: precio != null && capTotal ? (precio * cap) / capTotal : null,
+      dias: conDias.length ? conDias.reduce((s, f) => s + f.dias, 0) / conDias.length : null });
+  }
   const pintar = () => {
     const q = buscar.value.trim().toUpperCase();
     const v = q ? filas.filter((f) => [f.vreference, f.vgroupid, f.colonia, f.cp, f.municipio, f.estado].join(" ").toUpperCase().includes(q)) : filas;
     t.setFilas(v);
     resumen.textContent = `${numero(v.length)} créditos · capital ${dinero(v.reduce((s, f) => s + f.capital, 0))}`;
+    if (seleccionable) sincronizar();
   };
   buscar.addEventListener("input", pintar);
-  destino.replaceChildren(h("div", { class: "fila pt-det-enc" }, buscar, resumen), t.el);
+  const marcarVista = (si) => {
+    const q = buscar.value.trim().toUpperCase();
+    filas.filter((f) => !q || [f.vreference, f.vgroupid, f.colonia, f.cp, f.municipio, f.estado].join(" ").toUpperCase().includes(q))
+      .forEach((f) => (si ? marcados.add(clave(f)) : marcados.delete(clave(f))));
+    sincronizar();
+  };
+  destino.replaceChildren(
+    h("div", { class: "fila pt-det-enc" }, buscar, resumen,
+      seleccionable ? h("button", { class: "btn btn-secundario btn-chico", onclick: () => marcarVista(true) }, "☑ Marcar todos") : null,
+      seleccionable ? h("button", { class: "btn btn-secundario btn-chico", onclick: () => marcarVista(false) }, "☐ Desmarcar todos") : null),
+    seleccionable ? h("div", { class: "nota" }, "Desmarca los créditos que no quieres. En cartera Grupal se elige el grupo completo. " +
+      "Al aceptar, los que no marques regresan a la base como disponibles.") : null,
+    seleccionable ? resumenSel : null,
+    t.el);
   pintar();
+  return {
+    seleccion() {
+      if (marcados.size === new Set(filas.map(clave)).size) return null;
+      const sel = filas.filter((f) => marcados.has(clave(f)));
+      return { refs: [...new Set(sel.filter((f) => f.tipo !== "Grupal").map((f) => f.vreference))],
+               grupos: [...new Set(sel.filter((f) => f.tipo === "Grupal").map((f) => f.vgroupid))],
+               n: sel.length, total: filas.length, capital: sel.reduce((s, f) => s + f.capital, 0), capTotal };
+    },
+  };
 }
 
 // ---------- 🏠 Inicio ----------
@@ -77,7 +127,9 @@ const solicitar = {
     css(ctx);
     const { h, toast, dinero, numero, confirmar, tabla } = ctx.ui;
     let geo = [];
-    try { geo = await ctx.rpc("portal_catalogo_geo"); } catch { /* el formulario funciona sin catálogo */ }
+    try {   // una fila por estado con su lista de municipios (la API corta en 1,000 filas)
+      geo = (await ctx.rpc("portal_catalogo_estados")).flatMap((r) => (r.municipios || []).map((m) => ({ tipo: r.tipo, estado: r.estado, municipio: m })));
+    } catch (e) { toast(`No se pudieron cargar los estados: ${e.message}`, "mal", 9000); }
 
     let tipo = "Cualquiera";
     const elegidos = new Map();          // estado → Set(municipios elegidos); vacío = todos
@@ -188,23 +240,36 @@ const propuestas = {
     const { h, dinero, numero, toast, confirmar, pedirTexto } = ctx.ui;
     const lista = h("div", { class: "pt-lista" });
     cont.append(h("div", { class: "pt" }, h("div", { class: "pt-tit" }, h("h2", {}, "📋 Mis propuestas"),
-      h("span", { class: "nota" }, "Abre una propuesta para ver sus créditos. El precio aparece cuando la propuesta está autorizada.")), lista));
+      h("span", { class: "nota" }, "Abre una propuesta para ver sus créditos y elegir con cuáles te quedas. El precio aparece cuando la propuesta está autorizada.")), lista));
 
-    async function responder(p, acepta) {
+    async function responder(p, acepta, detalle) {
       let comentario = "";
+      const sel = acepta ? detalle?.seleccion() ?? null : null;
       if (acepta) {
-        if (!(await confirmar("Aceptar propuesta", `¿Aceptas la propuesta ${p.folio}?\n${numero(p.creditos)} créditos · capital ${dinero(p.capital)}` +
-          (p.precio != null ? ` · precio ${dinero(p.precio)}` : "\nEl precio está por confirmar; tu ejecutivo te lo confirmará.") +
-          "\n\nTu ejecutivo te contactará para formalizar la compra.", "Aceptar"))) return;
+        if (sel && !sel.n) { toast("Marca al menos un crédito; si no te interesa ninguno, usa «Rechazar».", "mal"); return; }
+        const cap = sel ? sel.capital : p.capital;
+        const precio = p.precio == null ? null : sel ? (p.precio * sel.capital) / sel.capTotal : p.precio;
+        const texto = sel
+          ? `¿Aceptas ${p.folio} quedándote con ${numero(sel.n)} de ${numero(sel.total)} créditos?\nCapital ${dinero(cap)}` +
+            (precio != null ? ` · precio aprox. ${dinero(precio)}` : "") +
+            `\n\nLos ${numero(sel.total - sel.n)} créditos que no marcaste se quitan de la propuesta y regresan a la base. No se puede deshacer.`
+          : `¿Aceptas la propuesta ${p.folio} completa?\n${numero(p.creditos)} créditos · capital ${dinero(p.capital)}` +
+            (p.precio != null ? ` · precio ${dinero(p.precio)}` : "\nEl precio está por confirmar; tu ejecutivo te lo confirmará.");
+        if (!(await confirmar("Aceptar propuesta", texto + "\n\nTu ejecutivo te contactará para formalizar la compra.", "Aceptar"))) return;
       } else {
         comentario = await pedirTexto("Rechazar propuesta", `¿Por qué rechazas ${p.folio}? (nos ayuda a armar una mejor propuesta)`);
         if (comentario === null) return;
       }
       try {
-        await ctx.rpc("portal_responder", { p_folio: p.folio, p_respuesta: acepta ? "ACEPTADA" : "RECHAZADA", p_comentario: comentario });
-        toast(acepta ? `¡Gracias! Aceptaste ${p.folio}.` : `Rechazaste ${p.folio}.`, "bien", 6000);
+        if (acepta) {
+          const r = await ctx.rpc("portal_aceptar", { p_folio: p.folio, p_refs: sel ? sel.refs : null, p_grupos: sel ? sel.grupos : null, p_comentario: comentario });
+          toast(r.quitadas ? `¡Gracias! Aceptaste ${p.folio} con ${numero(sel.n)} créditos (capital ${dinero(r.capital)}).` : `¡Gracias! Aceptaste ${p.folio}.`, "bien", 7000);
+        } else {
+          await ctx.rpc("portal_responder", { p_folio: p.folio, p_respuesta: "RECHAZADA", p_comentario: comentario });
+          toast(`Rechazaste ${p.folio}.`, "bien", 6000);
+        }
         cargar();
-      } catch (e) { toast(e.message, "mal", 7000); }
+      } catch (e) { toast(e.message, "mal", 8000); }
     }
 
     async function cargar() {
@@ -213,23 +278,45 @@ const propuestas = {
       if (!datos.length) { lista.replaceChildren(h("div", { class: "tarjeta nota" }, "Todavía no tienes propuestas. Puedes pedir una en «🛒 Solicitar nueva compra».")); return; }
       lista.replaceChildren(...datos.map((p) => {
         const det = h("div", { class: "pt-det" });
-        let abierto = false;
+        const pendiente = p.situacion === "PENDIENTE";
+        let abierto = false, detalle = null;
+        // valores de arriba: se mueven conforme el comprador marca / desmarca créditos
+        const vCred = h("b"), vCap = h("b"), vPrecio = h("b"), vDias = h("b");
+        const oCred = h("small", { class: "pt-orig" }), oCap = h("small", { class: "pt-orig" }), oPrecio = h("small", { class: "pt-orig" });
+        function actualizar(sel) {
+          const parcial = sel && sel.n < sel.total;
+          vCred.textContent = numero(sel ? sel.n : p.creditos);
+          vCap.textContent = dinero(sel ? sel.capital : p.capital);
+          vPrecio.textContent = p.precio == null ? "Por confirmar" : dinero(sel && sel.precio != null ? sel.precio : p.precio);
+          vDias.textContent = sel ? (sel.dias == null ? "—" : numero(Math.round(sel.dias))) : p.dias_prom != null ? numero(Math.round(p.dias_prom)) : "—";
+          oCred.textContent = parcial ? `de ${numero(sel.total)}` : "";
+          oCap.textContent = parcial ? `de ${dinero(p.capital)}` : "";
+          oPrecio.textContent = parcial && p.precio != null ? `de ${dinero(p.precio)}` : "";
+          [vCred, vCap, vDias].concat(p.precio == null ? [] : [vPrecio]).forEach((e) => e.classList.toggle("pt-cambio", !!parcial));
+        }
+        actualizar(null);
         const btnVer = h("button", { class: "btn btn-secundario", disabled: p.situacion === "NO DISPONIBLE",
-          onclick: () => { abierto = !abierto; btnVer.textContent = abierto ? "Ocultar créditos" : "Ver créditos"; abierto ? verDetalle(ctx, p.folio, det) : det.replaceChildren(); } },
-          "Ver créditos");
+          onclick: async () => {
+            abierto = !abierto;
+            btnVer.textContent = abierto ? "Ocultar créditos" : pendiente ? "Ver y elegir créditos" : "Ver créditos";
+            if (abierto) detalle = await verDetalle(ctx, p.folio, det, { seleccionable: pendiente, precio: p.precio == null ? null : Number(p.precio),
+              alCambiar: pendiente ? actualizar : null });
+            else { det.replaceChildren(); detalle = null; actualizar(null); }
+          } },
+          pendiente ? "Ver y elegir créditos" : "Ver créditos");
         return h("div", { class: `tarjeta pt-prop s-${(SITUACION[p.situacion] || [])[1] || ""}` },
           h("div", { class: "pt-prop-enc" },
             h("div", {}, h("b", { class: "pt-folio" }, p.folio), " ", pastilla(h, p.situacion),
               h("div", { class: "nota" }, `Publicada ${fechaCorta(p.publicada_en)}${p.vendedor ? ` · ${p.vendedor}` : ""}`)),
             h("div", { class: "fila pt-acc" }, btnVer,
               p.situacion === "PENDIENTE" ? h("button", { class: "btn btn-secundario", onclick: () => responder(p, false) }, "👎 Rechazar") : null,
-              p.situacion === "PENDIENTE" ? h("button", { class: "btn btn-marca", onclick: () => responder(p, true) }, "👍 Aceptar") : null)),
+              p.situacion === "PENDIENTE" ? h("button", { class: "btn btn-marca", onclick: () => responder(p, true, detalle) }, "👍 Aceptar") : null)),
           h("div", { class: "pt-datos" },
-            h("div", {}, h("small", {}, "Créditos"), h("b", {}, numero(p.creditos))),
-            h("div", {}, h("small", {}, "Capital"), h("b", {}, dinero(p.capital))),
-            h("div", {}, h("small", {}, "Precio"), h("b", {}, p.precio != null ? dinero(p.precio) : "Por confirmar")),
+            h("div", {}, h("small", {}, "Créditos"), vCred, oCred),
+            h("div", {}, h("small", {}, "Capital"), vCap, oCap),
+            h("div", {}, h("small", {}, "Precio"), vPrecio, oPrecio),
             h("div", {}, h("small", {}, "Tipo"), h("b", {}, p.tipo || "—")),
-            h("div", {}, h("small", {}, "Días de atraso prom."), h("b", {}, p.dias_prom != null ? numero(Math.round(p.dias_prom)) : "—")),
+            h("div", {}, h("small", {}, "Días de atraso prom."), vDias),
             h("div", { class: "ancho" }, h("small", {}, "Estados"), h("b", {}, p.estados || "—"))),
           p.municipios ? h("div", { class: "nota pt-munis" }, `Municipios: ${p.municipios}`) : null,
           p.respuesta_en ? h("div", { class: "nota" }, `Respondiste el ${fechaCorta(p.respuesta_en)}${p.respuesta_comentario ? `: «${p.respuesta_comentario}»` : ""}`) : null,
@@ -241,13 +328,47 @@ const propuestas = {
 };
 
 // ---------- ✅ Mis compras ----------
-const PASOS = [
-  ["Compra registrada", () => true],
-  ["Entrega de información", (c) => c.estatus_md === "Informacion Enviada"],
-  ["Control documental", (c) => c.estatus_control_doc === "Entregados"],
-  ["Jurídico / contrato", (c) => c.estatus_juridico === "Contrato entregado"],
-  ["Cierre", (c) => !!c.estatus_final],
+// Etapas después de la compra; cada una con su plazo en días (tabla etapas_plazos)
+const ETAPAS_COMPRA = [
+  { k: "md", nombre: "Creación de información demográfica final", listo: (c) => c.estatus_md === "Informacion Enviada", ini: "fecha_inicio_md", lim: "fecha_limite_md" },
+  { k: "doc", nombre: "Petición de expedientes", listo: (c) => c.estatus_control_doc === "Entregados", ini: "fecha_inicio_admin", lim: "fecha_limite_admin" },
+  { k: "juridico", nombre: "Firma de endoso", listo: (c) => c.estatus_juridico === "Contrato entregado" },
+  { k: "cierre", nombre: "Creación de guía de entrega", listo: (c) => !!c.numero_guia || !!c.estatus_final },
 ];
+const DIA = 86400000;
+const aFecha = (d) => (d ? new Date(`${String(d).slice(0, 10)}T12:00:00`) : null);
+const masDias = (f, n) => new Date(f.getTime() + n * DIA);
+const dias = (a, b) => Math.round((b - a) / DIA);
+const corta = (f) => f.toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
+
+/** Calendario de una compra: por etapa, inicio, fecha compromiso, si está lista, día actual y retraso. */
+function calendario(c, plazos) {
+  const hoy = aFecha(new Date().toISOString());
+  const listos = ETAPAS_COMPRA.map((e) => e.listo(c));
+  for (let i = listos.length - 2; i >= 0; i--) if (listos[i + 1]) listos[i] = true;   // si ya pasó una etapa, las anteriores también
+  let previo = aFecha(c.fecha_venta) || hoy;
+  const etapas = ETAPAS_COMPRA.map((e0, i) => {
+    let e = e0;
+    const plazo = plazos[e.k]?.dias || 7;
+    if (plazos[e.k]?.nombre) e = { ...e, nombre: plazos[e.k].nombre };
+    const inicio = aFecha(e.ini && c[e.ini]) || previo;
+    const fin = aFecha(e.lim && c[e.lim]) || masDias(inicio, plazo);
+    previo = fin;
+    return { ...e, plazo, inicio, fin, listo: listos[i] };
+  });
+  const actual = etapas.findIndex((e) => !e.listo);
+  if (actual >= 0) {
+    const e = etapas[actual];
+    e.dia = Math.max(1, dias(e.inicio, hoy) + 1);
+    e.retraso = Math.max(0, dias(e.fin, hoy));
+    // si va retrasada, las fechas de las siguientes se recorren
+    if (e.retraso) for (let i = actual + 1; i < etapas.length; i++) {
+      etapas[i].inicio = masDias(etapas[i].inicio, e.retraso); etapas[i].fin = masDias(etapas[i].fin, e.retraso);
+    }
+  }
+  return { etapas, actual, entrega: etapas[etapas.length - 1].fin };
+}
+
 const compras = {
   id: "compras", titulo: "Mis compras", icono: "✅", roles: ["comprador"],
   async montar(cont, ctx) {
@@ -274,15 +395,17 @@ const compras = {
         : h("div", { class: "nota" }, "Sin documentos todavía."));
     }
 
-    let datos;
-    try { datos = await ctx.rpc("portal_compras"); } catch (e) { toast(e.message, "mal"); return; }
+    let datos, plazos = {};
+    try {
+      const [d, p] = await Promise.all([ctx.rpc("portal_compras"), ctx.rpc("plazos_etapas")]);
+      datos = d; plazos = Object.fromEntries(p.map((x) => [x.etapa, x]));
+    } catch (e) { toast(e.message, "mal"); return; }
     kN.set(numero(datos.length), "ventas cerradas contigo");
     kC.set(dinero(datos.reduce((s, c) => s + Number(c.capital || 0), 0)), "capital de la cartera");
     kM.set(dinero(datos.reduce((s, c) => s + Number(c.monto_venta || 0), 0)), "monto de compra");
     if (!datos.length) { lista.replaceChildren(h("div", { class: "tarjeta nota" }, "Aún no tienes compras registradas.")); return; }
     lista.replaceChildren(...datos.map((c) => {
-      const hechos = PASOS.map(([, ok]) => ok(c));
-      const actual = hechos.indexOf(false);
+      const cal = calendario(c, plazos), act = cal.etapas[cal.actual];
       const extra = h("div", { class: "pt-det" });
       const docs = h("div");
       let abierto = false;
@@ -294,10 +417,20 @@ const compras = {
       return h("div", { class: "tarjeta pt-prop" },
         h("div", { class: "pt-prop-enc" },
           h("div", {}, h("b", { class: "pt-folio" }, c.folio), " ",
-            h("span", { class: `pt-pill ${actual === -1 ? "ok" : "proc"}` }, actual === -1 ? "Cerrada" : PASOS[actual][0]),
-            h("div", { class: "nota" }, `Fecha de compra ${fechaCorta(c.fecha_venta) || "—"}${c.numero_guia ? ` · Guía ${c.numero_guia}` : ""}`)),
+            h("span", { class: `pt-pill ${!act ? "ok" : act.retraso ? "no" : "proc"}` },
+              !act ? "Cerrada" : `${act.nombre} · ${act.retraso ? `${numero(act.retraso)} día${act.retraso === 1 ? "" : "s"} de retraso` : `día ${numero(Math.min(act.dia, act.plazo))} de ${act.plazo}`}`),
+            h("div", { class: "nota" }, `Fecha de compra ${fechaCorta(c.fecha_venta) || "—"}${c.numero_guia ? ` · 📦 Guía de entrega ${c.numero_guia}` : ""}`)),
           h("div", { class: "fila pt-acc" }, btnCred, btnDocs)),
-        h("ol", { class: "pt-pasos" }, ...PASOS.map(([t], i) => h("li", { class: hechos[i] ? "ok" : i === actual ? "act" : "" }, t))),
+        h("ol", { class: "pt-pasos" },
+          h("li", { class: "ok" }, h("b", {}, "Compra registrada"), h("small", {}, fechaCorta(c.fecha_venta) || "")),
+          ...cal.etapas.map((e, i) => h("li", { class: e.listo ? "ok" : i === cal.actual ? `act ${e.retraso ? "tarde" : ""}` : "" },
+            h("b", {}, e.nombre), h("small", { class: "pt-plazo" }, `${e.plazo} días`),
+            e.k === "cierre" && c.numero_guia ? h("button", { class: "pt-guia", title: "Copiar número de guía", onclick: () => {
+              navigator.clipboard?.writeText(c.numero_guia).then(() => toast("Número de guía copiado.", "bien"), () => {}); } }, `📦 Guía ${c.numero_guia}`) : null,
+            h("small", {}, e.listo ? "Lista"
+              : i === cal.actual ? (e.retraso ? `⚠ ${numero(e.retraso)} días de retraso` : `Día ${numero(e.dia)} de ${e.plazo} · ${corta(e.fin)}`)
+                : `≈ ${corta(e.fin)}`)))),
+        act ? h("div", { class: "nota pt-entrega" }, `Fecha estimada de guía de entrega: ${cal.entrega.toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" })}`) : null,
         h("div", { class: "pt-datos" },
           h("div", {}, h("small", {}, "Créditos"), h("b", {}, c.con_detalle ? numero(c.creditos) : "—")),
           h("div", {}, h("small", {}, "Capital"), h("b", {}, c.capital != null ? dinero(c.capital) : "—")),

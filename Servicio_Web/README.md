@@ -40,7 +40,11 @@ Servicio_Web/
 │       ├── 22_funnel_permisos.sql ← vendedor edita SUS ventas; auxiliar y maestros, todas
 │       ├── 23_documentos.sql     ← comprobante de pago y documentos del comprador (Storage privado)
 │       ├── 24_envio_comprador.sql ← Excel de la propuesta + avisos Vendida
-│       └── 25_portal_comprador.sql ← portal del comprador, catálogo, solicitudes, publicar propuesta
+│       ├── 25_portal_comprador.sql ← portal del comprador, catálogo, solicitudes, publicar propuesta
+│       ├── 26_estados_oficiales.sql ← mismo nombre de estado en todas las bases (también en cada carga)
+│       ├── 27_portal_seleccion.sql ← el comprador elige con qué créditos se queda; lo demás regresa a disponible
+│       ├── 28_colonia.sql        ← la carga toma la columna Colonia cuando las bases la traigan
+│       └── 29_plazos_etapas.sql  ← etapas y plazos (días) que ve el comprador en «Mis compras»
 │   └── functions/enviar-propuesta/ ← Edge Function: aviso por correo (Microsoft 365) y Excel interno
 ├── cargar_supabase.py         ← aplica SQL, sube bases, migra apartados, da admin
 ├── CARGAR_SUPABASE.bat
@@ -102,8 +106,12 @@ Editan: auxiliar de venta, validador y admin (todas las ventas); cada vendedor, 
 
 ### Portal del comprador
 El comprador entra a la misma página con su correo y sólo ve: **🏠 Inicio · 🛒 Solicitar nueva compra ·
-📋 Mis propuestas · ✅ Mis compras** (avance Compra → Entrega de información → Control documental →
-Jurídico → Cierre, y sus documentos; sólo ver).
+📋 Mis propuestas · ✅ Mis compras** (sus documentos, sólo ver, y el avance por etapa con su plazo:
+Compra registrada → Creación de información demográfica final 2 días → Petición de expedientes 15 →
+Firma de endoso 10 → Creación de guía de entrega 5, donde consulta su número de guía. Ve «día X de N», la
+fecha compromiso y si va retrasada. Los plazos se cambian en 🏢 Compradores › ⏱ Plazos).
+- En **Mis propuestas** el comprador marca con qué créditos se queda (en Grupal, grupo completo); al aceptar,
+  lo que no marcó sale de la propuesta y regresa a la base como disponible, y se recalculan capital y precio.
 - **🏢 Compradores** (interno): catálogo (nombre, RFC, contacto, ejecutivo) y los **nombres con que aparece
   en el Funnel**; sus ventas pasadas y nuevas se ligan solas. Editar y **dar acceso al portal**: sólo validador /
   admin (contraseña inicial que se comparte por un medio seguro). Desactivar el comprador apaga sus accesos.
