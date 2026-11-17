@@ -750,19 +750,34 @@ language plpgsql stable security definer set search_path = public as $$
 begin
     perform public._mi_comprador();
     return query
+    -- agrupa primero por las columnas normalizadas (estado_n / municipio_n) y luego une acentos: ~1 s
     with x as (
-        select 'JyP'::text t, j.estado, j.municipio from public.cartera_jyp j where public.norm(j.estatus_base) = 'DISPONIBLE'
-        union all select 'Grupal', g.estado, g.municipio from public.cartera_grupal g where public.norm(g.estatus_base) = 'DISPONIBLE'),
-    e as (   -- "Mexico" y "México" son el mismo estado: se muestra la forma con acentos
-        select public._clave_nombre(x.estado) k, max(initcap(lower(trim(x.estado)))) nombre
-          from x where coalesce(trim(x.estado), '') !~ '^[0-9]*$' group by 1),
-    m as (
-        select public._clave_nombre(x.municipio) k, max(initcap(lower(trim(x.municipio)))) nombre
-          from x where coalesce(trim(x.municipio), '') <> '' group by 1)
-    select distinct x.t, e.nombre, m.nombre
-      from x join e on e.k = public._clave_nombre(x.estado) join m on m.k = public._clave_nombre(x.municipio)
+        select 'JyP'::text t, j.estado_n en, j.municipio_n mn, max(j.estado) e, max(j.municipio) m
+          from public.cartera_jyp j where public.norm(j.estatus_base) = 'DISPONIBLE' and j.estado_n <> '' group by 2, 3
+        union all
+        select 'Grupal', g.estado_n, g.municipio_n, max(g.estado), max(g.municipio)
+          from public.cartera_grupal g where public.norm(g.estatus_base) = 'DISPONIBLE' and g.estado_n <> '' group by 2, 3),
+    y as (select x.t, public._clave_nombre(x.e) ke, public._clave_nombre(x.m) km, x.e, x.m from x
+           where coalesce(trim(x.e), '') !~ '^[0-9]*$' and coalesce(trim(x.m), '') <> ''),
+    -- "Mexico" y "México" son el mismo estado: se muestra la forma con acentos
+    e as (select y.ke, initcap(lower(trim(max(y.e)))) nombre from y group by 1),
+    m as (select y.ke, y.km, initcap(lower(trim(max(y.m)))) nombre from y group by 1, 2)
+    select distinct y.t, e.nombre, m.nombre
+      from y join e on e.ke = y.ke join m on m.ke = y.ke and m.km = y.km
      order by 1, 2, 3;
 end $$;
+
+-- Lo mismo, una fila por tipo + estado con sus municipios: la API de Supabase regresa máx. 1,000 filas
+create or replace function public.portal_catalogo_estados()
+returns table (tipo text, estado text, municipios text[])
+language plpgsql stable security definer set search_path = public as $$
+begin
+    return query
+    select g.tipo, g.estado, array_agg(g.municipio order by g.municipio)
+      from public.portal_catalogo_geo() g group by 1, 2 order by 1, 2;
+end $$;
+revoke all on function public.portal_catalogo_estados() from public, anon;
+grant execute on function public.portal_catalogo_estados() to authenticated;
 
 -- enlaces de avisos: id del módulo sin "#/"
 update public.notificaciones set enlace = regexp_replace(enlace, '^#/', '') where enlace like '#/%';

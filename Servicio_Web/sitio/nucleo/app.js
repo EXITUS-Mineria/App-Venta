@@ -190,12 +190,15 @@ async function iniciar() {
     try { moduloActual?.desmontar?.(); } catch { /* ignorar */ }
     moduloActual = mod;
     nav.querySelectorAll("a").forEach((a) => a.classList.toggle("activo", a.dataset.id === mod.id));
-    contenido.replaceChildren();
+    // Cada pantalla se monta en su propia caja: si un módulo anterior termina de cargar tarde,
+    // lo que agregue cae en su caja vieja (ya fuera de la página) y no se mezcla con la nueva.
+    const caja = h("div", { class: "modulo-caja" });
+    contenido.replaceChildren(caja);
     avisos.refrescar();
     document.title = `${mod.titulo} · ${CONFIG.SISTEMA}`;
-    Promise.resolve(mod.montar(contenido, ctx)).catch((e) => {
+    Promise.resolve(mod.montar(caja, ctx)).catch((e) => {
       console.error(e);
-      contenido.replaceChildren(h("div", { class: "tarjeta" }, `Error en el módulo: ${e.message}`));
+      if (caja.isConnected) caja.replaceChildren(h("div", { class: "tarjeta" }, `Error en el módulo: ${e.message}`));
     });
   }
 

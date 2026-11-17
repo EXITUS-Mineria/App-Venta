@@ -29,9 +29,34 @@ export default {
     const tabs = h("div", { class: "segmentado cmp-tabs" });
     const cuerpo = h("div");
     cont.append(tabs, cuerpo);
-    const pintarTabs = () => tabs.replaceChildren(...[["solicitudes", "🛒 Solicitudes"], ["catalogo", "🏢 Catálogo y accesos"]]
+    const pintarTabs = () => tabs.replaceChildren(...[["solicitudes", "🛒 Solicitudes"], ["catalogo", "🏢 Catálogo y accesos"], ["plazos", "⏱ Plazos"]]
       .map(([k, t]) => h("button", { class: pestana === k ? "activo" : "", onclick: () => { pestana = k; pintarTabs(); mostrar(); } }, t)));
-    const mostrar = () => (pestana === "solicitudes" ? solicitudes() : catalogo());
+    const mostrar = () => (pestana === "solicitudes" ? solicitudes() : pestana === "plazos" ? plazos() : catalogo());
+
+    // ================= Plazos por etapa (lo que ve el comprador en «Mis compras») =================
+    async function plazos() {
+      let datos;
+      try { datos = await ctx.rpc("plazos_etapas"); } catch (e) { toast(e.message, "mal"); return; }
+      const campos = Object.fromEntries(datos.map((d) => [d.etapa, h("input", { class: "campo", type: "number", min: 1, max: 365, value: d.dias, disabled: !maestro })]));
+      const total = h("b");
+      const sumar = () => { total.textContent = `${numero(Object.values(campos).reduce((s, i) => s + (Number(i.value) || 0), 0))} días de la compra al cierre`; };
+      Object.values(campos).forEach((i) => i.addEventListener("input", sumar));
+      const ult = datos.reduce((a, d) => (!a || d.actualizado > a.actualizado ? d : a), null);
+      cuerpo.replaceChildren(h("div", { class: "tarjeta", style: { maxWidth: "640px" } },
+        h("h3", { style: { margin: "0 0 4px" } }, "⏱ Plazos por etapa"),
+        h("div", { class: "nota" }, "Días naturales de cada etapa después de la compra. El comprador ve en «Mis compras» en qué etapa va (en la última, su número de guía), "
+          + "el día de su plazo, la fecha compromiso y si va retrasada. Si la venta tiene Fecha Límite MD / Admin en el Funnel, se usa esa."),
+        h("div", { class: "cmp-grid" }, ...datos.map((d) => h("label", {}, h("span", { class: "etiqueta" }, `${d.orden}. ${d.nombre}`), campos[d.etapa]))),
+        h("div", { class: "fila", style: { justifyContent: "space-between" } }, total,
+          maestro ? h("button", { class: "btn btn-marca", style: { flex: "0 0 auto" }, onclick: async () => {
+            try {
+              await ctx.rpc("plazos_guardar", { p_plazos: Object.fromEntries(Object.entries(campos).map(([k, i]) => [k, String(i.value)])) });
+              toast("Plazos guardados; ya se ven en el portal.", "bien"); plazos();
+            } catch (e) { toast(e.message, "mal", 8000); }
+          } }, "💾 Guardar") : h("span", { class: "nota" }, "Los cambia el validador o un administrador.")),
+        ult?.actualizado_por ? h("div", { class: "nota" }, `Último cambio: ${ult.actualizado_por} · ${fecha(ult.actualizado)}`) : null));
+      sumar();
+    }
 
     // ================= Solicitudes =================
     async function solicitudes() {

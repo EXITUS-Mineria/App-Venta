@@ -1,5 +1,5 @@
 /* Módulo Compradores */
-.cmp-tabs { max-width: 460px; margin-bottom: 12px; }
+.cmp-tabs { max-width: 600px; margin-bottom: 12px; }
 .cmp-panel { margin-top: 12px; }
 .cmp-panel h3 { margin: 0 0 6px; }
 .cmp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 14px; margin: 10px 0; }
