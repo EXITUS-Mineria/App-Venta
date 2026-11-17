@@ -13,5 +13,5 @@
 .cmp-accesos li.bloq { color: var(--gris-suave); text-decoration: line-through; }
 .cmp-est { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .8rem; font-weight: 600; background: var(--linea); }
 .cmp-est.e-NUEVA { background: var(--rojo-suave); color: var(--rojo); }
-.cmp-est.e-EN-PROCESO { background: #FFF6D6; color: #8A6400; }
-.cmp-est.e-ATENDIDA { background: #E6F2E7; color: var(--bien); }
+.cmp-est.e-EN-PROCESO { background: var(--aviso-bg); color: var(--aviso-texto-2); }
+.cmp-est.e-ATENDIDA { background: var(--ok-bg-2); color: var(--bien); }

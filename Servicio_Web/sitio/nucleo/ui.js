@@ -36,7 +36,7 @@ export const pastillaEstatus = (e) => h("span", { class: `estatus ${CLASE_ESTATU
 /** Aviso flotante. tipo: "bien" | "mal" | "" */
 export function toast(mensaje, tipo = "", ms = 4500) {
   let cont = document.querySelector(".toasts");
-  if (!cont) document.body.append((cont = h("div", { class: "toasts" })));
+  if (!cont) document.body.append((cont = h("div", { class: "toasts", role: "status", "aria-live": "polite" })));
   const t = h("div", { class: `toast ${tipo}` }, mensaje);
   cont.append(t);
   setTimeout(() => t.remove(), ms);
@@ -48,7 +48,8 @@ function ventana(titulo, cuerpo, botones) {
     const pie = h("footer", {}, ...botones.map((b) =>
       h("button", { class: `btn ${b.clase || "btn-secundario"}`, onclick: () => cerrar(b.valor()) }, b.texto)));
     const velo = h("div", { class: "velo" },
-      h("div", { class: "ventana", role: "dialog" }, h("header", {}, titulo), h("div", { class: "cuerpo" }, cuerpo), pie));
+      h("div", { class: "ventana", role: "dialog", "aria-modal": "true", "aria-label": titulo },
+        h("header", {}, titulo), h("div", { class: "cuerpo" }, cuerpo), pie));
     velo.addEventListener("keydown", (e) => { if (e.key === "Escape") cerrar(null); });
     document.body.append(velo);
     (velo.querySelector("input,textarea") || pie.lastChild).focus();
@@ -85,12 +86,15 @@ export function kpi(titulo) {
   };
 }
 
+// Hojas de estilos ya cargadas: evita recorrer document.styleSheets en cada llamada.
+const CSS_CARGADOS = new Set();
+
 /** Carga una hoja de estilos de un módulo (una sola vez). */
 export function cargarCSS(url) {
   const href = new URL(url, import.meta.url).href;
-  if (![...document.styleSheets].some((s) => s.href === href)) {
-    document.head.append(h("link", { rel: "stylesheet", href: url }));
-  }
+  if (CSS_CARGADOS.has(href)) return;
+  CSS_CARGADOS.add(href);
+  document.head.append(h("link", { rel: "stylesheet", href: url }));
 }
 
 function celdaCSV(v) {
@@ -98,24 +102,84 @@ function celdaCSV(v) {
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+/** Arma el texto CSV (separador coma, fin de línea CRLF) con su fila de encabezados. */
+export function construirCSV(columnas, filas) {
+  const lineas = [columnas.map(celdaCSV).join(",")];
+  for (const f of filas) lineas.push(columnas.map((c) => celdaCSV(f[c])).join(","));
+  return lineas.join("\r\n") + "\r\n";
+}
+
+/** Convierte texto a bytes Latin-1; lo que no existe en Latin-1 se vuelve "?". */
+export function textoALatin1(texto) {
+  const datos = new Uint8Array(texto.length);
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto.charCodeAt(i);
+    datos[i] = c < 256 ? c : 63;
+  }
+  return datos;
+}
+
 /** Descarga un CSV. codificacion: "latin1" (Funnel) o "utf8" (Excel con acentos). */
 export function descargarCSV(nombre, columnas, filas, codificacion = "utf8") {
-  const texto = [columnas.map(celdaCSV).join(","),
-    ...filas.map((f) => columnas.map((c) => celdaCSV(f[c])).join(","))].join("\r\n") + "\r\n";
-  let datos;
-  if (codificacion === "latin1") {
-    datos = new Uint8Array(texto.length);
-    for (let i = 0; i < texto.length; i++) {
-      const c = texto.charCodeAt(i);
-      datos[i] = c < 256 ? c : 63; // "?" para lo que no existe en Latin-1
-    }
-  } else {
-    datos = "﻿" + texto;
-  }
+  const texto = construirCSV(columnas, filas);
+  const datos = codificacion === "latin1" ? textoALatin1(texto) : "﻿" + texto;
   const url = URL.createObjectURL(new Blob([datos], { type: "text/csv" }));
   const a = h("a", { href: url, download: nombre });
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+/** Clave inicial para un usuario nuevo: 10 caracteres al azar + prefijo y signo. */
+export function claveAleatoria(prefijo) {
+  const letras = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  const n = new Uint32Array(10);
+  crypto.getRandomValues(n);
+  return `${prefijo}-${[...n].map((x) => letras[x % letras.length]).join("")}!`;
+}
+
+/**
+ * Lista de casillas con buscador (estados / municipios).
+ * items: [{nombre, n}], sel: Set(nombre), filtro: texto de búsqueda.
+ * vacio: mensaje cuando no hay items; si no se da, usa los textos por defecto.
+ */
+export function listaCasillas(cont, items, sel, filtro, alCambiar, vacio) {
+  const f = (filtro || "").trim().toUpperCase();
+  const vis = f ? items.filter((i) => i.nombre.toUpperCase().includes(f)) : items;
+  cont.replaceChildren(...(vis.length ? vis.map((i) => {
+    const chk = h("input", { type: "checkbox", checked: sel.has(i.nombre) });
+    const lab = h("label", { class: sel.has(i.nombre) ? "sel" : "" }, chk, i.nombre, h("small", {}, numero(i.n)));
+    chk.addEventListener("change", () => {
+      chk.checked ? sel.add(i.nombre) : sel.delete(i.nombre);
+      lab.classList.toggle("sel", chk.checked);
+      alCambiar();
+    });
+    return lab;
+  }) : [h("div", { class: "vacio" }, items.length ? "Sin coincidencias" : (vacio ?? "Elige primero un estado"))]));
+}
+
+/**
+ * Agrupa el catálogo geográfico para armar las listas sin recorrerlo dos veces:
+ * estados ordenados con su total, y municipios por estado con su total.
+ * geo: [{estado, municipio, registros}] (ya viene ordenado por estado, municipio).
+ */
+export function indiceGeo(geo) {
+  const estados = new Map();       // estado → {nombre, n}
+  const munis = new Map();         // estado → Map(municipio → {nombre, n})
+  for (const g of geo) {
+    const n = Number(g.registros) || 0;
+    const e = estados.get(g.estado) || { nombre: g.estado, n: 0 };
+    e.n += n; estados.set(g.estado, e);
+    if (!g.municipio) continue;
+    let porEstado = munis.get(g.estado);
+    if (!porEstado) munis.set(g.estado, (porEstado = new Map()));
+    const m = porEstado.get(g.municipio) || { nombre: g.municipio, n: 0 };
+    m.n += n; porEstado.set(g.municipio, m);
+  }
+  return {
+    estados: [...estados.values()],
+    municipios(estado) { return munis.has(estado) ? [...munis.get(estado).values()] : []; },
+    tieneEstado(estado) { return estados.has(estado); },
+  };
 }
 
 /**
@@ -135,9 +199,11 @@ export function tabla(columnas, opciones = {}) {
 
   function encabezado() {
     thead.replaceChildren(h("tr", {},
-      sel ? h("th", { class: "chk", title: "Seleccionar / quitar visibles", onclick: alternarTodos }, "✓") : null,
+      sel ? h("th", { class: "chk", scope: "col", title: "Seleccionar / quitar visibles", onclick: alternarTodos }, "✓") : null,
       ...columnas.map((c) => h("th", {
         class: c.num ? "num" : "",
+        scope: "col",
+        "aria-sort": orden.clave === c.clave ? (orden.asc ? "ascending" : "descending") : null,
         onclick: () => { orden = { clave: c.clave, asc: orden.clave === c.clave ? !orden.asc : true }; dibujar(); },
       }, c.titulo + (orden.clave === c.clave ? (orden.asc ? " ▲" : " ▼") : "")))));
   }

@@ -3,10 +3,8 @@
 // Sólo Estado, Municipio y Monto: arma la propuesta al instante con el optimizador
 // (mismo algoritmo que "Sugerir" de Armar propuesta) y la aparta con un clic.
 // ============================================================
-import { sugerir } from "../venta/venta.js";
+import { sugerir, mapearJyP, mapearGrupo, rangoObjetivo } from "../venta/cartera.js";
 
-const RANGO_ABAJO = 1000;
-const RANGO_ARRIBA = 2000;
 const ESTRATEGIAS = ["Mayor mora primero", "Mayor capital primero", "Menor mora primero", "Menor capital primero"];
 
 export default {
@@ -16,7 +14,7 @@ export default {
   roles: ["vendedor"],
 
   async montar(cont, ctx) {
-    const { h, tabla, kpi, dinero, numero, dias, toast, confirmar, avisar, cargarCSS } = ctx.ui;
+    const { h, tabla, kpi, dinero, numero, dias, toast, confirmar, avisar, cargarCSS, listaCasillas, indiceGeo } = ctx.ui;
     cargarCSS(new URL("./propuesta_ia.css", import.meta.url).href);
 
     const est = { tipo: "Grupal", geo: [], candidatos: [], elegidos: [], intento: 0,
@@ -87,36 +85,18 @@ export default {
     async function cargarGeo() {
       try { est.geo = await ctx.rpc("catalogo_geo", { p_tipo: est.tipo }); }
       catch (e) { toast(e.message, "mal"); est.geo = []; }
-      const validos = new Set(est.geo.map((g) => g.estado));
+      geoIdx = indiceGeo(est.geo);
+      const validos = new Set(geoIdx.estados.map((e) => e.nombre));
       [...est.estados].forEach((e) => !validos.has(e) && est.estados.delete(e));
       pintarEstados();
     }
 
-    // Lista de casillas con buscador (varios estados / municipios)
-    function listaCasillas(caja, items, sel, filtro, alCambiar, vacio) {
-      const f = filtro.trim().toUpperCase();
-      const vis = items.filter((i) => !f || i.nombre.includes(f));
-      caja.replaceChildren(...(vis.length ? vis.map((i) => {
-        const chk = h("input", { type: "checkbox", checked: sel.has(i.nombre) });
-        const lab = h("label", { class: sel.has(i.nombre) ? "sel" : "" }, chk, i.nombre, h("small", {}, numero(i.n)));
-        chk.addEventListener("change", () => {
-          chk.checked ? sel.add(i.nombre) : sel.delete(i.nombre);
-          lab.classList.toggle("sel", chk.checked);
-          alCambiar();
-        });
-        return lab;
-      }) : [h("div", { class: "vacio" }, items.length ? "Sin coincidencias" : vacio)]));
-    }
-    function estadosItems() {
-      const m = new Map();
-      for (const g of est.geo) m.set(g.estado, (m.get(g.estado) || 0) + Number(g.registros));
-      return [...m].map(([nombre, n]) => ({ nombre, n }));
-    }
-    function municipiosItems() {
-      const m = new Map();
-      for (const g of est.geo) if (est.estados.has(g.estado) && g.municipio) m.set(g.municipio, (m.get(g.municipio) || 0) + Number(g.registros));
-      return [...m].map(([nombre, n]) => ({ nombre, n })).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
-    }
+    // Índice del catálogo geográfico: una sola pasada por carga.
+    let geoIdx = indiceGeo([]);
+    const estadosItems = () => geoIdx.estados;
+    const municipiosItems = () =>
+      [...est.estados].flatMap((e) => geoIdx.municipios(e).filter((m) => m.nombre))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
     function pintarEstados() {
       listaCasillas(listaEstados, estadosItems(), est.estados, buscaEstado.value, () => {
         const validos = new Set(municipiosItems().map((m) => m.nombre));
@@ -153,20 +133,8 @@ export default {
       const f = { p_estados: [...est.estados], p_municipios: est.municipios.size ? [...est.municipios] : null,
         p_mora_min: null, p_mora_max: null, p_terminos: null };
       const filas = [];
-      if (est.tipo !== "Grupal") {
-        for (const r of await ctx.rpc("buscar_jyp", f)) {
-          filas.push({ key: `J:${r.vreference}`, tipo: "JyP", id: r.vreference, estado: r.estado, municipio: r.municipio,
-            integrantes: 1, mora: r.dias === null ? null : Number(r.dias), capital: Number(r.npendingk) });
-        }
-      }
-      if (est.tipo !== "JyP") {
-        for (const r of await ctx.rpc("buscar_grupos", f)) {
-          if (!r.disponible) continue;
-          filas.push({ key: `G:${r.vgroupid}`, tipo: "Grupal", id: r.vgroupid, estado: r.estados, municipio: r.municipios,
-            integrantes: Number(r.integrantes), mora: r.dias_promedio === null ? null : Number(r.dias_promedio),
-            capital: Number(r.capital) });
-        }
-      }
+      if (est.tipo !== "Grupal") filas.push(...(await ctx.rpc("buscar_jyp", f)).map(mapearJyP));
+      if (est.tipo !== "JyP") filas.push(...(await ctx.rpc("buscar_grupos", f)).map(mapearGrupo).filter((f) => f.disponible));
       return filas;
     }
 
@@ -181,7 +149,7 @@ export default {
           est.candidatos = await traerCandidatos();
           est.intento = 0;
         } else est.intento++;
-        const min = Math.max(0, monto - RANGO_ABAJO), max = monto + RANGO_ARRIBA;
+        const [min, max] = rangoObjetivo(monto);
         const total = est.candidatos.reduce((s, f) => s + f.capital, 0);
         if (!est.candidatos.length) throw new Error("No hay cartera disponible en los estados/municipios elegidos.");
         if (total < min) throw new Error(`Sólo hay ${dinero(total)} disponibles ahí (${numero(est.candidatos.length)} partidas). ` +

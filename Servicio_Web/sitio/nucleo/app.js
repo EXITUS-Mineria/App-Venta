@@ -17,15 +17,16 @@ const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
 
 // ---------- tamaño de letra (A− / A+) ----------
 const ESCALAS = [0.9, 1, 1.1, 1.2, 1.35, 1.5];
-function leerEscala() { try { return Number(localStorage.getItem("vc_escala")) || 1; } catch { return 1; } }
-function ponerEscala(e) {
+const leerEscala = () => { try { return Number(localStorage.getItem("vc_escala")) || 1; } catch { return 1; } };
+const ponerEscala = (e) => {
   document.documentElement.style.setProperty("--escala", e);
   try { localStorage.setItem("vc_escala", e); } catch { /* sin almacenamiento */ }
-}
+};
 ponerEscala(leerEscala());
 function cambiarEscala(paso) {
   const actual = leerEscala();
-  const i = ESCALAS.reduce((m, e, k) => (Math.abs(e - actual) < Math.abs(ESCALAS[m] - actual) ? k : m), 0);
+  // ESCALAS está ordenado: se toma la posición más cercana y se avanza un paso.
+  const i = ESCALAS.indexOf(ESCALAS.reduce((m, e) => (Math.abs(e - actual) < Math.abs(m - actual) ? e : m), ESCALAS[0]));
   ponerEscala(ESCALAS[Math.max(0, Math.min(ESCALAS.length - 1, i + paso))]);
 }
 
@@ -95,22 +96,23 @@ async function cargarModulos(perfil) {
   if (perfil.rol === "comprador") return (await import(new URL("../modulos/portal/portal.js", import.meta.url))).modulos;
   const resp = await fetch(new URL("../modulos/modulos.json", import.meta.url), { cache: "no-store" });
   const lista = (await resp.json()).modulos.filter((m) => m.activo !== false);
-  const cargados = [];
-  for (const m of lista) {
-    try {
-      const mod = (await import(new URL(`../modulos/${m.archivo}`, import.meta.url))).default;
-      const roles = mod.roles || ["vendedor", "admin"];
-      if (MAESTROS.includes(perfil.rol) || roles.includes(perfil.rol)) cargados.push({ ...mod, id: mod.id || m.id });
-    } catch (e) {
+  // Se importan en paralelo (los módulos son independientes) y se conserva el orden del menú.
+  const importados = await Promise.all(lista.map(async (m) => {
+    try { return (await import(new URL(`../modulos/${m.archivo}`, import.meta.url))).default; }
+    catch (e) {
       console.error("No se pudo cargar el módulo", m.archivo, e);
       ui.toast(`No se pudo cargar el módulo ${m.id}`, "mal");
+      return null;
     }
-  }
-  return cargados;
+  }));
+  return importados
+    .map((mod, i) => (mod ? { ...mod, id: mod.id || lista[i].id } : null))
+    .filter((mod) => mod && (MAESTROS.includes(perfil.rol) || (mod.roles || ["vendedor", "admin"]).includes(perfil.rol)));
 }
 
 let moduloActual = null;
-let relojAvisos = null;
+let avisosActual = null;    // campana montada de la sesión vigente
+let cerrarCampana = null;   // cierra la lista de avisos al dar clic fuera (se reemplaza en cada sesión)
 
 export const ROLES = { vendedor: "Vendedor", validador: "Validador (maestro)", auxiliar: "Auxiliar de venta", control_doc: "Control documental", admin: "Administrador", comprador: "Comprador" };
 // Usuarios maestros: ven todos los módulos y pueden todo (incluye dar de alta usuarios)
@@ -120,9 +122,10 @@ const MAESTROS = ["admin", "validador"];
 function campana() {
   const cuenta = h("span", { class: "campana-cuenta", hidden: true });
   const lista = h("div", { class: "campana-lista", hidden: true });
-  const boton = h("button", { class: "btn-oscuro campana", title: "Avisos", onclick: (e) => { e.stopPropagation(); alternar(); } }, "🔔", cuenta);
+  const boton = h("button", { class: "btn-oscuro campana", title: "Avisos", "aria-label": "Avisos", "aria-expanded": "false", onclick: (e) => { e.stopPropagation(); alternar(); } }, "🔔", cuenta);
   const el = h("div", { class: "campana-caja" }, boton, lista);
   let datos = [];
+  let reloj = null;   // propio de esta campana: no lo comparte otra sesión
 
   async function refrescar() {
     try { datos = (await rpc("mis_notificaciones", { p_limite: 30 })) || []; } catch { return; }
@@ -138,20 +141,41 @@ function campana() {
         class: `campana-item ${n.leida ? "" : "nueva"}`,
         onclick: async () => {
           if (!n.leida) await rpc("marcar_notificaciones", { p_ids: [n.id] }).catch(() => {});
-          lista.hidden = true;
+          ocultar();
           if (n.enlace) location.hash = `#/${n.enlace.replace(/^#\//, "")}`;
           refrescar();
         },
       }, h("b", {}, n.titulo), n.mensaje ? h("div", {}, n.mensaje) : null, h("small", {}, ui.fecha(n.creada))))
         : [h("div", { class: "campana-vacio" }, "Sin avisos")]));
   }
-  function alternar() { lista.hidden = !lista.hidden; if (!lista.hidden) pintar(); }
-  document.addEventListener("click", (e) => { if (!el.contains(e.target)) lista.hidden = true; });
+  function ocultar() { lista.hidden = true; boton.setAttribute("aria-expanded", "false"); }
+  function alternar() {
+    lista.hidden = !lista.hidden;
+    boton.setAttribute("aria-expanded", String(!lista.hidden));
+    if (!lista.hidden) pintar();
+  }
+  // Un solo listener por sesión: se retira el anterior para no acumular cierres al reentrar.
+  if (cerrarCampana) document.removeEventListener("click", cerrarCampana);
+  cerrarCampana = (e) => { if (!el.contains(e.target)) ocultar(); };
+  document.addEventListener("click", cerrarCampana);
 
-  clearInterval(relojAvisos);
-  relojAvisos = setInterval(refrescar, 60000);
+  reloj = setInterval(refrescar, 60000);
   refrescar();
-  return { el, refrescar };
+  return {
+    el, refrescar,
+    desmontar() {
+      clearInterval(reloj);
+      if (cerrarCampana) document.removeEventListener("click", cerrarCampana);
+      cerrarCampana = null;
+    },
+  };
+}
+
+/** Cierra la campana de la sesión anterior (timer + listener) al salir del sistema. */
+function cerrarSesion() {
+  avisosActual?.desmontar();
+  avisosActual = null;
+  window.onhashchange = null;
 }
 
 async function iniciar() {
@@ -174,7 +198,9 @@ async function iniciar() {
   const contenido = h("main", { class: "contenido" });
   const nav = h("nav");
 
+  cerrarSesion();
   const avisos = campana();
+  avisosActual = avisos;
   const ctx = {
     sb, rpc, ui, perfil, config: CONFIG,
     esAdmin: MAESTROS.includes(perfil.rol),
@@ -211,11 +237,11 @@ async function iniciar() {
       nav,
       h("div", { class: "derecha" },
         avisos.el,
-        h("button", { class: "btn-oscuro", title: "Letra más chica", onclick: () => cambiarEscala(-1) }, "A−"),
-        h("button", { class: "btn-oscuro", title: "Letra más grande", onclick: () => cambiarEscala(1) }, "A+"),
+        h("button", { class: "btn-oscuro", title: "Letra más chica", "aria-label": "Disminuir tamaño de letra", onclick: () => cambiarEscala(-1) }, "A−"),
+        h("button", { class: "btn-oscuro", title: "Letra más grande", "aria-label": "Aumentar tamaño de letra", onclick: () => cambiarEscala(1) }, "A+"),
         h("div", { class: "usuario" }, h("b", {}, `👤 ${perfil.nombre || perfil.email}`),
           h("span", {}, ROLES[perfil.rol] || perfil.rol)),
-        h("button", { class: "btn-oscuro", onclick: async () => { clearInterval(relojAvisos); await sb.auth.signOut(); location.hash = ""; pantallaLogin(); } }, "Salir"))),
+        h("button", { class: "btn-oscuro", onclick: async () => { cerrarSesion(); await sb.auth.signOut(); location.hash = ""; pantallaLogin(); } }, "Salir"))),
     contenido);
 
   window.onhashchange = mostrar;
@@ -223,8 +249,8 @@ async function iniciar() {
 }
 
 sb.auth.onAuthStateChange((evento) => {
-  if (evento === "PASSWORD_RECOVERY") pantallaNuevaClave();
-  if (evento === "SIGNED_OUT") pantallaLogin();
+  if (evento === "PASSWORD_RECOVERY") { cerrarSesion(); pantallaNuevaClave(); }
+  if (evento === "SIGNED_OUT") { cerrarSesion(); pantallaLogin(); }
 });
 
 iniciar();
