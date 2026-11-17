@@ -91,6 +91,8 @@ async function pantallaNuevaClave() {
 
 // ---------- Módulos ----------
 async function cargarModulos(perfil) {
+  // Compradores: sólo su portal (Inicio, Solicitar nueva compra, Mis propuestas, Mis compras)
+  if (perfil.rol === "comprador") return (await import(new URL("../modulos/portal/portal.js", import.meta.url))).modulos;
   const resp = await fetch(new URL("../modulos/modulos.json", import.meta.url), { cache: "no-store" });
   const lista = (await resp.json()).modulos.filter((m) => m.activo !== false);
   const cargados = [];
@@ -110,7 +112,7 @@ async function cargarModulos(perfil) {
 let moduloActual = null;
 let relojAvisos = null;
 
-export const ROLES = { vendedor: "Vendedor", validador: "Validador (maestro)", auxiliar: "Auxiliar de venta", admin: "Administrador" };
+export const ROLES = { vendedor: "Vendedor", validador: "Validador (maestro)", auxiliar: "Auxiliar de venta", control_doc: "Control documental", admin: "Administrador", comprador: "Comprador" };
 // Usuarios maestros: ven todos los módulos y pueden todo (incluye dar de alta usuarios)
 const MAESTROS = ["admin", "validador"];
 
@@ -137,7 +139,7 @@ function campana() {
         onclick: async () => {
           if (!n.leida) await rpc("marcar_notificaciones", { p_ids: [n.id] }).catch(() => {});
           lista.hidden = true;
-          if (n.enlace) location.hash = `#/${n.enlace}`;
+          if (n.enlace) location.hash = `#/${n.enlace.replace(/^#\//, "")}`;
           refrescar();
         },
       }, h("b", {}, n.titulo), n.mensaje ? h("div", {}, n.mensaje) : null, h("small", {}, ui.fecha(n.creada))))
@@ -201,7 +203,8 @@ async function iniciar() {
 
   app.replaceChildren(
     h("header", { class: "enc" },
-      h("div", { class: "marca" }, h("b", {}, `💼 ${CONFIG.SISTEMA}`), h("span", {}, CONFIG.EMPRESA)),
+      h("div", { class: "marca" }, h("b", {}, perfil.rol === "comprador" ? "💼 Portal de compradores" : `💼 ${CONFIG.SISTEMA}`),
+        h("span", {}, CONFIG.EMPRESA)),
       nav,
       h("div", { class: "derecha" },
         avisos.el,

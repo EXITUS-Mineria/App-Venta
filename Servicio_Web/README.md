@@ -13,6 +13,8 @@ Servicio_Web/
 │       ├── modulos.json       ← lista de módulos del menú
 │       ├── venta/             ← Armar propuesta + Bitácora + layout Funnel
 │       ├── funnel/            ← avance de cada venta (réplica de la lista SharePoint VENTAS DE CARTERA)
+│       ├── compradores/       ← catálogo de compradores, accesos al portal y solicitudes de compra
+│       ├── portal/            ← PORTAL DEL COMPRADOR (sólo rol comprador; no va en modulos.json)
 │       ├── propuesta_ia/      ← estado + municipio + monto → propuesta al instante
 │       ├── restituciones/     ← cambiar crédito/grupo vendido por otro similar (±$5,000)
 │       ├── revision/          ← (validador) revisar, quitar partidas, aprobar/rechazar
@@ -34,7 +36,12 @@ Servicio_Web/
 │       ├── 18_comprador.sql      ← nombre del comprador (obligatorio al apartar)
 │       ├── 19_funnel.sql         ← funnel de ventas (MD, control documental, jurídico, cierre, ticket, guía)
 │       ├── 20_funnel_migracion.sql ← campos de la migración SharePoint (mes, ligas, adjuntos)
-│       └── 21_almacenamiento.sql ← una sola copia de la cartera (lee BASE_JYP/BASE_GRUPAL)
+│       ├── 21_almacenamiento.sql ← una sola copia de la cartera (lee BASE_JYP/BASE_GRUPAL)
+│       ├── 22_funnel_permisos.sql ← vendedor edita SUS ventas; auxiliar y maestros, todas
+│       ├── 23_documentos.sql     ← comprobante de pago y documentos del comprador (Storage privado)
+│       ├── 24_envio_comprador.sql ← Excel de la propuesta + avisos Vendida
+│       └── 25_portal_comprador.sql ← portal del comprador, catálogo, solicitudes, publicar propuesta
+│   └── functions/enviar-propuesta/ ← Edge Function: aviso por correo (Microsoft 365) y Excel interno
 ├── cargar_supabase.py         ← aplica SQL, sube bases, migra apartados, da admin
 ├── CARGAR_SUPABASE.bat
 ├── server.js / package.json   ← servidor para Railway (sin dependencias)
@@ -54,7 +61,8 @@ Servicio_Web/
 - El vendedor ya **no** descarga el layout; sólo el auxiliar (y validador/admin) desde Sub bases o Bitácora.
 - El vendedor puede liberar su propuesta mientras está EN REVISIÓN; después, sólo un administrador.
 - Las propuestas migradas de la app de escritorio conservan su Id `PV-…` y estatus APARTADA / EN CONFLICTO.
-- Roles: **Vendedor, Validador (maestro), Auxiliar de venta, Administrador**. El **Validador es el usuario
+- Roles: **Vendedor, Validador (maestro), Auxiliar de venta, Control documental, Administrador**.
+  Control documental ve todo el Funnel (sus permisos de edición están por definir). El **Validador es el usuario
   maestro**: igual que el Administrador ve todos los módulos, puede todo y **da de alta usuarios** y cambia
   contraseñas desde el módulo **Usuarios** (sin entrar a Supabase).
 - La campana revisa avisos cada minuto y al cambiar de pantalla.
@@ -79,7 +87,43 @@ esa venta (sin regla de rango). Si estaba APROBADA o EN VENTA regresa a EN REVIS
 Réplica de la lista SharePoint «VENTAS DE CARTERA». Cada VTA-#### entra sola al apartar (Propuesta) y se
 sincroniza con la propuesta (comprador, capital, monto; Cancelada si se libera/rechaza). Etapas:
 1 Propuesta → 2 MD → 3 Control documental → 4 Jurídico → 5 Cierre → ✔ Cerrada. ⏰ = fecha límite vencida.
-Editan: auxiliar de venta y maestros (todo); el vendedor dueño, la sección Venta y ligas.
+Editan: auxiliar de venta, validador y admin (todas las ventas); cada vendedor, todos los campos de SUS ventas
+(las migradas de SharePoint se reconocen por su nombre en «Vendedor»). Control documental: consulta.
+
+**🌐 Portal del comprador** (sección Venta, sólo ventas de la página):
+- El vendedor dueño (o auxiliar / maestros) da **Publicar al comprador**: el comprador la ve en su portal con
+  los créditos en pantalla (vReference, vGroupId, días de atraso, capital, colonia, C.P., municipio, estado)
+  y la **Acepta** o **Rechaza** (con motivo). Se puede publicar aunque siga EN REVISIÓN; el **precio** sólo
+  aparece cuando el validador la aprobó. **Retirar del portal** la quita. **⬇ Excel** es descarga interna.
+- En el Funnel: 🌐 publicada · 👁 veces que la abrió · 👍 aceptada / 👎 rechazada (con aviso 🔔 al vendedor y validador).
+- Si Microsoft 365 está configurado, al publicar le llega un correo con la liga al portal (sin archivo).
+- Al marcar **Vendida**, aviso 🔔 al validador, al auxiliar, al vendedor dueño y al comprador.
+- Colonia sale vacía mientras BASE_JYP / BASE_GRUPAL no traigan esa columna.
+
+### Portal del comprador
+El comprador entra a la misma página con su correo y sólo ve: **🏠 Inicio · 🛒 Solicitar nueva compra ·
+📋 Mis propuestas · ✅ Mis compras** (avance Compra → Entrega de información → Control documental →
+Jurídico → Cierre, y sus documentos; sólo ver).
+- **🏢 Compradores** (interno): catálogo (nombre, RFC, contacto, ejecutivo) y los **nombres con que aparece
+  en el Funnel**; sus ventas pasadas y nuevas se ligan solas. Editar y **dar acceso al portal**: sólo validador /
+  admin (contraseña inicial que se comparte por un medio seguro). Desactivar el comprador apaga sus accesos.
+- **Solicitudes**: lo que pide el comprador (estados, municipios, días de atraso, capital, comentarios) llega
+  con aviso 🔔 a su ejecutivo y al validador; vendedor / auxiliar la atienden (En proceso / Atendida + folio).
+- Seguridad: el rol comprador **no cuenta como usuario interno** (`es_activo()`), así que todas las funciones y
+  políticas internas lo rechazan; el portal sólo usa funciones `portal_*` que filtran por su comprador.
+
+**Configurar el correo de aviso (una vez, TI):**
+1. Azure › *App registrations* › nueva app → *API permissions* › Microsoft Graph › **Application** › `Mail.Send`
+   → *Grant admin consent*. Recomendado: limitarla al buzón remitente con una *Application Access Policy*.
+2. *Certificates & secrets* › nuevo *client secret*.
+3. Supabase › Edge Functions › **Secrets**: `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET`,
+   `MS_REMITENTE` (buzón que envía, p. ej. ventas de cartera). No se guardan en el código ni en GitHub.
+
+**Documentos** (en el detalle de cada venta):
+- *Importes y estatus › 🧾 Comprobante de pago*: uno o varios (pagos parciales), PDF o foto.
+- *📂 Documentos del comprador*: identificación, acta, poderes, contrato… en PDF, fotos o Word.
+- Suben y borran quienes editan la venta; todos los usuarios activos los ven (liga temporal de 5 min).
+  Máx. 10 MB por archivo; columna **Docs** en la tabla (🧾 = hay comprobante, 📂n = documentos).
 
 ### Almacenamiento (mínimo)
 - La cartera vive **una sola vez** en `BASE_JYP` / `BASE_GRUPAL`; la página sólo guarda un índice ligero
@@ -87,6 +131,8 @@ Editan: auxiliar de venta y maestros (todo); el vendedor dueño, la sección Ven
 - Propuestas liberadas o rechazadas: se borra su copia de filas.
 - CSV de propuesta, base final, bitácora y funnel se **generan al presionar el botón** en el navegador;
   no se guardan archivos. Las ventas migradas de SharePoint guardan sólo **ligas** a sus adjuntos.
+- Lo único que ocupa Storage son los documentos que suben los usuarios (bucket privado `documentos-venta`);
+  las fotos se reducen en el navegador (máx. 1800 px, JPEG) antes de subir.
 
 ## Instalación (una vez)
 

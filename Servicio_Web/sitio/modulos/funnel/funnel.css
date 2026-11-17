@@ -58,3 +58,25 @@
 }
 .fun-adj { margin: 4px 0 0; padding-left: 18px; font-size: .85rem; columns: 2; }
 .fun-adj a { color: var(--rojo-oscuro); }
+
+/* Documentos (comprobante de pago y expediente del comprador) */
+.fun-docs { white-space: nowrap; font-size: .85rem; display: inline-flex; gap: 4px; }
+.doc-bloque { margin-top: 8px; border: 1px solid var(--linea); border-radius: var(--radio); padding: 8px 10px; background: var(--fondo); }
+.doc-enc { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.doc-lista { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.doc-lista li { display: flex; align-items: center; gap: 6px; background: var(--blanco); border: 1px solid var(--linea); border-radius: 6px; padding: 4px 6px; font-size: .86rem; }
+.doc-lista li a { color: var(--rojo-oscuro); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 0 1 auto; }
+.doc-lista li small { color: var(--texto-2); flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc-lista li.doc-vacio { background: none; border: 0; color: var(--texto-2); font-style: italic; padding: 2px 0; }
+.doc-ico { flex: 0 0 auto; }
+.doc-zona { border: 2px dashed var(--borde); border-radius: var(--radio); padding: 10px; text-align: center; cursor: pointer;
+  background: var(--blanco); font-size: .86rem; color: var(--texto-2); }
+.doc-zona b { color: var(--rojo-oscuro); }
+.doc-zona:hover, .doc-zona:focus, .doc-zona.sobre { border-color: var(--rojo); background: var(--rojo-suave); outline: none; }
+.env-bloque { background: #F4F7FB; border-color: #C9D8EA; }
+.env-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0; }
+.env-campos textarea, .env-campos .fila { grid-column: 1 / -1; }
+.env-campos textarea { resize: vertical; font-family: inherit; }
+.env-bloque.env-ok { border-color: #A8D5AA; background: #F3FAF3; }
+.env-bloque.env-no { border-color: var(--rojo-borde); background: var(--rojo-suave); }
+.env-linea { margin: 2px 0; }

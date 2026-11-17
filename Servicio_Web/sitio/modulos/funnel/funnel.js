@@ -6,6 +6,8 @@
 // Las ventas migradas de SharePoint conservan sus ligas y adjuntos (ligas, no copias).
 // ============================================================
 import { descargarLayout, descargarPropuestaCSV } from "../venta/layout.js";
+import { bloqueDocumentos } from "./documentos.js";
+import { bloqueEnvio } from "./envio.js";
 
 const OPC = {
   tipo: ["J&P", "Grupal", "Dual"],
@@ -14,6 +16,8 @@ const OPC = {
   estatus_control_doc: ["En Proceso", "Entregados"],
   estatus_juridico: ["Envío pagarés a jurídico", "Contrato en proceso", "Contrato entregado"],
   estatus_final: ["Expedientes enviados a comprador", "Venta cerrada"],
+  mes: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    .map((m) => `${m} 2026`).concat(["Enero 2027", "Febrero 2027", "Marzo 2027"]),
   estado: ["Aguascalientes", "Baja California", "Baja California Sur", "Campeche", "Chiapas", "Chihuahua", "CDMX", "Coahuila",
     "Colima", "Durango", "México", "Guanajuato", "Guerrero", "Hidalgo", "Jalisco", "Michoacan", "Morelos", "Nayarit", "Nuevo Leon",
     "Oaxaca", "Puebla", "Queretaro", "Quintana Roo", "San Luis Potosi", "Sinaloa", "Sonora", "Tabasco", "Tamaulipas", "Tlaxcala",
@@ -21,11 +25,12 @@ const OPC = {
 };
 // Secciones del formulario, igual que las columnas de SharePoint. venta=true: el vendedor dueño también la edita.
 const SECCIONES = [
-  ["🧾 Venta", true, [["comprador", "Comprador"], ["estado", "Estado", "estado"], ["municipios", "Municipio's"],
+  ["🧾 Venta", true, [["mes", "Mes", "mes"], ["comprador", "Comprador"], ["estado", "Estado", "estado"], ["municipios", "Municipio's"],
     ["fecha_propuesta", "Fecha Propuesta", "fecha"], ["fecha_venta", "Fecha Venta", "fecha"], ["vendedor", "Vendedor"],
-    ["propuesta_url", "Propuesta", "url"], ["comprobante_pago", "Comprobante de Pago (liga)", "url"]]],
+    ["propuesta_url", "Propuesta", "url"]]],
   ["💰 Importes y estatus", false, [["estatus_venta", "Estatus Venta", "estatus_venta"], ["tipo", "Tipo", "tipo"],
-    ["capital", "Capital", "num"], ["monto_venta", "Monto Venta", "num"]]],
+    ["capital", "Capital", "num"], ["monto_venta", "Monto Venta", "num"], ["comprobante_pago", "Comprobante (liga histórica)", "url"]],
+    "comprobante_pago"],
   ["📤 MD (mesa de datos)", false, [["estatus_md", "Estatus MD", "estatus_md"], ["fecha_inicio_md", "Fecha Inicio MD", "fecha"],
     ["fecha_limite_md", "Fecha Límite MD", "fecha"], ["base_completa_venta", "Base Completa Venta", "url"]]],
   ["📁 Control documental", false, [["estatus_control_doc", "Estatus Control Documental", "estatus_control_doc"],
@@ -71,7 +76,7 @@ export default {
   id: "funnel",
   titulo: "Funnel",
   icono: "📈",
-  roles: ["vendedor", "validador", "auxiliar", "admin"],
+  roles: ["vendedor", "validador", "auxiliar", "control_doc", "admin"],
 
   async montar(cont, ctx) {
     const { h, tabla, dinero, numero, toast, descargarCSV, cargarCSS, kpi } = ctx.ui;
@@ -87,6 +92,7 @@ export default {
     const kV = kpi("Ventas"), kC = kpi("Capital vendido"), kM = kpi("Monto venta"), kA = kpi("⏰ En atraso");
     const lbl = h("span", { class: "nota" });
     const det = h("aside", { class: "fun-det", hidden: true });
+    const listaVend = h("datalist", { id: "fun-vendedores" });
 
     const pasos = (f) => {
       const e = etapa(f), orden = ["propuesta", "md", "doc", "juridico", "cierre", "cerrada"];
@@ -108,6 +114,13 @@ export default {
       { clave: "etapa", titulo: "Avance", formato: (_, f) => h("span", { class: "fila", style: { gap: "6px", flexWrap: "nowrap" } },
           pasos(f), h("span", { class: `fun-etapa e-${etapa(f)}` }, ETAPAS.find(([k]) => k === etapa(f))[1])) },
       { clave: "alerta", titulo: "", formato: (_, f) => (atraso(f) ? h("span", { class: "fun-atraso", title: atraso(f) }, "⏰") : "") },
+      { clave: "docs", titulo: "Docs", formato: (_, f) => h("span", { class: "fun-docs" },
+          f.publicada_en ? h("span", { title: `En el portal de ${f.comprador_cat || "el comprador"}` +
+            (f.respuesta ? ` · ${f.respuesta}` : f.vistas ? ` · la abrió ${f.vistas} vez(es)` : " · sin abrir") },
+            f.respuesta === "ACEPTADA" ? "👍" : f.respuesta === "RECHAZADA" ? "👎" : "🌐") : "",
+          !f.publicada_en && f.enviada_en ? h("span", { title: `Enviada a ${f.correo_comprador} (${new Date(f.enviada_en).toLocaleDateString("es-MX")})` }, "📧") : "",
+          f.n_comprobantes ? h("span", { title: `${f.n_comprobantes} comprobante(s) de pago` }, "🧾") : "",
+          f.n_documentos ? h("span", { title: `${f.n_documentos} documento(s) del comprador` }, `📂${f.n_documentos}`) : "") },
       { clave: "numero_ticket_contrato", titulo: "Ticket" },
       { clave: "numero_guia", titulo: "Guía" },
     ], { idFila: (f) => f.folio, claseFila: (f) => (abierta?.folio === f.folio ? "sel" : f.estatus_venta === "Cancelada" ? "bloq" : ""),
@@ -133,7 +146,7 @@ export default {
             h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, onclick: () => cargar() }, "⟳")),
           t.el)),
       det);
-    cont.append(raiz);
+    cont.append(raiz, listaVend);
 
     async function cargar() {
       try { datos = (await ctx.rpc("funnel_lista")).map((f) => ({ ...f, capital: f.capital == null ? null : Number(f.capital),
@@ -146,6 +159,7 @@ export default {
       selMes.replaceChildren(h("option", { value: "" }, "Todos los meses"), ...meses.map((m) => h("option", { value: m }, m)));
       selVend.replaceChildren(h("option", { value: "" }, "Todos los vendedores"), ...vends.map((v) => h("option", { value: v }, v)));
       selMes.value = meses.includes(pm) ? pm : ""; selVend.value = vends.includes(pv) ? pv : "";
+      listaVend.replaceChildren(...vends.map((v) => h("option", { value: v })));
       pintar();
       if (abierta) { const f = datos.find((x) => x.folio === abierta.folio); if (f) abrir(f); }
     }
@@ -183,7 +197,8 @@ export default {
 
     function abrir(f) {
       abierta = f; t.redibujar(); det.hidden = false; raiz.classList.add("con-detalle");
-      const editaTodo = puedeTodo, editaVenta = puedeTodo || f.es_mia;
+      // back office (auxiliar / maestros): todo; vendedor: todos los campos de SUS ventas
+      const editaTodo = puedeTodo || !!f.es_mia, editaVenta = editaTodo;
       const campos = {};
       const control = (clave, tipo, editable) => {
         // ventas de la página: propuesta y base final se generan al momento, sin guardar archivos
@@ -202,7 +217,8 @@ export default {
           el.value = v;
         } else if (tipo === "fecha") el = h("input", { class: "campo", type: "date", value: v || "", disabled: !editable });
         else if (tipo === "num") el = h("input", { class: "campo", type: "number", step: "0.01", value: v === "" ? "" : v, disabled: !editable });
-        else el = h("input", { class: "campo", value: v, disabled: !editable, placeholder: tipo === "url" ? "https://…" : "" });
+        else el = h("input", { class: "campo", value: v, disabled: !editable, placeholder: tipo === "url" ? "https://…" : "",
+          list: clave === "vendedor" ? "fun-vendedores" : null });
         el.addEventListener("input", () => { el.classList.add("cambiado"); btnGuardar.disabled = false; });
         el.addEventListener("change", () => { el.classList.add("cambiado"); btnGuardar.disabled = false; });
         campos[clave] = { el, original: v === null ? "" : String(v) };
@@ -230,15 +246,25 @@ export default {
             atraso(f) ? h("div", { class: "fun-atraso-txt" }, `⏰ ${atraso(f)}`) : null),
           h("button", { class: "btn btn-secundario btn-chico", onclick: cerrar }, "✖")),
         h("div", { class: "fun-avance" }, pasos(f), h("span", { class: "nota" }, `Actualizado ${new Date(f.actualizado).toLocaleString("es-MX")} · ${f.actualizado_por || ""}`)),
-        ...SECCIONES.map(([titulo, esVenta, lista]) => h("section", { class: "fun-sec" },
+        ...SECCIONES.map(([titulo, esVenta, lista, docs]) => h("section", { class: "fun-sec" },
           h("h4", {}, titulo),
-          h("div", { class: "fun-grid" }, ...lista.map(([clave, etiqueta, tipo]) =>
-            h("label", {}, h("span", { class: "etiqueta" }, etiqueta), control(clave, tipo, esVenta ? editaVenta : editaTodo)))))),
+          h("div", { class: "fun-grid" }, ...lista.filter(([clave]) => !(clave === "comprobante_pago" && !f[clave])).map(([clave, etiqueta, tipo]) =>
+            h("label", {}, h("span", { class: "etiqueta" }, etiqueta), control(clave, tipo, esVenta ? editaVenta : editaTodo)))),
+          titulo === "🧾 Venta" && f.id_propuesta ? bloqueEnvio(ctx, f, { editable: editaTodo, alEnviar: () => cargar() }) : null,
+          docs ? bloqueDocumentos(ctx, { folio: f.folio, tipo: docs, editable: editaTodo, titulo: "🧾 Comprobante de pago",
+            ayuda: "Sube el comprobante del pago (PDF o foto). Se puede subir más de uno si el pago fue parcial.",
+            alConteo: (n) => { f.n_comprobantes = n; t.redibujar(); } }) : null)),
+        h("section", { class: "fun-sec" }, h("h4", {}, "📂 Documentos del comprador"),
+          bloqueDocumentos(ctx, { folio: f.folio, tipo: "comprador", editable: editaTodo, titulo: "Expediente del comprador",
+            ayuda: "Identificación, acta constitutiva, poderes, comprobante de domicilio, contrato firmado… (PDF, fotos o Word).",
+            alConteo: (n) => { f.n_documentos = n; t.redibujar(); } })),
         adjuntos.length ? h("section", { class: "fun-sec" }, h("h4", {}, `📎 Adjuntos en SharePoint (${adjuntos.length})`),
           h("ul", { class: "fun-adj" }, ...adjuntos.map((a) => h("li", {}, h("a", { href: a.url, target: "_blank", rel: "noopener" }, a.nombre))))) : null,
         h("div", { class: "fun-pie" },
-          editaVenta ? btnGuardar : h("span", { class: "nota" }, "Sólo lectura: el seguimiento lo actualiza el auxiliar de venta o un maestro."),
-          !editaTodo && editaVenta ? h("span", { class: "nota" }, "Como vendedor puedes editar la sección Venta.") : null)].filter(Boolean));
+          editaTodo ? btnGuardar : h("span", { class: "nota" },
+            ctx.perfil.rol === "control_doc"
+              ? "Control documental: consulta de todo el funnel (permisos de edición por definir)."
+              : `Sólo lectura: ${f.folio} es de ${f.vendedor || "otro vendedor"}. La editan su vendedor, el auxiliar de venta o un maestro.`))].filter(Boolean));
 
       async function guardar() {
         const cambios = {};

@@ -6,7 +6,9 @@ const ROLES = [
   ["vendedor", "Vendedor"],
   ["validador", "Validador (maestro)"],
   ["auxiliar", "Auxiliar de venta"],
+  ["control_doc", "Control documental"],
   ["admin", "Administrador"],
+  ["comprador", "Comprador (portal)"],   // se da de alta en el módulo Compradores
 ];
 
 function claveAleatoria() {
@@ -25,7 +27,8 @@ export default {
   async montar(cont, ctx) {
     const { h, toast, fecha, avisar, pedirTexto, confirmar } = ctx.ui;
     const selectRol = (valor = "vendedor") => {
-      const s = h("select", { class: "campo" }, ...ROLES.map(([v, t]) => h("option", { value: v }, t)));
+      const s = h("select", { class: "campo" }, ...ROLES.filter(([v]) => v !== "comprador" || valor === "comprador")
+        .map(([v, t]) => h("option", { value: v }, t)));
       s.value = valor;
       return s;
     };
@@ -57,7 +60,8 @@ export default {
         h("p", { class: "nota", style: { margin: "8px 0 0", fontSize: ".82rem" } },
           "La cuenta queda lista para entrar con ese correo y contraseña. Compártela por un medio seguro; ",
           "la persona puede cambiarla con «¿Olvidaste tu contraseña?» si su correo es real. ",
-          "Flujo: Vendedor arma → Validador (maestro) revisa → Auxiliar de venta genera la sub base.")),
+          "Flujo: Vendedor arma → Validador (maestro) revisa → Auxiliar de venta genera la sub base. ",
+          "Los accesos de compradores al portal se dan en 🏢 Compradores.")),
       h("div", { class: "tarjeta" },
         h("div", { class: "fila", style: { marginBottom: "8px", justifyContent: "flex-start" } },
           h("h3", { style: { margin: 0, flex: "0 0 auto" } }, "👥 Usuarios"), buscar,
@@ -123,7 +127,7 @@ export default {
           try { await ctx.rpc("admin_cambiar_clave", { p_user: u.user_id, p_clave: nueva }); toast("Contraseña cambiada.", "bien"); }
           catch (e) { toast(e.message, "mal"); }
         } }, "🔑 Contraseña");
-        tr.append(h("td", {}, correo), h("td", {}, nombre), h("td", {}, rol),
+        tr.append(h("td", {}, correo), h("td", {}, nombre, u.comprador ? h("div", { class: "nota" }, `🏢 ${u.comprador}`) : null), h("td", {}, rol),
           h("td", { class: "chk" }, activo), h("td", {}, fecha(u.creado)),
           h("td", {}, h("span", { class: "fila", style: { gap: "4px" } }, guardar, clave)));
         return tr;

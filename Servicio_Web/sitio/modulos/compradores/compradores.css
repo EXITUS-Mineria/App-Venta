@@ -1,0 +1,17 @@
+/* Módulo Compradores */
+.cmp-tabs { max-width: 460px; margin-bottom: 12px; }
+.cmp-panel { margin-top: 12px; }
+.cmp-panel h3 { margin: 0 0 6px; }
+.cmp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 14px; margin: 10px 0; }
+.cmp-grid .ancho { grid-column: 1 / -1; }
+.cmp-sec { border-top: 1px solid var(--linea); margin-top: 12px; padding-top: 10px; }
+.cmp-sec h4 { margin: 0 0 6px; }
+.cmp-alias { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; max-height: 220px; overflow: auto; }
+.cmp-alias label { border: 1px solid var(--borde); border-radius: 999px; padding: 3px 10px; font-size: .86rem; cursor: pointer; background: var(--blanco); }
+.cmp-alias label.sel { background: var(--rojo-suave); border-color: var(--rojo-borde); }
+.cmp-accesos { margin: 4px 0 8px; padding-left: 18px; }
+.cmp-accesos li.bloq { color: var(--gris-suave); text-decoration: line-through; }
+.cmp-est { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .8rem; font-weight: 600; background: var(--linea); }
+.cmp-est.e-NUEVA { background: var(--rojo-suave); color: var(--rojo); }
+.cmp-est.e-EN-PROCESO { background: #FFF6D6; color: #8A6400; }
+.cmp-est.e-ATENDIDA { background: #E6F2E7; color: var(--bien); }
