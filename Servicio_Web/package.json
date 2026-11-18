@@ -5,9 +5,13 @@
   "description": "Venta de Cartera · Exitus Credit · servicio web (HTML + Supabase)",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test --test-reporter=spec \"sitio/pruebas/*.test.mjs\""
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1"
   }
 }

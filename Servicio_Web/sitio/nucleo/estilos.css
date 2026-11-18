@@ -21,8 +21,25 @@
   --bien: #2E7D32;
   --alerta: #F2B705;
   --mal: #B01217;
+  /* Paleta semántica reutilizable: evita repetir literales de color en los módulos. */
+  --info: #1F4E79;
+  --info-bg: #E7F1FB;
+  --info-borde: #8DB8E2;
+  --aviso-bg: #FFF6D6;
+  --aviso-borde: #F2B705;
+  --aviso-texto: #7A5A00;
+  --ok-bg: #E6F4E7;
+  --ok-bg-2: #E6F2E7;
+  --ok-borde: #9CCC9F;
+  --ok-borde-2: #A8D5AA;
+  --ok-bg-suave: #F3FAF3;
+  --mal-bg: #F1E3E4;
+  --fuera-bg: #FAF6F6;
+  --neutro-bg: #F1F3F6;
+  --aviso-texto-2: #8A6400;
   --escala: 1;
   --radio: 8px;
+  --transicion: background-color .12s ease, color .12s ease, border-color .12s ease, box-shadow .12s ease;
   font-size: calc(15px * var(--escala));
 }
 
@@ -51,7 +68,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .enc nav { display: flex; gap: 4px; margin-left: 18px; flex-wrap: wrap; }
 .enc nav a {
   color: #C9CED6; text-decoration: none; padding: 7px 12px; border-radius: 6px;
-  font-weight: 600; font-size: .92rem; white-space: nowrap;
+  font-weight: 600; font-size: .92rem; white-space: nowrap; transition: var(--transicion);
 }
 .enc nav a:hover { background: var(--pizarra); color: var(--blanco); }
 .enc nav a.activo { background: var(--rojo); color: var(--blanco); }
@@ -61,11 +78,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .enc .usuario span { color: #C9CED6; }
 .btn-oscuro {
   background: var(--pizarra); color: var(--blanco); border: 0; border-radius: 6px;
-  padding: 6px 10px; font-weight: 700; cursor: pointer;
+  padding: 6px 10px; font-weight: 700; cursor: pointer; transition: var(--transicion);
 }
 .btn-oscuro:hover { background: var(--gris); }
 
 .contenido { padding: 14px 18px 20px; }
+/* Caja por pantalla: aísla el montaje de cada módulo y permite que las rejillas internas se encojan. */
+.modulo-caja { min-width: 0; }
 
 /* ---------- Tarjetas y controles ---------- */
 .tarjeta {
@@ -88,7 +107,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .btn {
   border: 1px solid transparent; border-radius: 6px; padding: 7px 13px; font-weight: 700;
-  cursor: pointer; white-space: nowrap;
+  cursor: pointer; white-space: nowrap; transition: var(--transicion);
 }
 .btn:disabled { opacity: .55; cursor: default; }
 .btn-primario { background: var(--tinta); color: var(--blanco); }
@@ -98,6 +117,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn-secundario { background: var(--blanco); color: var(--tinta); border-color: var(--borde); }
 .btn-secundario:hover:not(:disabled) { background: var(--fondo); }
 .btn-chico { padding: 3px 8px; font-size: .82rem; }
+
+/* Accesibilidad: foco visible consistente en controles interactivos (teclado). */
+.btn-oscuro:focus-visible, .btn:focus-visible, .segmentado button:focus-visible,
+.campana:focus-visible, .tabla th:focus-visible,
+.enc nav a:focus-visible { outline: 2px solid var(--alerta); outline-offset: 2px; }
+.lista-cas label:focus-within { background: var(--rojo-sel); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .001ms !important; animation-duration: .001ms !important; }
+}
 
 .segmentado { display: flex; border: 1px solid var(--borde); border-radius: 6px; overflow: hidden; }
 .segmentado button { flex: 1; border: 0; background: var(--blanco); padding: 7px; font-weight: 700; cursor: pointer; }
@@ -142,7 +170,7 @@ table.tabla { border-collapse: collapse; width: 100%; font-size: .9rem; }
 .tabla td { padding: 6px 9px; border-bottom: 1px solid var(--linea); white-space: nowrap;
   max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
 .tabla tbody tr:nth-child(even) td { background: var(--hover); }
-.tabla tbody tr:hover td { background: #F1F3F6; }
+.tabla tbody tr:hover td { background: var(--neutro-bg); }
 .tabla tr.sel td { background: var(--rojo-suave) !important; color: var(--rojo-oscuro); }
 .tabla tr.bloq td { color: var(--gris-suave); }
 .tabla tr.conflicto td { background: var(--rojo-suave); color: var(--rojo); }
@@ -190,9 +218,9 @@ table.tabla { border-collapse: collapse; width: 100%; font-size: .9rem; }
 
 /* Estatus del flujo */
 .estatus { display: inline-block; border-radius: 10px; padding: 1px 8px; font-size: .78rem; font-weight: 700; border: 1px solid var(--borde); background: var(--fondo); }
-.estatus.revision { background: #FFF6D6; border-color: #F2B705; color: #7A5A00; }
-.estatus.aprobada { background: #E7F1FB; border-color: #8DB8E2; color: #1F4E79; }
-.estatus.venta { background: #E6F4E7; border-color: #9CCC9F; color: var(--bien); }
+.estatus.revision { background: var(--aviso-bg); border-color: var(--aviso-borde); color: var(--aviso-texto); }
+.estatus.aprobada { background: var(--info-bg); border-color: var(--info-borde); color: var(--info); }
+.estatus.venta { background: var(--ok-bg); border-color: var(--ok-borde); color: var(--bien); }
 .estatus.rechazada, .estatus.conflicto { background: var(--rojo-suave); border-color: var(--rojo-borde); color: var(--rojo); }
 .estatus.liberada { color: var(--gris-suave); }
 
@@ -207,11 +235,23 @@ table.tabla { border-collapse: collapse; width: 100%; font-size: .9rem; }
 .login a { color: var(--rojo-oscuro); font-size: .85rem; cursor: pointer; }
 
 @media (max-width: 760px) {
-  .enc { flex-wrap: wrap; }
-  .enc nav { margin-left: 0; order: 3; width: 100%; overflow-x: auto; flex-wrap: nowrap; }
-  .contenido { padding: 10px 16px; }
+  .enc { flex-wrap: wrap; row-gap: 6px; }
+  .enc .marca b { font-size: 1.15rem; }
+  .enc nav { margin-left: 0; order: 3; width: 100%; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: thin; }
+  .enc .derecha { gap: 6px; }
+  .enc .usuario { display: none; }   /* el nombre/rol ya no cabe: se omite en móvil */
+  .contenido { padding: 10px 12px; }
+  .kpis { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+  .tabla td { max-width: 160px; }
+}
+
+@media (max-width: 480px) {
+  .enc { padding: 8px 12px; }
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .toasts { left: 12px; right: 12px; }
+  .toast { max-width: none; }
 }
 
 /* Fila con cambios sin guardar */
-.tabla tr.editado td { background: #FFF6D6 !important; }
+.tabla tr.editado td { background: var(--aviso-bg) !important; }
 .tabla td .campo { min-width: 120px; }

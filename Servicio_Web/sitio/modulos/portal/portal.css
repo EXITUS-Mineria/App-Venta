@@ -45,9 +45,9 @@
 .pt-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 600;
   background: var(--linea); color: var(--pizarra); vertical-align: middle; }
 .pt-pill.pend { background: var(--rojo-suave); color: var(--rojo); }
-.pt-pill.proc { background: #FFF6D6; color: #8A6400; }
-.pt-pill.ok { background: #E6F2E7; color: var(--bien); }
-.pt-pill.no { background: #F1E3E4; color: var(--rojo-oscuro); }
+.pt-pill.proc { background: var(--aviso-bg); color: var(--aviso-texto-2); }
+.pt-pill.ok { background: var(--ok-bg-2); color: var(--bien); }
+.pt-pill.no { background: var(--mal-bg); color: var(--rojo-oscuro); }
 
 .pt-pasos { display: flex; list-style: none; padding: 0; margin: 14px 0 4px; counter-reset: paso; }
 .pt-pasos li { flex: 1; position: relative; text-align: center; font-size: .8rem; color: var(--gris-suave); padding-top: 24px; }
@@ -80,9 +80,9 @@
 .pt-chip.chico { padding: 2px 10px; font-size: .8rem; }
 .pt-resumen { margin-top: 10px; padding: 8px 10px; background: var(--rojo-suave); border-radius: 8px; color: var(--tinta); }
 .pt-sel { width: 18px; height: 18px; accent-color: var(--rojo); cursor: pointer; }
-tr.pt-fuera td { color: var(--gris-suave); text-decoration: line-through; background: #faf6f6; }
+tr.pt-fuera td { color: var(--gris-suave); text-decoration: line-through; background: var(--fuera-bg); }
 tr.pt-fuera td:first-child { text-decoration: none; }
-.pt-sel-res { margin: 6px 0 8px; padding: 8px 10px; border-radius: 8px; background: #F3FAF3; border: 1px solid #A8D5AA; font-size: .9rem; }
+.pt-sel-res { margin: 6px 0 8px; padding: 8px 10px; border-radius: 8px; background: var(--ok-bg-suave); border: 1px solid var(--ok-borde-2); font-size: .9rem; }
 .pt-sel-fuera { color: var(--rojo); font-weight: 600; }
 .pt-det-enc .btn, .pt-det-enc .campo { flex: 0 0 auto; }
 .pt-datos b { transition: color .2s; }
@@ -99,7 +99,7 @@ tr.pt-fuera td:first-child { text-decoration: none; }
 .pt-pasos li.ok small:last-child { color: var(--bien); }
 .pt-entrega { margin: 2px 0 6px; text-align: right; }
 @media (max-width: 640px) { .pt-pasos li small { font-size: .62rem; } .pt-pasos li b { font-size: .68rem; } }
-.pt-guia { margin: 3px 0 1px; border: 1px solid var(--bien); background: #F3FAF3; color: var(--bien); border-radius: 999px;
+.pt-guia { margin: 3px 0 1px; border: 1px solid var(--bien); background: var(--ok-bg-suave); color: var(--bien); border-radius: 999px;
   padding: 2px 9px; font: inherit; font-size: .74rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .pt-guia:hover { background: var(--bien); color: #fff; }
 .pt-pasos li { min-width: 0; }

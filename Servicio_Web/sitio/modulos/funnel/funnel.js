@@ -152,7 +152,7 @@ export default {
       try { datos = (await ctx.rpc("funnel_lista")).map((f) => ({ ...f, capital: f.capital == null ? null : Number(f.capital),
         monto_venta: f.monto_venta == null ? null : Number(f.monto_venta) })); }
       catch (e) { toast(e.message, "mal"); return; }
-      datos.forEach((f) => { f.mes = normalizaMes(f.mes) || mes(f); f.etapa = ETAPAS.findIndex(([k]) => k === etapa(f)); });
+      datos.forEach((f) => { f.mes = normalizaMes(f.mes) || mes(f); });
       const meses = [...new Set(datos.map((f) => f.mes).filter(Boolean))];
       const vends = [...new Set(datos.map((f) => f.vendedor).filter(Boolean))].sort();
       const pm = selMes.value, pv = selVend.value;
@@ -174,23 +174,35 @@ export default {
 
     function pintar() {
       const b = base();
-      const vend = b.filter((f) => f.estatus_venta === "Vendida");
-      kV.set(numero(vend.length), `${numero(b.filter((f) => f.estatus_venta === "Propuesta").length)} en propuesta`);
-      kC.set(dinero(vend.reduce((s, f) => s + (f.capital || 0), 0)), "ventas vendidas");
-      kM.set(dinero(vend.reduce((s, f) => s + (f.monto_venta || 0), 0)), "cobrado / por cobrar");
-      const nAt = b.filter((f) => atraso(f)).length;
+      // Un solo recorrido: etapa, atraso y montos por etapa (evita recorrer b varias veces).
+      const porEtapa = new Map();
+      const montoPorEtapa = new Map();
+      const etapaDe = new Map();   // fila → etapa (por referencia: el folio podría repetirse)
+      let vend = 0, propuesta = 0, capVendido = 0, montoVendido = 0, nAt = 0;
+      for (const f of b) {
+        const e = etapa(f);
+        etapaDe.set(f, e);
+        porEtapa.set(e, (porEtapa.get(e) || 0) + 1);
+        montoPorEtapa.set(e, (montoPorEtapa.get(e) || 0) + (f.monto_venta || 0));
+        if (atraso(f)) nAt++;
+        if (f.estatus_venta === "Vendida") { vend++; capVendido += f.capital || 0; montoVendido += f.monto_venta || 0; }
+        else if (f.estatus_venta === "Propuesta") propuesta++;
+      }
+      kV.set(numero(vend), `${numero(propuesta)} en propuesta`);
+      kC.set(dinero(capVendido), "ventas vendidas");
+      kM.set(dinero(montoVendido), "cobrado / por cobrar");
       kA.set(numero(nAt), "fechas límite vencidas", nAt ? "mal" : "bien");
 
-      const total = Math.max(1, ...ETAPAS.map(([k]) => b.filter((f) => etapa(f) === k).length));
+      const total = Math.max(1, ...ETAPAS.map(([k]) => porEtapa.get(k) || 0));
       embudo.replaceChildren(...ETAPAS.map(([k, txt]) => {
-        const g = b.filter((f) => etapa(f) === k);
+        const n = porEtapa.get(k) || 0;
         return h("button", { class: `fun-paso e-${k} ${filtroEtapa === k ? "activo" : ""}`,
           onclick: () => { filtroEtapa = filtroEtapa === k ? null : k; pintar(); } },
-          h("div", { class: "fun-barra" }, h("span", { style: { width: `${(g.length / total) * 100}%` } })),
-          h("b", {}, numero(g.length)), h("span", {}, txt),
-          h("small", {}, dinero(g.reduce((s, f) => s + (f.monto_venta || 0), 0))));
+          h("div", { class: "fun-barra" }, h("span", { style: { width: `${(n / total) * 100}%` } })),
+          h("b", {}, numero(n)), h("span", {}, txt),
+          h("small", {}, dinero(montoPorEtapa.get(k) || 0)));
       }));
-      const v = filtroEtapa ? b.filter((f) => etapa(f) === filtroEtapa) : b;
+      const v = filtroEtapa ? b.filter((f) => etapaDe.get(f) === filtroEtapa) : b;
       t.setFilas(v);
       lbl.textContent = `${numero(v.length)} ventas`;
     }

@@ -1,54 +1,12 @@
 // ============================================================
 // MÓDULO: Armar propuesta de venta (JyP / Grupal / Dual)
 // ============================================================
+import { sugerir, terminos, mapearJyP, mapearGrupo, aCandidato, rangoObjetivo } from "./cartera.js";
 
-const RANGO_ABAJO = 1000;
-const RANGO_ARRIBA = 2000;
+// Se reexporta para no romper a quien importaba el optimizador desde este módulo.
+export { sugerir };
+
 const PRIORIDADES = ["Mayor mora primero", "Menor mora primero", "Mayor capital primero", "Menor capital primero"];
-
-/** Igual que la app de escritorio: llena hasta el objetivo sin pasarse del máximo y, si falta, intercambia. */
-export function sugerir(candidatos, objetivo, minimo, maximo, prioridad) {
-  const c = candidatos.filter((x) => x.capital > 0).map((x) => ({ ...x }));
-  const mora = (x) => (x.mora === null || x.mora === undefined || isNaN(x.mora) ? null : Number(x.mora));
-  const porMora = (asc) => (a, b) => {
-    const ma = mora(a), mb = mora(b);
-    if (ma === null && mb === null) return b.capital - a.capital;
-    if (ma === null) return 1;
-    if (mb === null) return -1;
-    return (asc ? ma - mb : mb - ma) || b.capital - a.capital;
-  };
-  if (prioridad === "Mayor mora primero") c.sort(porMora(false));
-  else if (prioridad === "Menor mora primero") c.sort(porMora(true));
-  else if (prioridad === "Menor capital primero") c.sort((a, b) => a.capital - b.capital);
-  else c.sort((a, b) => b.capital - a.capital);
-
-  const elegidos = [];
-  let total = 0;
-  for (const x of c) {
-    if (total >= objetivo) break;
-    if (total + x.capital <= maximo) { elegidos.push(x); total += x.capital; }
-  }
-  if (total < minimo) {
-    const usados = new Set(elegidos.map((x) => x.key));
-    const resto = c.filter((x) => !usados.has(x.key));
-    const cierre = resto.find((x) => x.capital >= minimo - total && x.capital <= maximo - total);
-    if (cierre) { elegidos.push(cierre); total += cierre.capital; }
-  }
-  if (total < minimo && elegidos.length) {
-    const usados = new Set(elegidos.map((x) => x.key));
-    const resto = c.filter((x) => !usados.has(x.key)).sort((a, b) => a.capital - b.capital);
-    for (let i = elegidos.length - 1; i >= 0; i--) {
-      const base = total - elegidos[i].capital;
-      const sub = resto.find((x) => base + x.capital >= minimo && base + x.capital <= maximo);
-      if (sub) { elegidos[i] = sub; total = base + sub.capital; break; }
-    }
-  }
-  return { keys: elegidos.map((x) => x.key), total };
-}
-
-function terminos(texto) {
-  return texto.split(/[\s,;]+/).map((t) => t.trim().toUpperCase()).filter(Boolean);
-}
 
 export default {
   id: "venta",
@@ -57,7 +15,7 @@ export default {
   roles: ["vendedor", "admin"],
 
   async montar(cont, ctx) {
-    const { h, kpi, tabla, dinero, numero, dias, toast, confirmar, avisar } = ctx.ui;
+    const { h, kpi, tabla, dinero, numero, dias, toast, confirmar, avisar, listaCasillas, indiceGeo } = ctx.ui;
     ctx.ui.cargarCSS(new URL("./venta.css", import.meta.url).href);
 
     // Modo complemento: #/venta?complementar=VTA-0300 (agregar cartera a una venta existente)
@@ -75,7 +33,7 @@ export default {
       geo: [], estados: new Set(), municipios: new Set(),
       filas: [], seleccion: new Set(),
     };
-    const rango = () => [Math.max(0, est.objetivo - RANGO_ABAJO), est.objetivo + RANGO_ARRIBA];
+    const rango = () => rangoObjetivo(est.objetivo);
 
     // ---------------- panel izquierdo ----------------
     const segBotones = ["JyP", "Grupal", "Dual"].map((t) =>
@@ -103,29 +61,11 @@ export default {
     const inBuscar = h("input", { class: "campo", placeholder: "🔍 Una o varias, separadas por coma…",
       onkeydown: (e) => { if (e.key === "Enter") aplicar(); } });
 
-    function listaCasillas(cont, items, sel, filtro, alCambiar) {
-      const f = filtro.trim().toUpperCase();
-      const vis = items.filter((i) => !f || i.nombre.includes(f));
-      cont.replaceChildren(...(vis.length ? vis.map((i) => {
-        const chk = h("input", { type: "checkbox", checked: sel.has(i.nombre) });
-        const lab = h("label", { class: sel.has(i.nombre) ? "sel" : "" }, chk, i.nombre, h("small", {}, numero(i.n)));
-        chk.addEventListener("change", () => {
-          chk.checked ? sel.add(i.nombre) : sel.delete(i.nombre);
-          lab.classList.toggle("sel", chk.checked);
-          alCambiar();
-        });
-        return lab;
-      }) : [h("div", { class: "vacio" }, items.length ? "Sin coincidencias" : "Elige primero un estado")]));
-    }
-    function estadosItems() {
-      const m = new Map();
-      for (const g of est.geo) m.set(g.estado, (m.get(g.estado) || 0) + Number(g.registros));
-      return [...m].map(([nombre, n]) => ({ nombre, n }));
-    }
-    function municipiosItems() {
-      return est.geo.filter((g) => est.estados.has(g.estado) && g.municipio)
-        .map((g) => ({ nombre: g.municipio, n: Number(g.registros) }));
-    }
+    // Índice del catálogo geográfico: se arma una sola vez por carga (evita recorrerlo por cada pintado).
+    let geoIdx = indiceGeo([]);
+    const estadosItems = () => geoIdx.estados;
+    const municipiosItems = () =>
+      [...est.estados].flatMap((e) => geoIdx.municipios(e).filter((m) => m.nombre));
     function pintarEstados() {
       listaCasillas(listaEstados, estadosItems(), est.estados, buscaEstado.value, () => {
         const validos = new Set(municipiosItems().map((m) => m.nombre));
@@ -217,7 +157,8 @@ export default {
 
     async function cargarGeo() {
       est.geo = await ctx.rpc("catalogo_geo", { p_tipo: est.tipo });
-      const validos = new Set(est.geo.map((g) => g.estado));
+      geoIdx = indiceGeo(est.geo);
+      const validos = new Set(geoIdx.estados.map((e) => e.nombre));
       [...est.estados].forEach((e) => !validos.has(e) && est.estados.delete(e));
       pintarEstados(); pintarMunicipios();
     }
@@ -250,20 +191,8 @@ export default {
       lblResumen.textContent = "Buscando…";
       try {
         const filas = [];
-        if (est.tipo !== "Grupal") {
-          for (const r of await ctx.rpc("buscar_jyp", f)) {
-            filas.push({ key: `J:${r.vreference}`, tipo: "JyP", id: r.vreference, estado: r.estado, municipio: r.municipio,
-              colonia: r.colonia, integrantes: 1, mora: r.dias === null ? null : Number(r.dias),
-              capital: Number(r.npendingk), disponible: true, estatus: "DISPONIBLE" });
-          }
-        }
-        if (est.tipo !== "JyP") {
-          for (const r of await ctx.rpc("buscar_grupos", f)) {
-            filas.push({ key: `G:${r.vgroupid}`, tipo: "Grupal", id: r.vgroupid, estado: r.estados, municipio: r.municipios,
-              colonia: r.colonias, integrantes: Number(r.integrantes), mora: r.dias_promedio === null ? null : Number(r.dias_promedio),
-              capital: Number(r.capital), disponible: r.disponible, estatus: r.disponible ? "DISPONIBLE" : "BLOQUEADO" });
-          }
-        }
+        if (est.tipo !== "Grupal") filas.push(...(await ctx.rpc("buscar_jyp", f)).map(mapearJyP));
+        if (est.tipo !== "JyP") filas.push(...(await ctx.rpc("buscar_grupos", f)).map(mapearGrupo));
         est.filas = filas;
         const vivas = new Set(filas.filter((x) => x.disponible).map((x) => x.key));
         [...est.seleccion].forEach((k) => !vivas.has(k) && est.seleccion.delete(k));
@@ -291,29 +220,31 @@ export default {
     function seleccionadas() { return est.filas.filter((f) => est.seleccion.has(f.key)); }
 
     function actualizarKpis() {
-      const disp = est.filas.filter((f) => f.disponible);
-      K.disp.set(numero(disp.length), disp.length ? `Capital ${dinero(disp.reduce((s, f) => s + f.capital, 0))}` : "Aplica filtros");
-      const sel = seleccionadas();
-      const cap = sel.reduce((s, f) => s + f.capital, 0);
+      // Un solo recorrido de las filas: disponibles + estadísticas de la selección.
+      let disp = 0, dispCap = 0, cap = 0, nSel = 0, sd = 0, nd = 0, nj = 0, ng = 0, integ = 0;
+      for (const f of est.filas) {
+        if (f.disponible) { disp++; dispCap += f.capital; }
+        if (!est.seleccion.has(f.key)) continue;
+        nSel++; cap += f.capital;
+        if (f.mora !== null) { sd += f.mora * f.integrantes; nd += f.integrantes; }
+        if (f.tipo === "JyP") nj++; else { ng++; integ += f.integrantes; }
+      }
+      K.disp.set(numero(disp), disp ? `Capital ${dinero(dispCap)}` : "Aplica filtros");
       const [min, max] = rango();
       if (cap <= 0) K.capital.set(dinero(0), `Objetivo ${dinero(est.objetivo)}`);
       else if (cap < min) K.capital.set(dinero(cap), `Faltan ${dinero(min - cap)} para el mínimo`, "alerta");
       else if (cap > max) K.capital.set(dinero(cap), `Excede ${dinero(cap - max)} el máximo`, "mal");
       else K.capital.set(dinero(cap), "✔ Dentro del rango", "bien");
       K.venta.set(dinero(cap * est.centavos), `${est.centavos} centavos por peso`);
-      let sd = 0, nd = 0;
-      for (const f of sel) if (f.mora !== null) { sd += f.mora * f.integrantes; nd += f.integrantes; }
       K.mora.set(nd ? dias(sd / nd) : "N/D", "Promedio de días de atraso");
-      const nj = sel.filter((f) => f.tipo === "JyP").length, ng = sel.length - nj;
-      const integ = sel.filter((f) => f.tipo === "Grupal").reduce((s, f) => s + f.integrantes, 0);
-      K.partidas.set(numero(sel.length), [nj ? `${nj} JyP` : "", ng ? `${ng} grupos · ${integ} integrantes` : ""].filter(Boolean).join(" + ") || "Sin selección");
+      K.partidas.set(numero(nSel), [nj ? `${nj} JyP` : "", ng ? `${ng} grupos · ${integ} integrantes` : ""].filter(Boolean).join(" + ") || "Sin selección");
       btnApartar.disabled = comp ? !(cap > 0) : !(cap >= min && cap <= max && cap > 0);
     }
 
     function sugerirAccion() {
       if (!est.filas.length) { toast("Primero aplica los filtros.", "mal"); return; }
       const [min, max] = rango();
-      const cand = est.filas.filter((f) => f.disponible).map((f) => ({ key: f.key, capital: f.capital, mora: f.mora }));
+      const cand = est.filas.filter((f) => f.disponible).map(aCandidato);
       const { keys, total } = sugerir(cand, est.objetivo, min, max, est.prioridad);
       est.seleccion.clear(); keys.forEach((k) => est.seleccion.add(k));
       t.redibujar(); t.verSeleccion(); actualizarKpis();

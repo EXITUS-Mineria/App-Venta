@@ -2,6 +2,8 @@
 // MÓDULO: Usuarios (usuarios maestros: Validador y Administrador)
 // Alta de usuarios y edición completa: correo, nombre, rol, activo y contraseña.
 // ============================================================
+import { claveAleatoria } from "../../nucleo/ui.js";
+
 const ROLES = [
   ["vendedor", "Vendedor"],
   ["validador", "Validador (maestro)"],
@@ -10,13 +12,6 @@ const ROLES = [
   ["admin", "Administrador"],
   ["comprador", "Comprador (portal)"],   // se da de alta en el módulo Compradores
 ];
-
-function claveAleatoria() {
-  const letras = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-  const n = new Uint32Array(10);
-  crypto.getRandomValues(n);
-  return "Vta-" + [...n].map((x) => letras[x % letras.length]).join("") + "!";
-}
 
 export default {
   id: "usuarios",
@@ -37,7 +32,7 @@ export default {
     const nCorreo = h("input", { class: "campo", type: "email", placeholder: "correo@exitus.com", autocomplete: "off" });
     const nNombre = h("input", { class: "campo", placeholder: "Nombre completo" });
     const nRol = selectRol();
-    const nClave = h("input", { class: "campo", value: claveAleatoria(), autocomplete: "new-password" });
+    const nClave = h("input", { class: "campo", value: claveAleatoria("Vta"), autocomplete: "new-password" });
     const btnAlta = h("button", { class: "btn btn-marca", onclick: () => alta() }, "＋ Dar de alta");
 
     const cuerpo = h("tbody");
@@ -55,7 +50,7 @@ export default {
           h("div", { style: { flex: "1.5 1 200px" } }, h("span", { class: "etiqueta" }, "Contraseña inicial"),
             h("div", { class: "fila", style: { gap: "4px" } }, nClave,
               h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, title: "Generar otra",
-                onclick: () => { nClave.value = claveAleatoria(); } }, "🎲"))),
+                onclick: () => { nClave.value = claveAleatoria("Vta"); } }, "🎲"))),
           h("div", { style: { flex: "0 0 auto" } }, btnAlta)),
         h("p", { class: "nota", style: { margin: "8px 0 0", fontSize: ".82rem" } },
           "La cuenta queda lista para entrar con ese correo y contraseña. Compártela por un medio seguro; ",
@@ -79,7 +74,7 @@ export default {
         const rolTxt = ROLES.find(([v]) => v === nRol.value)[1];
         await avisar("Usuario creado",
           `Correo: ${correo.toLowerCase()}\nContraseña: ${clave}\nRol: ${rolTxt}\n\nCópialo ahora; la contraseña no se vuelve a mostrar.`);
-        nCorreo.value = ""; nNombre.value = ""; nRol.value = "vendedor"; nClave.value = claveAleatoria();
+        nCorreo.value = ""; nNombre.value = ""; nRol.value = "vendedor"; nClave.value = claveAleatoria("Vta");
         await cargar();
       } catch (e) { toast(e.message, "mal", 8000); }
       btnAlta.disabled = false;
@@ -121,7 +116,7 @@ export default {
         [correo, nombre].forEach((x) => x.addEventListener("input", revisar));
         [rol, activo].forEach((x) => x.addEventListener("change", revisar));
         const clave = h("button", { class: "btn btn-secundario btn-chico", title: "Asignar nueva contraseña", onclick: async () => {
-          const nueva = await pedirTexto("Nueva contraseña", `Nueva contraseña para ${u.email} (mínimo 8 caracteres):`, claveAleatoria());
+          const nueva = await pedirTexto("Nueva contraseña", `Nueva contraseña para ${u.email} (mínimo 8 caracteres):`, claveAleatoria("Vta"));
           if (nueva === null) return;
           if (!(await confirmar("Cambiar contraseña", `¿Cambiar la contraseña de ${u.email}?\n\nNueva: ${nueva}`, "Cambiar"))) return;
           try { await ctx.rpc("admin_cambiar_clave", { p_user: u.user_id, p_clave: nueva }); toast("Contraseña cambiada.", "bien"); }

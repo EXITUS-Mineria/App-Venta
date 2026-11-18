@@ -4,12 +4,8 @@
 //  🏢 Catálogo: datos del comprador, nombres con que aparece en el Funnel (alias) y accesos al portal.
 //     Editar y dar accesos: sólo validador / admin. Los demás lo consultan.
 // ============================================================
-function claveAleatoria() {
-  const letras = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-  const n = new Uint32Array(10);
-  crypto.getRandomValues(n);
-  return "Cmp-" + [...n].map((x) => letras[x % letras.length]).join("") + "!";
-}
+import { claveAleatoria } from "../../nucleo/ui.js";
+
 const clave = (t) => (t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/\s+/g, " ").trim();
 const palabras = (t) => clave(t).split(" ").filter((w) => w.length >= 3);
 const parecido = (a, b) => { const A = new Set(palabras(a)); return palabras(b).filter((w) => A.has(w)).length; };
@@ -164,9 +160,12 @@ export default {
         const pintarAlias = () => {
           const q = clave(qAlias.value), base = fNombre.value || c?.nombre || "";
           const libres = nombres.filter((n) => !n.comprador_id || n.comprador_id === c?.id);
-          const vista = libres.filter((n) => alias.has(n.nombre) || (q ? clave(n.nombre).includes(q) : parecido(base, n.nombre) >= 2 || clave(n.nombre) === clave(base)))
-            .sort((a, b) => (alias.has(b.nombre) - alias.has(a.nombre)) || parecido(base, b.nombre) - parecido(base, a.nombre));
-          listaAlias.replaceChildren(...(vista.length ? vista.slice(0, 60).map((n) => h("label", { class: alias.has(n.nombre) ? "sel" : "" },
+          // La similitud se calcula una sola vez por nombre (antes se recalculaba en el filtro y en el orden).
+          const conSim = libres.map((n) => ({ n, sim: parecido(base, n.nombre) }));
+          const vista = conSim
+            .filter(({ n, sim }) => alias.has(n.nombre) || (q ? clave(n.nombre).includes(q) : sim >= 2 || clave(n.nombre) === clave(base)))
+            .sort((a, b) => (alias.has(b.n.nombre) - alias.has(a.n.nombre)) || b.sim - a.sim);
+          listaAlias.replaceChildren(...(vista.length ? vista.slice(0, 60).map(({ n }) => h("label", { class: alias.has(n.nombre) ? "sel" : "" },
             h("input", { type: "checkbox", checked: alias.has(n.nombre), disabled: !ed, onchange: (e) => { e.target.checked ? alias.add(n.nombre) : alias.delete(n.nombre); pintarAlias(); } }),
             ` ${n.nombre} `, h("small", { class: "nota" }, `(${n.ventas})`)))
             : [h("div", { class: "nota" }, q ? "Sin coincidencias." : "Escribe para buscar cómo aparece este comprador en el Funnel.")]));
@@ -189,7 +188,7 @@ export default {
         if (c) {
           const aCorreo = h("input", { class: "campo", type: "email", placeholder: "correo@comprador.com", autocomplete: "off" });
           const aNombre = h("input", { class: "campo", placeholder: "Nombre de la persona" });
-          const aClave = h("input", { class: "campo", value: claveAleatoria(), autocomplete: "new-password" });
+          const aClave = h("input", { class: "campo", value: claveAleatoria("Cmp"), autocomplete: "new-password" });
           accesos = h("section", { class: "cmp-sec" }, h("h4", {}, "👤 Accesos al portal"),
             c.accesos.length ? h("ul", { class: "cmp-accesos" }, ...c.accesos.map((u) => h("li", { class: u.activo ? "" : "bloq" },
               `${u.email} · ${u.nombre || ""} ${u.activo ? "" : "(inactivo)"}`))) : h("div", { class: "nota" }, "Sin accesos todavía."),
@@ -197,7 +196,7 @@ export default {
               h("label", {}, h("span", { class: "etiqueta" }, "Correo"), aCorreo),
               h("label", {}, h("span", { class: "etiqueta" }, "Nombre"), aNombre),
               h("label", {}, h("span", { class: "etiqueta" }, "Contraseña inicial"), h("div", { class: "fila", style: { gap: "4px" } }, aClave,
-                h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, onclick: () => { aClave.value = claveAleatoria(); } }, "🎲"))),
+                h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, onclick: () => { aClave.value = claveAleatoria("Cmp"); } }, "🎲"))),
               h("div", { style: { alignSelf: "end" } }, h("button", { class: "btn btn-primario", disabled: !c.activo, onclick: async () => {
                 if (!aCorreo.value.trim()) { toast("Escribe el correo.", "mal"); return; }
                 try {

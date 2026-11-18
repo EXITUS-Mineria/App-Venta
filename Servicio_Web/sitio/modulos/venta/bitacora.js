@@ -94,40 +94,43 @@ export default {
       if (abierta) { const p = datos.find((x) => x.id_propuesta === abierta.id_propuesta); if (p) abrir(p); }
     }
 
-    const fechaUltimo = (p) => [p.fecha, p.revisada_en, p.sub_base_en, p.liberada_en].filter(Boolean).sort().pop();
     function ultimoMovimiento(p) {
       const opciones = [[p.liberada_en, `Liberada · ${p.liberada_por || ""}`], [p.sub_base_en, `Sub base · ${p.sub_base_por || ""}`],
         [p.revisada_en, `${p.estatus === "RECHAZADA" ? "Rechazada" : "Revisada"} · ${p.revisada_por || ""}`], [p.fecha, "Creada"]]
         .filter(([f]) => f).sort((a, b) => String(b[0]).localeCompare(String(a[0])));
       return opciones.length ? `${opciones[0][1]} · ${fecha(opciones[0][0])}` : "";
     }
-
     function base() {
       const q = buscar.value.trim().toUpperCase();
       return datos.filter((p) => (!chkMias.checked || esMia(p)) &&
         (!q || `${p.id_propuesta} ${p.usuario} ${p.comprador || ""} ${p.comentario || ""} ${p.tipo_venta || ""}`.toUpperCase().includes(q)));
     }
-    function visibles() {
-      const b = base();
+    function visibles(b = base()) {
       return filtroEstatus === "TODAS" ? b : filtroEstatus ? b.filter((p) => p.estatus === filtroEstatus) : b.filter((p) => VIGENTES.includes(p.estatus));
     }
 
     function pintar() {
       const b = base();
-      const cuenta = (e) => b.filter((p) => p.estatus === e).length;
+      // Un solo recorrido: conteos por estatus y capital, y las vigentes.
+      const cuenta = new Map();
+      const capital = new Map();
+      const vig = [];
+      for (const p of b) {
+        cuenta.set(p.estatus, (cuenta.get(p.estatus) || 0) + 1);
+        capital.set(p.estatus, (capital.get(p.estatus) || 0) + p.capital);
+        if (VIGENTES.includes(p.estatus)) vig.push(p);
+      }
       const chip = (clave, texto, n, cap) => h("button", {
         class: `bit-chip ${filtroEstatus === clave ? "activo" : ""}`,
         onclick: () => { filtroEstatus = filtroEstatus === clave ? null : clave; pintar(); },
       }, h("span", {}, texto), h("b", {}, numero(n)), cap !== undefined ? h("small", {}, dinero(cap)) : null);
-      const vig = b.filter((p) => VIGENTES.includes(p.estatus));
       chips.replaceChildren(
         chip(null, "📂 Vigentes", vig.length, vig.reduce((s, p) => s + p.capital, 0)),
-        ...ESTATUS.filter(([e]) => cuenta(e) || ["EN REVISIÓN", "APROBADA", "EN VENTA"].includes(e)).map(([e, txt]) =>
-          chip(e, txt, cuenta(e), b.filter((p) => p.estatus === e).reduce((s, p) => s + p.capital, 0))),
+        ...ESTATUS.filter(([e]) => cuenta.get(e) || ["EN REVISIÓN", "APROBADA", "EN VENTA"].includes(e)).map(([e, txt]) =>
+          chip(e, txt, cuenta.get(e) || 0, capital.get(e) || 0)),
         chip("TODAS", "🗂 Todas", b.length));
-      const v = visibles().map((p) => ({ ...p, ultimo: fechaUltimo(p) }));
-      t.setFilas(v);
-      lbl.textContent = `${numero(v.length)} propuestas · ${dinero(v.reduce((s, p) => s + p.capital, 0))}`;
+      t.setFilas(visibles());
+      lbl.textContent = `${numero(t.filas.length)} propuestas · ${dinero(t.filas.reduce((s, p) => s + p.capital, 0))}`;
     }
 
     // ---------- detalle ----------

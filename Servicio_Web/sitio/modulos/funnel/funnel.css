@@ -14,8 +14,8 @@
 .fun-paso small { color: var(--texto-2); font-size: .76rem; }
 .fun-barra { height: 6px; background: var(--linea); border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
 .fun-barra span { display: block; height: 100%; background: var(--tinta); }
-.fun-paso.e-md .fun-barra span { background: #8DB8E2; } .fun-paso.e-doc .fun-barra span { background: #5B8FC7; }
-.fun-paso.e-juridico .fun-barra span { background: #F2B705; } .fun-paso.e-cierre .fun-barra span { background: #E08A00; }
+.fun-paso.e-md .fun-barra span { background: var(--info-borde); } .fun-paso.e-doc .fun-barra span { background: #5B8FC7; }
+.fun-paso.e-juridico .fun-barra span { background: var(--aviso-borde); } .fun-paso.e-cierre .fun-barra span { background: #E08A00; }
 .fun-paso.e-cerrada .fun-barra span { background: var(--bien); } .fun-paso.e-cancelada .fun-barra span { background: var(--gris-suave); }
 
 /* Pasos (puntitos) y etiqueta de etapa */
@@ -25,10 +25,10 @@
 .fun-pasos i.act { background: var(--alerta); border-color: #C99400; }
 .fun-pasos i.x { background: var(--gris-suave); }
 .fun-etapa { display: inline-block; font-size: .74rem; font-weight: 700; border-radius: 10px; padding: 1px 8px; border: 1px solid var(--borde); background: var(--fondo); white-space: nowrap; }
-.fun-etapa.e-propuesta { background: #F1F3F6; }
-.fun-etapa.e-md, .fun-etapa.e-doc { background: #E7F1FB; border-color: #8DB8E2; color: #1F4E79; }
-.fun-etapa.e-juridico, .fun-etapa.e-cierre { background: #FFF6D6; border-color: #F2B705; color: #7A5A00; }
-.fun-etapa.e-cerrada { background: #E6F4E7; border-color: #9CCC9F; color: var(--bien); }
+.fun-etapa.e-propuesta { background: var(--neutro-bg); }
+.fun-etapa.e-md, .fun-etapa.e-doc { background: var(--info-bg); border-color: var(--info-borde); color: var(--info); }
+.fun-etapa.e-juridico, .fun-etapa.e-cierre { background: var(--aviso-bg); border-color: var(--aviso-borde); color: var(--aviso-texto); }
+.fun-etapa.e-cerrada { background: var(--ok-bg); border-color: var(--ok-borde); color: var(--bien); }
 .fun-etapa.e-cancelada { color: var(--gris-suave); }
 .fun-atraso { cursor: help; }
 .fun-izq .tabla tbody tr { cursor: pointer; }
@@ -47,7 +47,7 @@
 .fun-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
 .fun-grid label .etiqueta { margin-top: 6px; color: var(--texto-2); }
 .fun-grid .campo:disabled { background: var(--fondo); color: var(--tinta); }
-.fun-grid .campo.cambiado { border-color: var(--alerta); background: #FFFBEA; }
+.fun-grid .campo.cambiado { border-color: var(--alerta); background: var(--aviso-bg); }
 .fun-link { font-size: .82rem; color: var(--rojo-oscuro); white-space: nowrap; align-self: center; }
 .fun-pie { position: sticky; bottom: -12px; background: var(--blanco); padding: 10px 0 2px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .fun.con-detalle .fun-izq .tabla th:nth-child(n+11), .fun.con-detalle .fun-izq .tabla td:nth-child(n+11) { display: none; }
@@ -77,6 +77,6 @@
 .env-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0; }
 .env-campos textarea, .env-campos .fila { grid-column: 1 / -1; }
 .env-campos textarea { resize: vertical; font-family: inherit; }
-.env-bloque.env-ok { border-color: #A8D5AA; background: #F3FAF3; }
+.env-bloque.env-ok { border-color: var(--ok-borde-2); background: var(--ok-bg-suave); }
 .env-bloque.env-no { border-color: var(--rojo-borde); background: var(--rojo-suave); }
 .env-linea { margin: 2px 0; }
