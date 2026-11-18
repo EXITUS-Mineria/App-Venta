@@ -268,3 +268,22 @@ export function tabla(columnas, opciones = {}) {
     filaDe(tr) { const k = tr?.dataset?.id; return filas.find((f) => String(id(f)) === k); },
   };
 }
+
+// ---------- Llamadas a funciones de la base ----------
+/**
+ * Llama una función de Supabase y junta TODAS sus filas. La API regresa como máximo 1,000 filas por
+ * llamada (max_rows); si la función regresa justo ese tope se piden las páginas siguientes.
+ * Así no se cortan el catálogo geográfico, la búsqueda de créditos ni el Funnel.
+ */
+export async function rpcPaginado(cliente, funcion, args = {}, traducir = (m) => m) {
+  const { data, error } = await cliente.rpc(funcion, args);
+  if (error) throw new Error(traducir(error.message));
+  if (!Array.isArray(data) || data.length < 1000 || data.length % 1000) return data;
+  const pagina = data.length, todo = [...data];
+  for (let desde = pagina; ; desde += pagina) {
+    const r = await cliente.rpc(funcion, args).range(desde, desde + pagina - 1);
+    if (r.error) throw new Error(traducir(r.error.message));
+    todo.push(...r.data);
+    if (r.data.length < pagina) return todo;
+  }
+}

@@ -3,6 +3,9 @@
 // Propuestas EN REVISIÓN: ver partidas, quitar las que no deben venderse,
 // aprobar (avisa al auxiliar de venta) o rechazar (todo regresa a Disponible).
 // ============================================================
+import { descargarCuentasRevision } from "../venta/layout.js";
+import { botonPropuestaFinal } from "../venta/propuesta_final.js";
+
 export default {
   id: "revision",
   titulo: "Revisión",
@@ -41,6 +44,12 @@ export default {
     const btnQuitar = h("button", { class: "btn btn-secundario", disabled: true, onclick: () => quitarSel() }, "✂ Quitar marcadas");
     const btnRechazar = h("button", { class: "btn btn-secundario", disabled: true, onclick: () => revisar(false) }, "✖ Rechazar");
     const btnAprobar = h("button", { class: "btn btn-marca", disabled: true, onclick: () => revisar(true) }, "✔ Aprobar");
+    const btnCuentas = h("button", { class: "btn btn-secundario", disabled: true, title: "Referencias para preguntar si siguen disponibles para venta",
+      onclick: async () => {
+        try { const n = await descargarCuentasRevision(ctx, actual); toast(`${numero(n)} cuentas descargadas.`, "bien"); }
+        catch (e) { toast(e.message, "mal"); }
+      } }, "⬇ Cuentas");
+    const cajaFinal = h("span", { style: { display: "contents" } });
     const tDet = tabla([
       { clave: "tipo", titulo: "Cartera" },
       { clave: "clave", titulo: "Grupo / vReference" },
@@ -63,7 +72,7 @@ export default {
         h("div", { class: "tarjeta" },
           h("div", { class: "fila", style: { flexWrap: "wrap" } },
             h("div", { style: { flex: "1 1 260px" } }, titulo, sub),
-            h("div", { class: "fila", style: { flex: "0 0 auto", gap: "6px" } }, btnQuitar, btnRechazar, btnAprobar))),
+            h("div", { class: "fila", style: { flex: "0 0 auto", gap: "6px", flexWrap: "wrap" } }, btnCuentas, cajaFinal, btnQuitar, btnRechazar, btnAprobar))),
         h("div", { class: "kpis" }, kCap.el, kRango.el, kVenta.el, kPart.el, kMora.el),
         h("div", { class: "tarjeta" },
           h("div", { class: "fila", style: { marginBottom: "6px" } },
@@ -90,7 +99,8 @@ export default {
       actual = null; quitar.clear(); tDet.setFilas([]);
       titulo.textContent = "Selecciona una propuesta"; sub.textContent = "";
       [kCap, kRango, kVenta, kPart, kMora].forEach((k) => k.set("—"));
-      [btnQuitar, btnRechazar, btnAprobar].forEach((b) => (b.disabled = true));
+      [btnQuitar, btnRechazar, btnAprobar, btnCuentas].forEach((b) => (b.disabled = true));
+      cajaFinal.replaceChildren();
       tLista.redibujar(); pintarQuitar();
     }
 
@@ -113,7 +123,8 @@ export default {
       kVenta.set(dinero(p.valor_venta), `${p.centavos} centavos por peso`);
       kPart.set(numero(partidas.length), `${numero(partidas.reduce((s, f) => s + f.integrantes, 0))} créditos`);
       kMora.set(dias(p.dias_mora));
-      btnRechazar.disabled = btnAprobar.disabled = false;
+      btnRechazar.disabled = btnAprobar.disabled = btnCuentas.disabled = false;
+      cajaFinal.replaceChildren(botonPropuestaFinal(ctx, p, () => cargar()));
       pintarQuitar();
     }
 

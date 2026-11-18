@@ -26,7 +26,7 @@ const OPC = {
 // Secciones del formulario, igual que las columnas de SharePoint. venta=true: el vendedor dueño también la edita.
 const SECCIONES = [
   ["🧾 Venta", true, [["mes", "Mes", "mes"], ["comprador", "Comprador"], ["estado", "Estado", "estado"], ["municipios", "Municipio's"],
-    ["fecha_propuesta", "Fecha Propuesta", "fecha"], ["fecha_venta", "Fecha Venta", "fecha"], ["vendedor", "Vendedor"],
+    ["fecha_propuesta", "Fecha Propuesta", "fecha"], ["fecha_venta", "Fecha Venta", "fecha"],
     ["propuesta_url", "Propuesta", "url"]]],
   ["💰 Importes y estatus", false, [["estatus_venta", "Estatus Venta", "estatus_venta"], ["tipo", "Tipo", "tipo"],
     ["capital", "Capital", "num"], ["monto_venta", "Monto Venta", "num"], ["comprobante_pago", "Comprobante (liga histórica)", "url"]],
@@ -44,6 +44,8 @@ const ETAPAS = [
   ["propuesta", "1 · Propuesta"], ["md", "2 · MD"], ["doc", "3 · Control documental"], ["juridico", "4 · Jurídico"],
   ["cierre", "5 · Cierre"], ["cerrada", "✔ Cerrada"], ["cancelada", "✖ Cancelada"],
 ];
+// Fechas que llena la base sola (plazos de ⏱ Plazos); sólo un maestro las corrige.
+const AUTOMATICAS = new Set(["fecha_inicio_md", "fecha_limite_md", "fecha_inicio_admin", "fecha_limite_admin"]);
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 const hoy = () => new Date().toISOString().slice(0, 10);
 
@@ -86,6 +88,11 @@ export default {
     let datos = [], filtroEtapa = null, abierta = null;
     const selMes = h("select", { class: "campo", onchange: () => pintar() });
     const selVend = h("select", { class: "campo", onchange: () => pintar() });
+    const selTipo = h("select", { class: "campo", onchange: () => pintar() }, h("option", { value: "" }, "Todos los tipos"),
+      ...[["J&P", "JyP"], ["Grupal", "Grupal"], ["Dual", "Dual"]].map(([v, t2]) => h("option", { value: v }, t2)));
+    const maestro = ctx.esAdmin;
+    let usuarios = [];   // posibles responsables (para reasignar)
+    const panelReasignar = h("div", { class: "fun-reasignar", hidden: true });
     const buscar = h("input", { class: "campo", placeholder: "🔍 Folio, comprador, estado, ticket…", oninput: () => pintar() });
     const chkAtraso = h("input", { type: "checkbox", onchange: () => pintar() });
     const embudo = h("div", { class: "fun-embudo" });
@@ -120,7 +127,8 @@ export default {
             f.respuesta === "ACEPTADA" ? "👍" : f.respuesta === "RECHAZADA" ? "👎" : "🌐") : "",
           !f.publicada_en && f.enviada_en ? h("span", { title: `Enviada a ${f.correo_comprador} (${new Date(f.enviada_en).toLocaleDateString("es-MX")})` }, "📧") : "",
           f.n_comprobantes ? h("span", { title: `${f.n_comprobantes} comprobante(s) de pago` }, "🧾") : "",
-          f.n_documentos ? h("span", { title: `${f.n_documentos} documento(s) del comprador` }, `📂${f.n_documentos}`) : "") },
+          f.n_documentos ? h("span", { title: `${f.n_documentos} documento(s) del comprador` }, `📂${f.n_documentos}`) : "",
+          f.n_comentarios ? h("span", { title: `${f.n_comentarios} comentario(s)` }, `💬${f.n_comentarios}`) : "") },
       { clave: "numero_ticket_contrato", titulo: "Ticket" },
       { clave: "numero_guia", titulo: "Guía" },
     ], { idFila: (f) => f.folio, claseFila: (f) => (abierta?.folio === f.folio ? "sel" : f.estatus_venta === "Cancelada" ? "bloq" : ""),
@@ -139,11 +147,15 @@ export default {
           h("div", { class: "fila fun-filtros" },
             h("h3", { style: { margin: 0, flex: "0 0 auto" } }, "📈 Funnel de ventas"),
             h("div", { style: { flex: "0 1 170px" } }, selMes), h("div", { style: { flex: "0 1 210px" } }, selVend),
+            h("div", { style: { flex: "0 1 150px" } }, selTipo),
             h("div", { style: { flex: "1 1 200px" } }, buscar),
             h("label", { style: { flex: "0 0 auto" } }, chkAtraso, " Sólo en atraso"),
             lbl,
+            maestro ? h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, title: "Asignar las ventas filtradas a un vendedor",
+              onclick: () => reasignarFiltradas() }, "👤 Reasignar") : null,
             h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, onclick: () => exportar() }, "⬇ Exportar"),
             h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, onclick: () => cargar() }, "⟳")),
+          panelReasignar,
           t.el)),
       det);
     cont.append(raiz, listaVend);
@@ -154,6 +166,7 @@ export default {
       catch (e) { toast(e.message, "mal"); return; }
       datos.forEach((f) => { f.mes = normalizaMes(f.mes) || mes(f); });
       const meses = [...new Set(datos.map((f) => f.mes).filter(Boolean))];
+      datos.forEach((f) => { if (!f.vendedor_user) f.vendedor = f.vendedor ? `${f.vendedor} (sin usuario)` : "Sin asignar"; });
       const vends = [...new Set(datos.map((f) => f.vendedor).filter(Boolean))].sort();
       const pm = selMes.value, pv = selVend.value;
       selMes.replaceChildren(h("option", { value: "" }, "Todos los meses"), ...meses.map((m) => h("option", { value: m }, m)));
@@ -167,6 +180,7 @@ export default {
     function base() {
       const q = buscar.value.trim().toUpperCase();
       return datos.filter((f) => (!selMes.value || f.mes === selMes.value) && (!selVend.value || f.vendedor === selVend.value) &&
+        (!selTipo.value || f.tipo === selTipo.value) &&
         (!chkAtraso.checked || atraso(f)) &&
         (!q || [f.folio, f.comprador, f.estado, f.municipios, f.vendedor, f.numero_ticket_contrato, f.numero_guia]
           .join(" ").toUpperCase().includes(q)));
@@ -221,13 +235,15 @@ export default {
             onclick: () => generar(esBase) }, esBase ? "⬇ Generar base final" : "⬇ Generar propuesta (CSV)");
         }
         const v = f[clave] ?? "";
+        if (AUTOMATICAS.has(clave) && !maestro) editable = false;
         let el;
         if (OPC[tipo]) {
           el = h("select", { class: "campo", disabled: !editable }, h("option", { value: "" }, "—"),
             ...OPC[tipo].map((o) => h("option", { value: o }, o)));
           if (v && !OPC[tipo].includes(v)) el.append(h("option", { value: v }, v));
           el.value = v;
-        } else if (tipo === "fecha") el = h("input", { class: "campo", type: "date", value: v || "", disabled: !editable });
+        } else if (tipo === "fecha") el = h("input", { class: "campo", type: "date", value: v || "", disabled: !editable,
+          title: AUTOMATICAS.has(clave) ? "Automática: se calcula con los plazos por etapa" : "" });
         else if (tipo === "num") el = h("input", { class: "campo", type: "number", step: "0.01", value: v === "" ? "" : v, disabled: !editable });
         else el = h("input", { class: "campo", value: v, disabled: !editable, placeholder: tipo === "url" ? "https://…" : "",
           list: clave === "vendedor" ? "fun-vendedores" : null });
@@ -258,6 +274,7 @@ export default {
             atraso(f) ? h("div", { class: "fun-atraso-txt" }, `⏰ ${atraso(f)}`) : null),
           h("button", { class: "btn btn-secundario btn-chico", onclick: cerrar }, "✖")),
         h("div", { class: "fun-avance" }, pasos(f), h("span", { class: "nota" }, `Actualizado ${new Date(f.actualizado).toLocaleString("es-MX")} · ${f.actualizado_por || ""}`)),
+        bloqueResponsable(f),
         ...SECCIONES.map(([titulo, esVenta, lista, docs]) => h("section", { class: "fun-sec" },
           h("h4", {}, titulo),
           h("div", { class: "fun-grid" }, ...lista.filter(([clave]) => !(clave === "comprobante_pago" && !f[clave])).map(([clave, etiqueta, tipo]) =>
@@ -270,6 +287,7 @@ export default {
           bloqueDocumentos(ctx, { folio: f.folio, tipo: "comprador", editable: editaTodo, titulo: "Expediente del comprador",
             ayuda: "Identificación, acta constitutiva, poderes, comprobante de domicilio, contrato firmado… (PDF, fotos o Word).",
             alConteo: (n) => { f.n_documentos = n; t.redibujar(); } })),
+        bloqueComentarios(f),
         adjuntos.length ? h("section", { class: "fun-sec" }, h("h4", {}, `📎 Adjuntos en SharePoint (${adjuntos.length})`),
           h("ul", { class: "fun-adj" }, ...adjuntos.map((a) => h("li", {}, h("a", { href: a.url, target: "_blank", rel: "noopener" }, a.nombre))))) : null,
         h("div", { class: "fun-pie" },
@@ -288,6 +306,85 @@ export default {
         catch (e) { toast(e.message, "mal", 8000); btnGuardar.disabled = false; }
       }
     }
+    async function cargarUsuarios() {
+      if (!usuarios.length) usuarios = (await ctx.rpc("funnel_vendedores")) || [];
+      return usuarios;
+    }
+    const selectorUsuario = (actual) => {
+      const sel = h("select", { class: "campo" }, h("option", { value: "" }, "— elige el vendedor responsable —"));
+      cargarUsuarios().then((us) => {
+        sel.append(...us.map((u) => h("option", { value: u.user_id }, `${u.nombre} · ${u.rol}`)));
+        if (actual) sel.value = actual;
+      }).catch((e) => toast(e.message, "mal"));
+      return sel;
+    };
+    async function asignar(folios, userId) {
+      if (!userId) { toast("Elige el vendedor.", "mal"); return false; }
+      try {
+        const n = await ctx.rpc("funnel_asignar_vendedor", { p_folios: folios, p_user: userId });
+        toast(`${numero(n)} venta(s) asignadas a ${usuarios.find((u) => u.user_id === userId)?.nombre || "el vendedor"}.`, "bien");
+        await cargar(); return true;
+      } catch (e) { toast(e.message, "mal", 8000); return false; }
+    }
+
+    // Vendedor responsable: lo ve todo el que ve la venta; sólo un maestro lo cambia
+    function bloqueResponsable(f) {
+      const txt = h("div", {}, h("span", { class: "etiqueta" }, "Vendedor responsable"),
+        h("b", {}, f.vendedor_user ? f.vendedor : "⚠ Sin usuario asignado"),
+        !f.vendedor_user && f.vendedor && f.vendedor !== "Sin asignar" ? h("div", { class: "nota" }, `En SharePoint: ${f.vendedor.replace(" (sin usuario)", "")}`) : null);
+      if (!maestro) return h("section", { class: "fun-sec fun-resp" }, txt);
+      const sel = selectorUsuario(f.vendedor_user);
+      return h("section", { class: "fun-sec fun-resp" }, txt,
+        h("div", { class: "fila", style: { gap: "6px" } }, sel,
+          h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, onclick: () => asignar([f.folio], sel.value) }, "👤 Reasignar")));
+    }
+
+    function reasignarFiltradas() {
+      const v = filtroEtapa ? base().filter((f) => etapa(f) === filtroEtapa) : base();
+      if (!panelReasignar.hidden) { panelReasignar.hidden = true; return; }
+      const sel = selectorUsuario(null);
+      panelReasignar.hidden = false;
+      panelReasignar.replaceChildren(
+        h("span", {}, `Asignar las ${numero(v.length)} ventas filtradas a:`), sel,
+        h("button", { class: "btn btn-marca", onclick: async () => {
+          if (!v.length) { toast("No hay ventas en el filtro.", "mal"); return; }
+          if (!(await ctx.ui.confirmar("Reasignar ventas", `¿Asignar ${numero(v.length)} venta(s) a ${sel.selectedOptions[0]?.textContent || ""}?\n` +
+            "El vendedor anterior deja de verlas.", "Reasignar"))) return;
+          if (await asignar(v.map((f) => f.folio), sel.value)) panelReasignar.hidden = true;
+        } }, "Asignar"),
+        h("button", { class: "btn btn-secundario", onclick: () => { panelReasignar.hidden = true; } }, "Cancelar"));
+    }
+
+    // Comentarios de la venta (hilo)
+    function bloqueComentarios(f) {
+      const lista = h("ul", { class: "fun-coment" }, h("li", { class: "nota" }, "Cargando…"));
+      const texto = h("textarea", { class: "campo", rows: 2, placeholder: "Escribe un comentario para el equipo…" });
+      const btn = h("button", { class: "btn btn-primario", style: { flex: "0 0 auto" }, onclick: async () => {
+        if (!texto.value.trim()) { texto.focus(); return; }
+        btn.disabled = true;
+        try { await ctx.rpc("funnel_comentar", { p_folio: f.folio, p_texto: texto.value }); texto.value = ""; await pintarLista(); f.n_comentarios = (f.n_comentarios || 0) + 1; t.redibujar(); }
+        catch (e) { toast(e.message, "mal"); }
+        btn.disabled = false;
+      } }, "💬 Comentar");
+      async function pintarLista() {
+        let cs;
+        try { cs = (await ctx.rpc("funnel_comentarios_lista", { p_folio: f.folio })) || []; } catch (e) { lista.replaceChildren(h("li", { class: "nota" }, e.message)); return; }
+        lista.replaceChildren(...(cs.length ? cs.map((c) => h("li", { class: c.mio ? "mio" : "" },
+          h("div", { class: "fun-coment-enc" }, h("b", {}, c.autor || ""), h("small", {}, new Date(c.fecha).toLocaleString("es-MX")),
+            c.mio || maestro ? h("button", { class: "btn-x", title: "Borrar", onclick: async () => {
+              if (!(await ctx.ui.confirmar("Borrar comentario", "¿Borrar este comentario?", "Borrar"))) return;
+              try { await ctx.rpc("funnel_borrar_comentario", { p_id: c.id }); f.n_comentarios = Math.max(0, (f.n_comentarios || 1) - 1); t.redibujar(); pintarLista(); }
+              catch (e) { toast(e.message, "mal"); }
+            } }, "🗑") : null),
+          h("div", { class: "fun-coment-txt" }, c.texto)))
+          : [h("li", { class: "nota" }, "Sin comentarios todavía.")]));
+        lista.scrollTop = lista.scrollHeight;
+      }
+      pintarLista();
+      return h("section", { class: "fun-sec" }, h("h4", {}, "💬 Comentarios"), lista,
+        h("div", { class: "fila", style: { gap: "6px", alignItems: "flex-end" } }, texto, btn));
+    }
+
     function cerrar() { abierta = null; det.hidden = true; raiz.classList.remove("con-detalle"); t.redibujar(); }
 
     function exportar() {

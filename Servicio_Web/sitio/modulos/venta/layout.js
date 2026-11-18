@@ -35,18 +35,41 @@ export async function descargarLayout(ctx, propuesta) {
     EstatusPropuesta: propuesta.estatus || "APARTADA",
     Comprador: propuesta.comprador || "",
   }));
-  // Nombre con la nomenclatura de la venta: VTA-0300_BaseFinal.csv
-  ctx.ui.descargarCSV(`${propuesta.id_propuesta}_BaseFinal.csv`, todas, salida, "latin1");
+  // Nombre con la nomenclatura de la venta y el comprador: VTA-0300_Comprador_BaseFinal.csv
+  ctx.ui.descargarCSV(nombreArchivo(propuesta, "BaseFinal"), todas, salida, "latin1");
   return salida.length;
 }
 
-/** CSV de la propuesta (un renglón por crédito), generado al momento: VTA-0300_Propuesta.csv */
+/** Nombre de archivo con folio y comprador: VTA-0301_Jonathan_Caballero_Propuesta.csv */
+export function nombreArchivo(p, sufijo) {
+  const comp = (p.comprador || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60);
+  return `${p.id_propuesta}${comp ? `_${comp}` : ""}_${sufijo}.csv`;
+}
+
+/** CSV de la propuesta (un renglón por crédito), generado al momento, con nombre, saldos y fechas. */
 export async function descargarPropuestaCSV(ctx, p) {
+  const filas = await ctx.rpc("propuesta_descarga", { p_id: p.id_propuesta });
+  if (!filas?.length) throw new Error("La propuesta no tiene créditos.");
+  const cols = ["IdPropuesta", "Estatus", "Vendedor", "Comprador", "TipoCartera", "vGroupId", "NombreGrupo", "vReference", "NombreCliente",
+    "Estado", "Municipio", "Colonia", "CP", "DiasMora", "Capital", "MontoOriginal", "SaldoTotal", "SaldoVencido",
+    "FechaApertura", "UltimoPago", "Frecuencia"];
+  ctx.ui.descargarCSV(nombreArchivo(p, "Propuesta"), cols, filas.map((f) => ({
+    IdPropuesta: p.id_propuesta, Estatus: p.estatus, Vendedor: p.usuario, Comprador: p.comprador || "", TipoCartera: f.tipo,
+    vGroupId: f.vgroupid || "", NombreGrupo: f.grupo || "", vReference: f.vreference, NombreCliente: f.nombre || "",
+    Estado: f.estado, Municipio: f.municipio, Colonia: f.colonia || "", CP: f.cp || "", DiasMora: f.dias, Capital: f.capital,
+    MontoOriginal: f.monto_original ?? "", SaldoTotal: f.saldo_total ?? "", SaldoVencido: f.saldo_vencido ?? "",
+    FechaApertura: f.fecha_apertura || "", UltimoPago: f.ultimo_pago || "", Frecuencia: f.frecuencia || "" })));
+  return filas.length;
+}
+
+/** Revisión: sólo las referencias, para preguntar si siguen disponibles para venta. */
+export async function descargarCuentasRevision(ctx, p) {
   const filas = await ctx.rpc("creditos_propuesta", { p_id: p.id_propuesta });
   if (!filas?.length) throw new Error("La propuesta no tiene créditos.");
-  const cols = ["IdPropuesta", "Estatus", "Vendedor", "Comprador", "TipoCartera", "vGroupId", "vReference", "Estado", "Municipio", "DiasMora", "Capital"];
-  ctx.ui.descargarCSV(`${p.id_propuesta}_Propuesta.csv`, cols, filas.map((f) => ({
-    IdPropuesta: p.id_propuesta, Estatus: p.estatus, Vendedor: p.usuario, Comprador: p.comprador || "", TipoCartera: f.tipo,
-    vGroupId: f.vgroupid || "", vReference: f.vreference, Estado: f.estado, Municipio: f.municipio, DiasMora: f.dias, Capital: f.capital })));
+  const cols = ["IdPropuesta", "Comprador", "TipoCartera", "vReference", "vGroupId", "Capital"];
+  ctx.ui.descargarCSV(nombreArchivo(p, "Cuentas_Revision"), cols, filas.map((f) => ({
+    IdPropuesta: p.id_propuesta, Comprador: p.comprador || "", TipoCartera: f.tipo, vReference: f.vreference,
+    vGroupId: f.vgroupid || "", Capital: f.capital })));
   return filas.length;
 }

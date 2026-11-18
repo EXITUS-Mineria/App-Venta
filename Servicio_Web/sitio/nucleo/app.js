@@ -43,11 +43,7 @@ export function traducir(msg) {
   return msg || "Error desconocido";
 }
 
-async function rpc(funcion, args = {}) {
-  const { data, error } = await sb.rpc(funcion, args);
-  if (error) throw new Error(traducir(error.message));
-  return data;
-}
+const rpc = (funcion, args = {}) => ui.rpcPaginado(sb, funcion, args, traducir);
 
 // ---------- Login ----------
 function pantallaLogin(mensaje = "") {

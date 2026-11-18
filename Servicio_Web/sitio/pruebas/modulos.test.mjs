@@ -257,6 +257,47 @@ test("Funnel: embudo, atraso y edición de una venta", async () => {
   const det = c.querySelector(".fun-det");
   assert.ok(!det.hidden);
   assert.ok(det.textContent.includes("VTA-0300"));
+  assert.ok(det.textContent.includes("Comentarios"));
+  assert.ok(det.textContent.includes("Vendedor responsable"));
+});
+
+test("Funnel: filtro por tipo de venta, comentarios y fechas automáticas", async () => {
+  const base = { mes: "Enero 2026", capital: 1000, monto_venta: 260, estado: "JALISCO", estatus_venta: "Vendida",
+    estatus_md: "En Proceso", actualizado: "2026-01-01T10:00:00Z", es_mia: true, vendedor_user: "u1", vendedor: "Ana" };
+  const ventas = [
+    { ...base, folio: "VTA-0401", tipo: "J&P", comprador: "Uno", fecha_limite_md: "2999-01-01" },
+    { ...base, folio: "VTA-0402", tipo: "Dual", comprador: "Dos", n_comentarios: 2 },
+    { ...base, folio: "VTA-0403", tipo: "Grupal", comprador: "Tres", vendedor_user: null, vendedor: "Rubén" },
+  ];
+  const llamadas = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, args) => {
+      llamadas.push([fn, args]);
+      if (fn === "funnel_lista") return ventas;
+      if (fn === "funnel_comentarios_lista") return [{ id: 1, autor: "Aux", texto: "Falta comprobante", fecha: "2026-01-02T10:00:00Z", mio: false }];
+      return null;
+    },
+    tieneRol: () => false, esAdmin: false,
+  });
+  const c = cont();
+  await (await import("../modulos/funnel/funnel.js")).default.montar(c, ctx);
+  const selTipo = [...c.querySelectorAll("select")].find((s) => [...s.options].some((o) => o.value === "Dual"));
+  selTipo.value = "Dual"; selTipo.dispatchEvent(new Event("change"));
+  assert.deepEqual(visibles(c).map((tr) => tr.textContent).filter((t) => t.includes("VTA-")).map((t) => t.match(/VTA-\d+/)[0]), ["VTA-0402"]);
+  assert.ok(c.textContent.includes("💬2"));
+  fila(c, "VTA-0402").dispatchEvent(new Event("click", { bubbles: true }));
+  await esperar(5);
+  const det = c.querySelector(".fun-det");
+  assert.ok(det.textContent.includes("Falta comprobante"));
+  // fechas límite: automáticas (deshabilitadas) para quien no es maestro
+  const fechas = [...det.querySelectorAll("input[type=date]")].filter((i) => /Automática/.test(i.title));
+  assert.equal(fechas.length, 4);
+  assert.ok(fechas.every((i) => i.disabled));
+  // el vendedor ya no es un campo editable
+  assert.ok(!llamadas.some(([fn]) => fn === "funnel_vendedores"));
+  // ventas sin usuario aparecen marcadas
+  selTipo.value = ""; selTipo.dispatchEvent(new Event("change"));
+  assert.ok(fila(c, "VTA-0403").textContent.includes("sin usuario"));
 });
 
 // ---------- Compradores ----------
@@ -281,6 +322,7 @@ test("Restituciones: valida un crédito y lista el historial", async () => {
     rpc: (fn) => (fn === "validar_restitucion" ? {
       tipo: "JyP", clave: "V1", buscado: "V1", capital: 1000, integrantes: 1, dias: 10, estados: "JALISCO", municipios: "G",
       vendido: true, bloqueado: false, id_propuesta: "VTA-0300", estatus_propuesta: "APROBADA", usuario_propuesta: "Ana", disponible_en_base: false,
+      venta: { folio: "VTA-0300", id_propuesta: "VTA-0300", comprador: "Jonathan", vendedor: "Victor", tipo: "JyP", estatus_venta: "Vendida", fecha_venta: "2026-11-10", capital: 5000, monto_venta: 1300, centavos: 0.26, partidas: 31, restringida: false },
     } : null),
     filas: (t) => (t === "restituciones" ? [{ id_restitucion: "RST-0001", fecha: "2026-01-01", usuario: "Ana", motivo: "Liquidado", clave_original: "V0", capital_original: 100, clave_reemplazo: "V1", capital_reemplazo: 120, diferencia: 20, tipo_cartera: "JyP" }] : []),
   });
@@ -292,8 +334,64 @@ test("Restituciones: valida un crédito y lista el historial", async () => {
   [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Validar en bases")).click();
   await esperar(5);
   assert.ok(c.querySelector(".rst-ficha").textContent.includes("VTA-0300"));
+  const venta = c.querySelector(".rst-venta").textContent;
+  assert.ok(venta.includes("Jonathan") && venta.includes("Victor") && venta.includes("26¢") && venta.includes("Vendida"));
   const buscar = [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Buscar reemplazo"));
   assert.equal(buscar.disabled, false);
+});
+
+test("Restituciones: crédito de una venta histórica", async () => {
+  const ctx = await ctxMontaje({
+    rpc: (fn) => (fn === "validar_restitucion" ? {
+      tipo: "Grupal", clave: "G1", buscado: "G1", capital: 900, integrantes: 3, dias: 200, vendido: true, bloqueado: false, disponible_en_base: true,
+      venta: { folio: "VTA-0100", comprador: "Lic. X", vendedor: "Sandibel", historico: true, archivo: "base_completa.xlsx", otras_ventas: ["VTA-0050"], restringida: false },
+    } : null),
+    filas: () => [],
+  });
+  const c = cont();
+  await (await import("../modulos/restituciones/restituciones.js")).default.montar(c, ctx);
+  [...c.querySelectorAll("input")].find((i) => i.placeholder.includes("vReference")).value = "G1";
+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Validar en bases")).click();
+  await esperar(5);
+  const ficha = c.querySelector(".rst-ficha");
+  assert.ok(ficha.classList.contains("bien"));
+  assert.ok(ficha.textContent.includes("Vendido en VTA-0100") && ficha.textContent.includes("VTA-0050") && ficha.textContent.includes("base_completa.xlsx"));
+  assert.equal([...c.querySelectorAll("button")].find((b) => b.textContent.includes("Buscar reemplazo")).disabled, false);
+});
+
+test("Restituciones: venta vieja que ya no viene en la base y sin capital", async () => {
+  const llamadas = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, args) => {
+      llamadas.push([fn, args]);
+      if (fn === "validar_restitucion") return { tipo: "JyP", clave: "1000123456-1", buscado: "1000123456-1", en_base: false, capital: null,
+        integrantes: null, dias: null, vendido: true, bloqueado: false, disponible_en_base: false, estatus_base: "No está en la base del mes",
+        venta: { folio: "VTA-0035", comprador: "Lic. Y", vendedor: "Rubén", historico: true, archivo: "base_completa.xlsx", restringida: false },
+        detalle_historico: { folio: "VTA-0035", creditos: 1, capital: null, saldo_total: 52000.5, dias: 400,
+          filas: [{ vreference: "1000123456-1", nombre: "PEREZ LUIS", saldo_total: 52000.5, dias: 400, ult_pago: "2025-04-28" }] } };
+      if (fn === "sugerir_restitucion") return [{ clave: "1000999999-9", integrantes: 1, capital: 15100, diferencia: 100, dias: 200 }];
+      if (fn === "aplicar_restitucion") return { id_restitucion: "RST-0009", original: "1000123456-1", reemplazo: "1000999999-9", diferencia: 100, id_propuesta: "RST-0009", propuesta_nueva: true };
+      return null;
+    },
+    filas: () => [],
+  });
+  const c = cont();
+  await (await import("../modulos/restituciones/restituciones.js")).default.montar(c, ctx);
+  [...c.querySelectorAll("input")].find((i) => i.placeholder.includes("vReference")).value = "1000123456-1";
+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Validar en bases")).click();
+  await esperar(5);
+  assert.ok(c.querySelector(".rst-ficha").textContent.includes("ya no viene en la base del mes"));
+  const det = c.querySelector(".rst-detalle").textContent;
+  assert.ok(det.includes("PEREZ LUIS") && det.includes("2025-04-28") && det.includes("Saldo total"));
+  const buscar = [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Buscar reemplazo"));
+  assert.equal(buscar.disabled, true, "sin capital no se puede buscar");
+  const cap = [...c.querySelectorAll("input")].find((i) => i.placeholder.includes("Capital del crédito"));
+  assert.equal(cap.closest("[hidden]"), null);
+  cap.value = "15000"; cap.dispatchEvent(new window.Event("input"));
+  assert.equal(buscar.disabled, false);
+  buscar.click(); await esperar(5);
+  const sug = llamadas.find(([f]) => f === "sugerir_restitucion");
+  assert.equal(sug[1].p_capital, 15000);
 });
 
 // ---------- Bases ----------

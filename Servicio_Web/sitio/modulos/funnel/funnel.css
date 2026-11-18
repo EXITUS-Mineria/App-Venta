@@ -80,3 +80,18 @@
 .env-bloque.env-ok { border-color: var(--ok-borde-2); background: var(--ok-bg-suave); }
 .env-bloque.env-no { border-color: var(--rojo-borde); background: var(--rojo-suave); }
 .env-linea { margin: 2px 0; }
+/* responsable, reasignar y comentarios */
+.fun-resp { display: flex; flex-direction: column; gap: 6px; }
+.fun-resp b { display: block; font-size: 1rem; }
+.fun-reasignar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 0 10px; padding: 8px 10px;
+  border: 1px solid var(--borde); border-radius: 8px; background: var(--neutro-bg, #f6f7f9); }
+.fun-reasignar .campo { flex: 1 1 220px; max-width: 360px; }
+.fun-coment { list-style: none; padding: 0; margin: 0 0 8px; max-height: 260px; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
+.fun-coment li { padding: 6px 10px; border-radius: 8px; background: var(--neutro-bg, #f6f7f9); border: 1px solid var(--linea); }
+.fun-coment li.mio { background: var(--rojo-suave); border-color: var(--rojo-borde); }
+.fun-coment li.nota { background: none; border: 0; padding: 2px 0; }
+.fun-coment-enc { display: flex; gap: 8px; align-items: baseline; }
+.fun-coment-enc small { color: var(--texto-2); font-size: .74rem; }
+.fun-coment-enc .btn-x { margin-left: auto; border: 0; background: none; cursor: pointer; font-size: .8rem; opacity: .6; }
+.fun-coment-enc .btn-x:hover { opacity: 1; }
+.fun-coment-txt { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .9rem; }
