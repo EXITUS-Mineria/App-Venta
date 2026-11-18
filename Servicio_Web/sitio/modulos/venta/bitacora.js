@@ -5,6 +5,7 @@
 //  - Descargas: CSV de la propuesta (siempre) y base final Funnel (cuando ya está aprobada).
 // ============================================================
 import { descargarLayout, descargarPropuestaCSV } from "./layout.js";
+import { botonPropuestaFinal } from "./propuesta_final.js";
 
 const ESTATUS = [
   ["EN REVISIÓN", "🕒 En revisión"], ["APROBADA", "✅ Aprobadas"], ["EN VENTA", "💼 En venta"],
@@ -197,6 +198,7 @@ export default {
           btnBase,
           puedeComplementar(p) ? h("button", { class: "btn btn-secundario",
             onclick: () => { location.hash = `#/venta?complementar=${encodeURIComponent(p.id_propuesta)}`; } }, "➕ Complementar") : null,
+          ctx.esAdmin && ["EN REVISIÓN", "APROBADA", "APARTADA"].includes(p.estatus) ? botonPropuestaFinal(ctx, p, () => cargar()) : null,
           puedeLiberar(p) ? h("button", { class: "btn btn-secundario", onclick: () => liberar(p) }, "↩ Liberar") : null),
         !baseOk && !["LIBERADA", "RECHAZADA"].includes(p.estatus)
           ? h("div", { class: "nota", style: { margin: "-4px 0 8px" } }, "La base final se habilita cuando el validador aprueba la venta.") : null,

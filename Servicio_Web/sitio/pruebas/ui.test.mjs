@@ -150,3 +150,24 @@ test("pedirTexto regresa el texto escrito", async () => {
   velo.querySelector(".btn-primario").dispatchEvent(new Event("click"));
   assert.equal(await p, "nuevo");
 });
+
+test("rpcPaginado junta todas las páginas cuando la API corta en 1,000 filas", async () => {
+  const total = 2350, llamadas = [];
+  const cliente = {
+    rpc(fn, args) {
+      llamadas.push(fn);
+      const pagina = (desde) => ({ data: Array.from({ length: Math.max(0, Math.min(1000, total - desde)) }, (_, i) => desde + i), error: null });
+      const p = Promise.resolve(pagina(0));
+      p.range = (desde) => Promise.resolve(pagina(desde));
+      return p;
+    },
+  };
+  const filas = await ui.rpcPaginado(cliente, "buscar_grupos", {});
+  assert.equal(filas.length, total);
+  assert.equal(filas[2349], 2349);
+  assert.equal(llamadas.length, 3);
+  const pocas = { rpc: () => Object.assign(Promise.resolve({ data: [1, 2, 3], error: null }), { range: () => assert.fail("no debe paginar") }) };
+  assert.deepEqual(await ui.rpcPaginado(pocas, "x"), [1, 2, 3]);
+  const conError = { rpc: () => Promise.resolve({ data: null, error: { message: "boom" } }) };
+  await assert.rejects(ui.rpcPaginado(conError, "x", {}, (m) => `trad:${m}`), /trad:boom/);
+});

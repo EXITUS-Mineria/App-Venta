@@ -19,10 +19,15 @@ export default {
     let original = null;
 
     // ---- panel: original ----
-    const inTexto = h("input", { class: "campo", placeholder: "vReference o grupo (vGroupId)",
+    const inTexto = h("input", { class: "campo", placeholder: "vReference o grupo (vGroupId), también de ventas viejas",
       onkeydown: (e) => { if (e.key === "Enter") validar(); } });
     const btnValidar = h("button", { class: "btn btn-primario", onclick: () => validar() }, "✔ Validar en bases");
     const ficha = h("div", { class: "rst-ficha vacia" }, "Escribe la vReference o el grupo y da clic en Validar.");
+    // capital del original cuando el archivo de la venta histórica no lo traía
+    const inCapital = h("input", { class: "campo", type: "number", min: 0, step: "0.01", placeholder: "Capital del crédito/grupo vendido",
+      oninput: () => { if (original) { original.capital = Number(inCapital.value) || null; actualizarBoton(); } } });
+    const cajaCapital = h("div", { hidden: true, style: { marginTop: "8px" } },
+      h("span", { class: "etiqueta" }, "Capital original (no venía en el archivo de la venta)"), inCapital);
 
     // ---- panel: reemplazo ----
     const selMotivo = h("select", { class: "campo" }, h("option", { value: "" }, "— Selecciona el motivo —"),
@@ -73,7 +78,7 @@ export default {
           h("div", { class: "fila" }, inTexto, h("span", { style: { flex: "0 0 auto" } }, btnValidar)),
           h("p", { class: "nota", style: { margin: "6px 0 10px" } },
             "Si escribes la vReference de un integrante de grupo se restituye el grupo completo."),
-          ficha),
+          ficha, cajaCapital),
         h("div", { class: "tarjeta" },
           h("h3", {}, "2 · Motivo y criterio"),
           h("span", { class: "etiqueta" }, "Motivo"), selMotivo,
@@ -95,14 +100,18 @@ export default {
             h("button", { class: "btn btn-secundario btn-chico", style: { flex: "0 0 auto" }, onclick: () => cargarHistorial() }, "⟳")),
           tHist.el))));
 
-    function actualizarBoton() { btnBuscar.disabled = !(original && original.vendido && !original.bloqueado); }
+    function actualizarBoton() { btnBuscar.disabled = !(original && original.vendido && !original.bloqueado && original.capital > 0); }
 
     async function validar() {
       const texto = inTexto.value.trim();
       if (!texto) { inTexto.focus(); return; }
       btnValidar.disabled = true; original = null; tCand.setFilas([]); lblCand.textContent = "";
+      cajaCapital.hidden = true; inCapital.value = "";
       try {
         original = await ctx.rpc("validar_restitucion", { p_texto: texto });
+        original.capital = original.capital == null ? null : Number(original.capital);
+        original.sinCapital = !(original.capital > 0);
+        cajaCapital.hidden = !(original.sinCapital && original.vendido && !original.bloqueado);
         pintarFicha();
       } catch (e) {
         ficha.className = "rst-ficha mal";
@@ -116,6 +125,11 @@ export default {
       let estado, clase;
       if (o.bloqueado) { estado = `Ya restituido (${o.restitucion} · ${o.motivo_bloqueo}). No se puede restituir de nuevo.`; clase = "mal"; }
       else if (o.id_propuesta) { estado = `En propuesta ${o.id_propuesta} · ${o.estatus_propuesta} · ${o.usuario_propuesta}`; clase = "bien"; }
+      else if (o.venta?.historico) {
+        estado = `Vendido en ${o.venta.folio} (venta anterior a la página)` + (o.en_base === false ? "; ya no viene en la base del mes" : "") +
+          ". Se creará una propuesta de restitución." + (o.sinCapital ? " Captura el capital original para buscar reemplazo." : "");
+        clase = "bien";
+      }
       else if (!o.disponible_en_base) { estado = `Vendido antes de la página (Estatus en base: ${o.estatus_base}). Se creará una propuesta de restitución.`; clase = "bien"; }
       else { estado = "Está Disponible y no está en ninguna propuesta: no requiere restitución."; clase = "mal"; }
       ficha.className = `rst-ficha ${clase}`;
@@ -123,10 +137,74 @@ export default {
         h("div", { class: "rst-titulo" }, h("b", {}, `${o.tipo === "Grupal" ? "Grupo" : "Crédito JyP"} ${o.clave}`),
           o.buscado.toUpperCase() !== o.clave.toUpperCase() ? h("small", {}, ` (buscaste ${o.buscado})`) : null),
         h("div", { class: "rst-datos" },
-          dato("Capital", dinero(o.capital)), dato("Créditos", numero(o.integrantes)), dato("Mora", dias(o.dias)),
+          dato("Capital", o.capital > 0 ? dinero(o.capital) : "—"), dato("Créditos", o.integrantes == null ? "—" : numero(o.integrantes)),
+          dato("Mora", o.dias == null ? "—" : dias(o.dias)),
           dato("Estado", o.estados || "—"), dato("Municipio", o.municipios || "—")),
-        h("div", { class: "rst-estado" }, estado));
+        h("div", { class: "rst-estado" }, estado),
+        bloqueVenta(o),
+        bloqueDetalle(o));
     }
+
+    // Saldos y datos del crédito / integrantes tal como venían en el archivo de la venta histórica
+    function bloqueDetalle(o) {
+      const d = o.detalle_historico;
+      if (!d || !d.filas?.length) return null;
+      const din = (v) => (v == null ? "—" : dinero(v));
+      const cols = [["vreference", "vReference"], ["nombre", "Nombre"], ["capital", "Capital", din], ["saldo_total", "Saldo total", din],
+        ["saldo_vencido", "Saldo vencido", din], ["dias", "Mora", (v) => (v == null ? "—" : dias(v))], ["monto", "Monto otorgado", din],
+        ["apertura", "Apertura"], ["ult_pago", "Últ. pago"], ["frecuencia", "Frecuencia"], ["plazo", "Plazo"],
+        ["estatus_cred", "Estatus"], ["municipio", "Municipio"], ["colonia", "Colonia"]];
+      const usadas = cols.filter(([k]) => d.filas.some((f) => f[k] != null && f[k] !== ""));
+      return h("div", { class: "rst-venta rst-detalle" },
+        h("div", { class: "rst-venta-tit" }, "📋 Así venía en la venta ", h("b", {}, d.folio),
+          d.grupo ? h("small", {}, ` · grupo ${d.grupo}`) : null),
+        h("div", { class: "rst-datos" },
+          dato(o.tipo === "Grupal" ? "Integrantes" : "Créditos", numero(d.creditos)),
+          dato("Capital", din(d.capital)), dato("Saldo total", din(d.saldo_total)),
+          d.saldo_vencido != null ? dato("Saldo vencido", din(d.saldo_vencido)) : null,
+          d.saldo_grupal != null ? dato("Saldo grupal", din(d.saldo_grupal)) : null,
+          d.monto != null ? dato("Monto otorgado", din(d.monto)) : null,
+          dato("Mora prom.", d.dias == null ? "—" : dias(d.dias)),
+          dato("Estado", d.estados || "—"), dato("Municipio", d.municipios || "—")),
+        h("div", { class: "rst-det-tabla" }, h("table", { class: "tabla-simple" },
+          h("thead", {}, h("tr", {}, ...usadas.map(([, t]) => h("th", {}, t)))),
+          h("tbody", {}, ...d.filas.map((f) => h("tr", {}, ...usadas.map(([k, , fmt]) =>
+            h("td", { class: fmt ? "num" : "" }, fmt ? fmt(f[k]) : (f[k] ?? "—")))))))));
+    }
+
+    // Venta a la que pertenece el crédito / grupo
+    function bloqueVenta(o) {
+      const v = o.venta;
+      if (!v) {
+        return o.vendido && !o.disponible_en_base
+          ? h("div", { class: "rst-venta nota" }, "Venta anterior a la página: no hay liga crédito → venta en el sistema.")
+          : null;
+      }
+      const titulo = h("div", { class: "rst-venta-tit" }, "🧾 Venta a la que pertenece: ",
+        h("b", {}, v.folio || v.id_propuesta), v.folio && v.id_propuesta && v.folio !== v.id_propuesta ? h("small", {}, ` · ${v.id_propuesta}`) : null);
+      if (v.restringida) {
+        return h("div", { class: "rst-venta" }, titulo,
+          h("div", { class: "rst-datos" }, dato("Comprador", v.comprador || "—"), dato("Vendedor", v.vendedor || "—")),
+          notaHistorico(v),
+          h("div", { class: "nota" }, "La venta es de otro responsable; el detalle sólo lo ven su vendedor, admin y validador."));
+      }
+      return h("div", { class: "rst-venta" }, titulo,
+        h("div", { class: "rst-datos" },
+          dato("Comprador", v.comprador || "—"), dato("Vendedor", v.vendedor || "—"), dato("Tipo", v.tipo || "—"),
+          dato("Estatus", v.estatus_venta || v.estatus_propuesta || "—"),
+          dato("Fecha venta", v.fecha_venta ? fecha(v.fecha_venta) : "—"),
+          dato("Fecha propuesta", v.fecha_propuesta ? fecha(v.fecha_propuesta) : "—"),
+          dato("Capital venta", v.capital != null ? dinero(v.capital) : "—"),
+          dato("Monto venta", v.monto_venta != null ? dinero(v.monto_venta) : "—"),
+          dato("Precio", v.centavos != null ? `${Math.round(v.centavos * 100)}¢` : "—"),
+          dato("Partidas", v.partidas != null ? numero(v.partidas) : "—"),
+          v.estatus_control_doc ? dato("Control doc.", v.estatus_control_doc) : null,
+          v.numero_guia ? dato("Guía", v.numero_guia) : null),
+        notaHistorico(v));
+    }
+    const notaHistorico = (v) => (v.historico || v.otras_ventas?.length) ? h("div", { class: "nota" },
+      v.historico ? `Histórico: tomado de ${v.archivo || "los archivos de la venta"} en SharePoint.` : "",
+      v.otras_ventas?.length ? ` También aparece en: ${v.otras_ventas.join(", ")}.` : "") : null;
     const dato = (t, v) => h("div", {}, h("span", {}, t), h("b", {}, v));
 
     async function buscar() {
@@ -157,12 +235,14 @@ export default {
       if (!ok) return;
       try {
         const r = await ctx.rpc("aplicar_restitucion", { p_original: original.clave, p_reemplazo: c.clave,
-          p_motivo: selMotivo.value, p_comentario: inComentario.value.trim() });
+          p_motivo: selMotivo.value, p_comentario: inComentario.value.trim(),
+          p_capital_original: original.sinCapital ? original.capital : null });
         await avisar(`Restitución ${r.id_restitucion}`,
           `${r.original} → ${r.reemplazo}\nDiferencia: ${dinero(r.diferencia)}\nPropuesta: ${r.id_propuesta}` +
           (r.propuesta_nueva ? " (nueva, APROBADA)" : "") +
           "\n\nSe avisó al validador y al auxiliar de venta para generar la sub base.");
         inTexto.value = ""; inComentario.value = ""; selMotivo.value = ""; original = null;
+        cajaCapital.hidden = true; inCapital.value = "";
         ficha.className = "rst-ficha vacia"; ficha.textContent = "Escribe la vReference o el grupo y da clic en Validar.";
         tCand.setFilas([]); lblCand.textContent = ""; actualizarBoton();
         ctx.refrescarAvisos(); cargarHistorial();

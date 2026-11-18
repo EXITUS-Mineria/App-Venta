@@ -11,3 +11,12 @@
 .rst-estado { margin-top: 8px; font-weight: 600; }
 @media (max-width: 900px) { .rst { grid-template-columns: 1fr; } }
 .rst-der .tabla td { max-width: 170px; }
+.rst-venta { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--borde); color: var(--tinta); font-weight: 400; }
+.rst-venta-tit { margin-bottom: 6px; }
+.rst-venta-tit small { color: var(--texto-2); }
+.rst-venta .nota { margin-top: 6px; }
+.rst-det-tabla { margin-top: 8px; max-height: 260px; overflow: auto; border: 1px solid var(--borde); border-radius: 6px; background: var(--fondo); }
+.rst-det-tabla table { border-collapse: collapse; width: 100%; font-size: .78rem; }
+.rst-det-tabla th, .rst-det-tabla td { padding: 4px 6px; border-bottom: 1px solid var(--borde); white-space: nowrap; text-align: left; }
+.rst-det-tabla th { position: sticky; top: 0; background: var(--fondo); font-size: .68rem; text-transform: uppercase; color: var(--texto-2); }
+.rst-det-tabla td.num { text-align: right; font-variant-numeric: tabular-nums; }
