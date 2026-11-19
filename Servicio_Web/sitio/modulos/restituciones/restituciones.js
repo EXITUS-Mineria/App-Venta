@@ -73,23 +73,6 @@ export default {
     tCand.el.style.maxHeight = "calc(100vh - 470px)";
     tCand.el.style.minHeight = "160px";
 
-    // ---- ventas duplicadas: un crédito o grupo en más de una venta (sólo administrador) ----
-    const verDuplicados = ctx.perfil.rol === "admin";
-    const lblDup = h("span", { class: "nota" });
-    const tDup = tabla([
-      { clave: "tipo", titulo: "Tipo" },
-      { clave: "clave", titulo: "Grupo / vReference" },
-      { clave: "n_ventas", titulo: "Ventas", num: true },
-      { clave: "ventas", titulo: "Vendido en", formato: (v, f) => h("span", { class: "rst-dup-ventas" },
-        ...(v || []).map((x) => h("button", {
-          class: "btn btn-secundario btn-chico", disabled: !x.visible,
-          title: [x.comprador, x.vendedor, x.estatus, x.fecha ? fecha(x.fecha) : ""].filter(Boolean).join(" · "),
-          onclick: () => restituirDuplicado(f, x.folio) }, x.folio))) },
-      { clave: "integrantes_repetidos", titulo: "Integrantes repetidos", num: true, formato: (v, f) => (f.tipo === "JyP" ? "—" : numero(v)) },
-      { clave: "restituido", titulo: "Restituido", formato: (v) => (v ? `🔒 ${v}` : h("span", { class: "rst-dup-pend" }, "Pendiente")) },
-    ], { idFila: (f) => f.tipo + f.clave, vacio: "✔ Ningún crédito o grupo aparece en más de una venta." });
-    tDup.el.style.maxHeight = "260px";
-
     // ---- historial ----
     const chkMias = h("input", { type: "checkbox", checked: ctx.perfil.rol === "vendedor", onchange: () => cargarHistorial() });
     const tHist = tabla([
@@ -135,14 +118,6 @@ export default {
           h("div", { class: "fila", style: { marginBottom: "8px" } },
             h("h3", { style: { margin: 0, flex: "0 0 auto" } }, "4 · Reemplazos sugeridos"), lblCand),
           tCand.el),
-        !verDuplicados ? null : h("div", { class: "tarjeta" },
-          h("div", { class: "fila", style: { marginBottom: "8px", justifyContent: "flex-start" } },
-            h("h3", { style: { margin: 0, flex: "0 0 auto" } }, "⚠ Ventas duplicadas"), lblDup,
-            h("span", { style: { flex: 1 } }),
-            h("button", { class: "btn btn-secundario btn-chico", style: { flex: "0 0 auto" }, onclick: () => cargarDuplicados() }, "⟳")),
-          h("p", { class: "nota", style: { margin: "0 0 8px" } },
-            "Cada venta debe llevar créditos y grupos distintos. Da clic en el folio de la venta donde se va a restituir."),
-          tDup.el),
         h("div", { class: "tarjeta" },
           h("div", { class: "fila", style: { marginBottom: "8px", justifyContent: "flex-start" } },
             h("h3", { style: { margin: 0, flex: "0 0 auto" } }, "🔁 Historial de restituciones"),
@@ -183,16 +158,7 @@ export default {
       const rest = partidas.filter((f) => f.restituido).length;
       lblPart.textContent = partidas.length ? `${numero(lista.length)} de ${numero(partidas.length)}${rest ? ` · ${rest} ya restituidas` : ""}` : "";
     }
-    async function cargarDuplicados() {
-      if (!verDuplicados) return;
-      try {
-        const filas = (await ctx.rpc("ventas_duplicadas")) || [];
-        tDup.setFilas(filas);
-        const pend = filas.filter((f) => !f.restituido).length;
-        lblDup.textContent = filas.length ? `${numero(filas.length)} repetidos · ${numero(pend)} pendientes` : "";
-        lblDup.className = pend ? "nota rst-dup-alerta" : "nota";
-      } catch (e) { toast(e.message, "mal"); }
-    }
+    // llegada desde el módulo «Ventas duplicadas» (sólo admin): elige la venta, el grupo y el motivo
     async function restituirDuplicado(f, folio) {
       if (folio) await elegirVenta(folio);
       if (!selVenta.value) inBuscaVenta.value = "";
@@ -350,7 +316,7 @@ export default {
         cajaCapital.hidden = true; inCapital.value = "";
         ficha.className = "rst-ficha vacia"; ficha.textContent = "Escribe la vReference o el grupo y da clic en Validar.";
         tCand.setFilas([]); lblCand.textContent = ""; actualizarBoton();
-        ctx.refrescarAvisos(); cargarHistorial(); cargarDuplicados(); if (selVenta.value) elegirVenta();
+        ctx.refrescarAvisos(); cargarHistorial(); if (selVenta.value) elegirVenta();
       } catch (e) { toast(e.message, "mal", 9000); }
     }
 
@@ -364,12 +330,12 @@ export default {
     }
 
     inBuscaVenta.focus();
-    await Promise.all([cargarHistorial(), cargarVentas(), cargarDuplicados()]);
+    await Promise.all([cargarHistorial(), cargarVentas()]);
     // llegada desde «Ventas duplicadas»: #/restituciones?venta=VTA-0205&clave=G199051
     const qs = new URLSearchParams((location.hash.split("?")[1]) || "");
     if (qs.get("clave")) {
       await restituirDuplicado({ clave: qs.get("clave"), restituido: null }, qs.get("venta") || "");
-      history.replaceState(null, "", "#/restituciones");
+      try { window.history.replaceState(null, "", "#/restituciones"); } catch { /* sin historial */ }
     }
   },
 };
