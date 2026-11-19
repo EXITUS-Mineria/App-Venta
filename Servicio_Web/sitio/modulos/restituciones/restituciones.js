@@ -73,7 +73,8 @@ export default {
     tCand.el.style.maxHeight = "calc(100vh - 470px)";
     tCand.el.style.minHeight = "160px";
 
-    // ---- ventas duplicadas: un crédito o grupo en más de una venta ----
+    // ---- ventas duplicadas: un crédito o grupo en más de una venta (sólo administrador) ----
+    const verDuplicados = ctx.perfil.rol === "admin";
     const lblDup = h("span", { class: "nota" });
     const tDup = tabla([
       { clave: "tipo", titulo: "Tipo" },
@@ -134,7 +135,7 @@ export default {
           h("div", { class: "fila", style: { marginBottom: "8px" } },
             h("h3", { style: { margin: 0, flex: "0 0 auto" } }, "4 · Reemplazos sugeridos"), lblCand),
           tCand.el),
-        h("div", { class: "tarjeta" },
+        !verDuplicados ? null : h("div", { class: "tarjeta" },
           h("div", { class: "fila", style: { marginBottom: "8px", justifyContent: "flex-start" } },
             h("h3", { style: { margin: 0, flex: "0 0 auto" } }, "⚠ Ventas duplicadas"), lblDup,
             h("span", { style: { flex: 1 } }),
@@ -183,6 +184,7 @@ export default {
       lblPart.textContent = partidas.length ? `${numero(lista.length)} de ${numero(partidas.length)}${rest ? ` · ${rest} ya restituidas` : ""}` : "";
     }
     async function cargarDuplicados() {
+      if (!verDuplicados) return;
       try {
         const filas = (await ctx.rpc("ventas_duplicadas")) || [];
         tDup.setFilas(filas);
