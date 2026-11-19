@@ -154,6 +154,57 @@ test("Revisión: lista pendientes, abre la primera y calcula el rango", async ()
   assert.equal(aprobar.disabled, false);
 });
 
+test("Revisión: avisa y marca las partidas que ya están vendidas en otra venta", async () => {
+  const props = [{ id_propuesta: "VTA-0310", fecha: "2026-01-01T10:00:00Z", usuario: "Ana", tipo_venta: "Grupal", capital: 1000, capital_objetivo: 1000, valor_venta: 260, centavos: 0.26, dias_mora: 12 }];
+  const ctx = await ctxMontaje({
+    filas: () => props,
+    rpc: (fn) => (fn === "partidas_propuesta" ? [
+      { tipo: "Grupal", clave: "G1", integrantes: 5, capital: 600 }, { tipo: "Grupal", clave: "G2", integrantes: 4, capital: 400 },
+    ] : fn === "propuesta_ya_vendidas" ? [{ tipo: "Grupal", clave: "G2", ventas: ["VTA-0205"], integrantes_repetidos: 4 }] : null),
+  });
+  const c = cont();
+  await (await import("../modulos/revision/revision.js")).default.montar(c, ctx);
+  await esperar(5);
+  const aviso = c.querySelector(".rev-aviso-dup");
+  assert.equal(aviso.hidden, false);
+  assert.ok(aviso.textContent.includes("1 partidas ya están vendidas"));
+  assert.ok(fila(c, "G2").textContent.includes("VTA-0205"));
+  [...aviso.querySelectorAll("button")].find((b) => b.textContent.includes("Marcarlas")).click();
+  assert.ok(c.textContent.includes("1 marcadas para quitar"));
+});
+
+// ---------- Ventas duplicadas ----------
+test("Ventas duplicadas: KPIs, filtro y justificar", async () => {
+  const llamadas = [];
+  const dups = [
+    { tipo: "Grupal", clave: "G199051", n_ventas: 3, integrantes_repetidos: 6, mismo_credito: true, revision: "Pendiente",
+      ventas: [{ folio: "VTA-0180", visible: true, comprador: "Lic A" }, { folio: "VTA-0205", visible: true }] },
+    { tipo: "JyP", clave: "1001469165-2", n_ventas: 2, mismo_credito: true, revision: "Restituido", restituido: "RST-0003",
+      ventas: [{ folio: "VTA-0027", visible: true }, { folio: "VTA-0056", visible: true }] },
+  ];
+  let irA = null;
+  const ctx = await ctxMontaje({
+    rpc: (fn, args) => { llamadas.push([fn, args]); return fn === "ventas_duplicadas" ? dups : null; },
+    tieneRol: () => true,
+  });
+  ctx.ui = { ...ctx.ui, pedirTexto: async () => "Otro ciclo del grupo" };
+  ctx.ir = (x) => { irA = x; };
+  const c = cont();
+  await (await import("../modulos/duplicados/duplicados.js")).default.montar(c, ctx);
+  const kpis = [...c.querySelectorAll(".kpi")].map((k) => k.textContent);
+  assert.ok(kpis.some((x) => x.includes("Repetidos") && x.includes("2")));
+  assert.ok(kpis.some((x) => x.includes("Restituidos") && x.includes("1")));
+  const sel = [...c.querySelectorAll("select")][0];
+  sel.value = "Pendiente"; sel.dispatchEvent(new window.Event("change"));
+  assert.ok(fila(c, "G199051")); assert.equal(fila(c, "1001469165-2"), undefined);
+  [...c.querySelectorAll("button")].find((b) => b.textContent.startsWith("VTA-0205")).click();
+  assert.equal(irA, "restituciones?venta=VTA-0205&clave=G199051");
+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Justificar")).click();
+  await esperar(5);
+  assert.deepEqual(llamadas.find(([f]) => f === "duplicado_marcar")[1],
+    { p_tipo: "Grupal", p_clave: "G199051", p_estatus: "Justificado", p_comentario: "Otro ciclo del grupo" });
+});
+
 // ---------- Sub bases ----------
 test("Sub bases: KPIs de pendientes y en venta", async () => {
   const props = [

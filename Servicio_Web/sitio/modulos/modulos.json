@@ -37,6 +37,11 @@
       "activo": true
     },
     {
+      "id": "duplicados",
+      "archivo": "duplicados/duplicados.js",
+      "activo": true
+    },
+    {
       "id": "revision",
       "archivo": "revision/revision.js",
       "activo": true

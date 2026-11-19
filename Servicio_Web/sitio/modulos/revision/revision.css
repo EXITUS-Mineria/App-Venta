@@ -4,3 +4,6 @@
 .rev-det { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .rev-det .tabla-caja { max-height: calc(100vh - 400px); min-height: 200px; }
 @media (max-width: 900px) { .rev { grid-template-columns: 1fr; } }
+.rev-aviso-dup { margin: 0 0 8px; padding: 8px 12px; border-radius: 8px; background: var(--rojo-suave, #FBE9EA); color: var(--rojo); font-size: .85rem; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rev-dup { color: var(--rojo); font-weight: 700; white-space: nowrap; }
+tr.rev-fila-dup td { background: var(--rojo-suave, #FBE9EA); }

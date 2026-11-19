@@ -192,7 +192,7 @@ export default {
       } catch (e) { toast(e.message, "mal"); }
     }
     async function restituirDuplicado(f, folio) {
-      await elegirVenta(folio);
+      if (folio) await elegirVenta(folio);
       if (!selVenta.value) inBuscaVenta.value = "";
       if (!f.restituido) selMotivo.value = "Venta duplicada";
       inTexto.value = f.clave; validar();
@@ -363,5 +363,11 @@ export default {
 
     inBuscaVenta.focus();
     await Promise.all([cargarHistorial(), cargarVentas(), cargarDuplicados()]);
+    // llegada desde «Ventas duplicadas»: #/restituciones?venta=VTA-0205&clave=G199051
+    const qs = new URLSearchParams((location.hash.split("?")[1]) || "");
+    if (qs.get("clave")) {
+      await restituirDuplicado({ clave: qs.get("clave"), restituido: null }, qs.get("venta") || "");
+      history.replaceState(null, "", "#/restituciones");
+    }
   },
 };
