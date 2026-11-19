@@ -19,6 +19,7 @@ export default {
     let propuestas = [];
     let actual = null;
     const quitar = new Set();
+    let yaVendidas = new Map();   // "tipo|clave" -> folios donde ya se vendió
 
     // ---- lista de pendientes ----
     const lblPend = h("span", { class: "nota" });
@@ -34,6 +35,9 @@ export default {
     tLista.el.addEventListener("click", (e) => {
       const p = tLista.filaDe(e.target.closest("tbody tr")); if (p) abrir(p);
     });
+
+    // ---- aviso: partidas que ya están en otra venta ----
+    const avisoDup = h("div", { class: "rev-aviso-dup", hidden: true });
 
     // ---- detalle ----
     const titulo = h("h3", { style: { margin: 0 } }, "Selecciona una propuesta");
@@ -59,7 +63,12 @@ export default {
       { clave: "colonias", titulo: "Colonia" },
       { clave: "dias", titulo: "Mora", num: true, formato: (v) => dias(v) },
       { clave: "capital", titulo: "Capital", num: true, formato: (v) => dinero(v) },
+      { clave: "ya_vendida", titulo: "Ya vendida en", formato: (_, f) => {
+        const v = yaVendidas.get(`${f.tipo}|${f.clave}`);
+        return v ? h("span", { class: "rev-dup" }, `⚠ ${v.join(", ")}`) : "";
+      } },
     ], { seleccion: quitar, idFila: (f) => `${f.tipo}|${f.clave}`, alCambiar: () => pintarQuitar(),
+         claseFila: (f) => (yaVendidas.has(`${f.tipo}|${f.clave}`) ? "rev-fila-dup" : ""),
          vacio: "Sin partidas" });
 
     cont.append(h("div", { class: "rev" },
@@ -77,6 +86,7 @@ export default {
         h("div", { class: "tarjeta" },
           h("div", { class: "fila", style: { marginBottom: "6px" } },
             h("b", { style: { flex: "0 0 auto" } }, "Partidas"), lblQuitar),
+          avisoDup,
           h("p", { class: "nota", style: { margin: "0 0 6px" } },
             "Marca las partidas que NO deben venderse y da clic en Quitar marcadas: regresan a Disponible."),
           tDet.el))));
@@ -96,7 +106,7 @@ export default {
     }
 
     function limpiar() {
-      actual = null; quitar.clear(); tDet.setFilas([]);
+      actual = null; quitar.clear(); tDet.setFilas([]); avisoDup.hidden = true;
       titulo.textContent = "Selecciona una propuesta"; sub.textContent = "";
       [kCap, kRango, kVenta, kPart, kMora].forEach((k) => k.set("—"));
       [btnQuitar, btnRechazar, btnAprobar, btnCuentas].forEach((b) => (b.disabled = true));
@@ -114,7 +124,20 @@ export default {
       try { partidas = await ctx.rpc("partidas_propuesta", { p_id: p.id_propuesta }); }
       catch (e) { toast(e.message, "mal"); return; }
       partidas = partidas.map((f) => ({ ...f, capital: Number(f.capital), dias: f.dias === null ? null : Number(f.dias), integrantes: Number(f.integrantes) }));
+      yaVendidas = new Map();
+      try {
+        for (const d of (await ctx.rpc("propuesta_ya_vendidas", { p_id: p.id_propuesta })) || []) yaVendidas.set(`${d.tipo}|${d.clave}`, d.ventas || []);
+      } catch { /* sin aviso si falla */ }
       tDet.setFilas(partidas);
+      if (yaVendidas.size) {
+        avisoDup.replaceChildren(h("b", {}, `⚠ ${yaVendidas.size} partidas ya están vendidas en otra venta. `),
+          "Cada venta debe llevar créditos y grupos distintos. ",
+          h("button", { class: "btn btn-secundario btn-chico", onclick: () => {
+            partidas.forEach((f) => { if (yaVendidas.has(`${f.tipo}|${f.clave}`)) quitar.add(`${f.tipo}|${f.clave}`); });
+            tDet.redibujar(); pintarQuitar();
+          } }, "Marcarlas para quitar"));
+        avisoDup.hidden = false;
+      } else avisoDup.hidden = true;
 
       const cap = Number(p.capital), obj = Number(p.capital_objetivo);
       const min = Math.max(0, obj - 1000), max = obj + 2000, enRango = cap >= min && cap <= max;

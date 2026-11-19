@@ -1,0 +1,10 @@
+/* Revisión de ventas duplicadas */
+.dup { display: flex; flex-direction: column; gap: 12px; }
+.dup-ventas { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.dup-acc { display: inline-flex; gap: 4px; white-space: nowrap; }
+.dup-est { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .74rem; font-weight: 700; white-space: nowrap; }
+.dup-pendiente { background: var(--rojo-suave, #FBE9EA); color: var(--rojo); }
+.dup-en-revisión { background: #FFF6DD; color: #7A5A00; }
+.dup-justificado { background: var(--fondo); color: var(--texto-2); border: 1px solid var(--borde); }
+.dup-restituido { background: #E8F5E9; color: var(--bien); }
+tr.dup-fila-pend td:first-child { box-shadow: inset 3px 0 0 var(--rojo); }
