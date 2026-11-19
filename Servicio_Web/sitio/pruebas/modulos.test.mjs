@@ -340,6 +340,62 @@ test("Restituciones: valida un crédito y lista el historial", async () => {
   assert.equal(buscar.disabled, false);
 });
 
+test("Restituciones: elige venta y luego el grupo de la lista", async () => {
+  const llamadas = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, args) => {
+      llamadas.push([fn, args]);
+      if (fn === "restitucion_ventas") return [
+        { folio: "VTA-0100", comprador: "Lic. X", vendedor: "Sandibel", partidas: 2, origen: "histórico" },
+        { folio: "VTA-0301", comprador: "Jonathan", vendedor: "Victor", partidas: 31, origen: "página" }];
+      if (fn === "restitucion_partidas") return [
+        { tipo: "Grupal", clave: "G100", nombre: "LAS ROSAS", integrantes: 5, capital: 20000, saldo_total: 25000, dias: 300 },
+        { tipo: "Grupal", clave: "G200", nombre: "EL SOL", integrantes: 4, capital: 9000, saldo_total: 9500, dias: 200, restituido: "RST-0001" }];
+      if (fn === "validar_restitucion") return { tipo: "Grupal", clave: args.p_texto, buscado: args.p_texto, capital: 20000, integrantes: 5,
+        vendido: true, bloqueado: false, disponible_en_base: false, venta: { folio: "VTA-0100", historico: true, restringida: false } };
+      return null;
+    },
+    filas: () => [],
+  });
+  const c = cont();
+  await (await import("../modulos/restituciones/restituciones.js")).default.montar(c, ctx);
+  const busca = [...c.querySelectorAll("input")].find((i) => i.placeholder.includes("Folio, comprador"));
+  busca.value = "sandibel"; busca.dispatchEvent(new window.Event("input"));
+  await esperar(5);
+  assert.deepEqual(llamadas.find(([f]) => f === "restitucion_partidas")[1], { p_folio: "VTA-0100" });
+  const botones = [...c.querySelectorAll("button")].filter((b) => b.textContent === "Elegir");
+  assert.equal(botones.length, 1, "el grupo ya restituido no se puede elegir");
+  botones[0].click(); await esperar(5);
+  assert.deepEqual(llamadas.find(([f]) => f === "validar_restitucion")[1], { p_texto: "G100" });
+  assert.ok(c.querySelector(".rst-ficha").textContent.includes("G100"));
+});
+
+test("Restituciones: panel de ventas duplicadas lleva a la venta y al grupo", async () => {
+  const llamadas = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, args) => {
+      llamadas.push([fn, args]);
+      if (fn === "ventas_duplicadas") return [{ tipo: "Grupal", clave: "G199051", n_ventas: 2, integrantes_repetidos: 6, mismo_credito: true,
+        ventas: [{ folio: "VTA-0180", visible: true, comprador: "A" }, { folio: "VTA-0205", visible: true, comprador: "B" }], restituido: null }];
+      if (fn === "restitucion_ventas") return [{ folio: "VTA-0180", partidas: 12 }, { folio: "VTA-0205", partidas: 3 }];
+      if (fn === "restitucion_partidas") return [{ tipo: "Grupal", clave: "G199051", integrantes: 6, capital: 17879 }];
+      if (fn === "validar_restitucion") return { tipo: "Grupal", clave: "G199051", buscado: "G199051", capital: 17879, vendido: true, bloqueado: false,
+        venta: { folio: "VTA-0180", historico: true, otras_ventas: ["VTA-0205"], restringida: false } };
+      return null;
+    },
+    filas: () => [],
+  });
+  const c = cont();
+  await (await import("../modulos/restituciones/restituciones.js")).default.montar(c, ctx);
+  await esperar(5);
+  assert.ok(c.textContent.includes("1 repetidos · 1 pendientes"));
+  [...c.querySelectorAll("button")].find((b) => b.textContent === "VTA-0205").click();
+  await esperar(10);
+  assert.deepEqual(llamadas.find(([f]) => f === "restitucion_partidas")[1], { p_folio: "VTA-0205" });
+  assert.deepEqual(llamadas.find(([f]) => f === "validar_restitucion")[1], { p_texto: "G199051" });
+  assert.equal([...c.querySelectorAll("select")].find((x) => [...x.options].some((o) => o.value === "Venta duplicada")).value, "Venta duplicada");
+});
+
 test("Restituciones: crédito de una venta histórica", async () => {
   const ctx = await ctxMontaje({
     rpc: (fn) => (fn === "validar_restitucion" ? {
