@@ -20,3 +20,6 @@
 .rst-det-tabla th, .rst-det-tabla td { padding: 4px 6px; border-bottom: 1px solid var(--borde); white-space: nowrap; text-align: left; }
 .rst-det-tabla th { position: sticky; top: 0; background: var(--fondo); font-size: .68rem; text-transform: uppercase; color: var(--texto-2); }
 .rst-det-tabla td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.rst-dup-ventas { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.rst-dup-pend { color: var(--rojo); font-weight: 700; }
+.rst-dup-alerta { color: var(--rojo); font-weight: 700; }
