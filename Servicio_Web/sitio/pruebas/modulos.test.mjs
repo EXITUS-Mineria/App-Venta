@@ -432,31 +432,30 @@ test("Restituciones: elige venta y luego el grupo de la lista", async () => {
   assert.ok(c.querySelector(".rst-ficha").textContent.includes("G100"));
 });
 
-test("Restituciones: panel de ventas duplicadas lleva a la venta y al grupo", async () => {
+test("Restituciones: llega desde Ventas duplicadas con la venta y el grupo", async () => {
   const llamadas = [];
+  location.hash = "#/restituciones?venta=VTA-0205&clave=G199051";
   const ctx = await ctxMontaje({
     perfil: { rol: "admin" },
     rpc: (fn, args) => {
       llamadas.push([fn, args]);
-      if (fn === "ventas_duplicadas") return [{ tipo: "Grupal", clave: "G199051", n_ventas: 2, integrantes_repetidos: 6, mismo_credito: true,
-        ventas: [{ folio: "VTA-0180", visible: true, comprador: "A" }, { folio: "VTA-0205", visible: true, comprador: "B" }], restituido: null }];
       if (fn === "restitucion_ventas") return [{ folio: "VTA-0180", partidas: 12 }, { folio: "VTA-0205", partidas: 3 }];
       if (fn === "restitucion_partidas") return [{ tipo: "Grupal", clave: "G199051", integrantes: 6, capital: 17879 }];
       if (fn === "validar_restitucion") return { tipo: "Grupal", clave: "G199051", buscado: "G199051", capital: 17879, vendido: true, bloqueado: false,
-        venta: { folio: "VTA-0180", historico: true, otras_ventas: ["VTA-0205"], restringida: false } };
+        venta: { folio: "VTA-0180", historico: true, restringida: false } };
       return null;
     },
     filas: () => [],
   });
   const c = cont();
   await (await import("../modulos/restituciones/restituciones.js")).default.montar(c, ctx);
-  await esperar(5);
-  assert.ok(c.textContent.includes("1 repetidos · 1 pendientes"));
-  [...c.querySelectorAll("button")].find((b) => b.textContent === "VTA-0205").click();
   await esperar(10);
+  assert.ok(!c.textContent.includes("⚠ Ventas duplicadas"), "ya no hay panel de duplicados");
+  assert.ok(!llamadas.some(([f]) => f === "ventas_duplicadas"));
   assert.deepEqual(llamadas.find(([f]) => f === "restitucion_partidas")[1], { p_folio: "VTA-0205" });
   assert.deepEqual(llamadas.find(([f]) => f === "validar_restitucion")[1], { p_texto: "G199051" });
   assert.equal([...c.querySelectorAll("select")].find((x) => [...x.options].some((o) => o.value === "Venta duplicada")).value, "Venta duplicada");
+  location.hash = "";
 });
 
 test("Restituciones: crédito de una venta histórica", async () => {
