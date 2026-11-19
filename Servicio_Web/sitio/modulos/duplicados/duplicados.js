@@ -3,7 +3,7 @@
 // Cada venta debe llevar créditos y grupos distintos. Aquí se ven los créditos JyP y grupos que aparecen
 // en más de una venta (archivos históricos + propuestas de la página) y se les da seguimiento:
 // Pendiente → En revisión → Justificado (con comentario) o Restituido (desde Restituciones).
-// El vendedor sólo ve los duplicados de sus ventas y no cambia estatus.
+// Sólo lo ve el ADMINISTRADOR (ni el validador ni otros perfiles).
 // ============================================================
 const ESTATUS = ["Pendiente", "En revisión", "Justificado", "Restituido"];
 
@@ -11,12 +11,13 @@ export default {
   id: "duplicados",
   titulo: "Ventas duplicadas",
   icono: "⚠️",
-  roles: ["vendedor", "validador", "auxiliar", "control_doc", "admin"],
+  roles: ["admin"],
+  rolesExactos: true,
 
   async montar(cont, ctx) {
     const { h, tabla, kpi, numero, fecha, toast, pedirTexto, descargarCSV, cargarCSS } = ctx.ui;
     cargarCSS(new URL("./duplicados.css", import.meta.url).href);
-    const puedeMarcar = ctx.tieneRol("auxiliar");
+    const puedeMarcar = ctx.perfil.rol === "admin";
     let filas = [];
 
     const kTot = kpi("Repetidos"), kPend = kpi("Pendientes"), kRev = kpi("En revisión"), kJus = kpi("Justificados"), kRes = kpi("Restituidos");

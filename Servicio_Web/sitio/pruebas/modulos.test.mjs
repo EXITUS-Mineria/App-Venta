@@ -185,7 +185,7 @@ test("Ventas duplicadas: KPIs, filtro y justificar", async () => {
   let irA = null;
   const ctx = await ctxMontaje({
     rpc: (fn, args) => { llamadas.push([fn, args]); return fn === "ventas_duplicadas" ? dups : null; },
-    tieneRol: () => true,
+    tieneRol: () => true, perfil: { rol: "admin" },
   });
   ctx.ui = { ...ctx.ui, pedirTexto: async () => "Otro ciclo del grupo" };
   ctx.ir = (x) => { irA = x; };
@@ -203,6 +203,17 @@ test("Ventas duplicadas: KPIs, filtro y justificar", async () => {
   await esperar(5);
   assert.deepEqual(llamadas.find(([f]) => f === "duplicado_marcar")[1],
     { p_tipo: "Grupal", p_clave: "G199051", p_estatus: "Justificado", p_comentario: "Otro ciclo del grupo" });
+});
+
+test("Ventas duplicadas: sólo el administrador; el validador no ve el panel en Restituciones", async () => {
+  const mod = (await import("../modulos/duplicados/duplicados.js")).default;
+  assert.deepEqual(mod.roles, ["admin"]); assert.equal(mod.rolesExactos, true);
+  const llamadas = [];
+  const ctx = await ctxMontaje({ perfil: { rol: "validador" }, rpc: (fn) => { llamadas.push(fn); return null; }, filas: () => [] });
+  const c = cont();
+  await (await import("../modulos/restituciones/restituciones.js")).default.montar(c, ctx);
+  assert.ok(!c.textContent.includes("Ventas duplicadas"));
+  assert.ok(!llamadas.includes("ventas_duplicadas"));
 });
 
 // ---------- Sub bases ----------
@@ -424,6 +435,7 @@ test("Restituciones: elige venta y luego el grupo de la lista", async () => {
 test("Restituciones: panel de ventas duplicadas lleva a la venta y al grupo", async () => {
   const llamadas = [];
   const ctx = await ctxMontaje({
+    perfil: { rol: "admin" },
     rpc: (fn, args) => {
       llamadas.push([fn, args]);
       if (fn === "ventas_duplicadas") return [{ tipo: "Grupal", clave: "G199051", n_ventas: 2, integrantes_repetidos: 6, mismo_credito: true,
