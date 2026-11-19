@@ -1,661 +1,1137 @@
-diff --git a/Servicio_Web/sitio/modulos/dashboard/dashboard.css b/Servicio_Web/sitio/modulos/dashboard/dashboard.css
-new file mode 100644
-index 0000000..e31e706
---- /dev/null
-+++ b/Servicio_Web/sitio/modulos/dashboard/dashboard.css
-@@ -0,0 +1,113 @@
-+/* Dashboard de Venta de Cartera — tema ejecutivo (rojo / carbón) con los tokens del núcleo */
-+.dsh { max-width: 1280px; margin: 0 auto; padding-bottom: 24px; color: var(--tinta); }
-+.dsh-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--blanco); border-radius: 12px;
-+  border-bottom: 3px solid var(--rojo); box-shadow: 0 1px 3px rgba(31,36,48,.08); padding: 12px 18px; margin-bottom: 12px; }
-+.dsh-cab h1 { margin: 0; font-size: 1.45rem; font-weight: 600; }
-+.dsh-cab p { margin: 3px 0 0; font-size: .82rem; color: var(--texto-2); }
-+.dsh-cab p b { color: var(--rojo); }
-+.dsh-upd { background: var(--tinta); color: #fff; border-radius: 8px; padding: 6px 14px; text-align: center; min-width: 170px; }
-+.dsh-upd small { display: block; font-size: .65rem; font-weight: 600; letter-spacing: 1px; color: #FF9EA1; }
-+.dsh-upd b { font-size: .8rem; font-weight: 600; }
-+
-+.dsh-filtros { display: grid; grid-template-columns: repeat(6, minmax(110px, 1fr)) auto; gap: 8px; margin-bottom: 10px; }
-+.dsh-filtro { background: var(--blanco); border: 1px solid var(--borde); border-radius: 9px; padding: 4px 10px; }
-+.dsh-filtro label { display: block; font-size: .65rem; font-weight: 700; letter-spacing: .6px; color: var(--texto-2); }
-+.dsh-filtro select { border: 0; padding: 2px 0; width: 100%; background: transparent; }
-+.dsh-acc { display: flex; gap: 6px; align-items: center; }
-+
-+.dsh-sec { display: flex; align-items: baseline; gap: 10px; margin: 22px 2px 10px; padding-bottom: 6px; border-bottom: 2px solid var(--borde); }
-+.dsh-sec h2 { margin: 0; font-size: 1.1rem; font-weight: 600; }
-+.dsh-num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%;
-+  background: var(--rojo); color: #fff; font-size: .78rem; font-weight: 700; }
-+
-+.dsh-kpis { display: grid; grid-template-columns: 1.5fr repeat(4, 1fr); gap: 12px; }
-+.dsh-kpi { background: var(--blanco); border-radius: 12px; box-shadow: 0 1px 3px rgba(31,36,48,.08); padding: 16px 16px 14px; }
-+.dsh-kt { font-size: .7rem; font-weight: 700; letter-spacing: .6px; color: var(--texto-2); }
-+.dsh-kv { margin-top: 6px; font-size: 1.85rem; font-weight: 600; line-height: 1.1; }
-+.dsh-ks { margin-top: 6px; font-size: .78rem; color: var(--texto-2); }
-+.dsh-kpi.principal { background: var(--tinta); color: #fff; }
-+.dsh-kpi.principal .dsh-kt, .dsh-kpi.principal .dsh-ks, .dsh-kpi.principal .dsh-esp { color: #C9CDD4; }
-+.dsh-kpi.principal .dsh-kv { font-size: 2.4rem; }
-+.dsh-kfila { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
-+.dsh-kfila .dsh-ks { text-align: right; }
-+.dsh-esp { margin-top: 6px; font-size: .7rem; color: var(--texto-2); }
-+.verde { color: var(--bien) !important; } .ambar { color: var(--alerta) !important; } .rojo { color: var(--rojo) !important; }
-+.dsh-kpi.principal .verde { color: #7BD389 !important; } .dsh-kpi.principal .ambar { color: #FFD166 !important; } .dsh-kpi.principal .rojo { color: #FF8A8E !important; }
-+.dsh-lectura { margin-top: 12px; padding: 11px 16px; background: var(--blanco); border-radius: 12px; border-left: 5px solid var(--rojo);
-+  box-shadow: 0 1px 3px rgba(31,36,48,.08); font-size: .85rem; line-height: 1.55; }
-+.dsh-lectura b { color: var(--rojo); }
-+
-+.dsh-track { position: relative; height: 10px; margin-top: 10px; background: var(--linea); border-radius: 6px; }
-+.dsh-kpi.principal .dsh-track { background: rgba(255,255,255,.18); height: 12px; }
-+.dsh-track > span { display: block; height: 100%; border-radius: 6px; transition: width .4s; }
-+.dsh-track > i { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--tinta); border-radius: 2px; }
-+.dsh-kpi.principal .dsh-track > i { background: #fff; }
-+
-+.dsh-g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-+.dsh-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-+.dsh-card { background: var(--blanco); border-radius: 12px; box-shadow: 0 1px 3px rgba(31,36,48,.08); overflow: hidden; }
-+.dsh-ctit { padding: 11px 16px; border-bottom: 1px solid var(--linea); font-size: .9rem; font-weight: 600; }
-+.dsh-ctit small { display: block; font-size: .7rem; font-weight: 400; color: var(--texto-2); }
-+.dsh-cbody { padding: 6px 16px 14px; }
-+.dsh-prog { padding: 11px 0; border-bottom: 1px solid var(--fondo); }
-+.dsh-prog:last-child { border-bottom: 0; }
-+.dsh-ptop { display: flex; justify-content: space-between; align-items: baseline; }
-+.dsh-pnom { font-size: .9rem; font-weight: 600; }
-+.dsh-ppct { font-size: 1.1rem; font-weight: 700; }
-+.dsh-psub { display: flex; justify-content: space-between; margin-top: 5px; font-size: .7rem; color: var(--texto-2); }
-+
-+.dsh-tabla { overflow: auto; padding: 10px 12px 12px; }
-+.dsh-tabla.lim { max-height: 320px; }
-+.dsh-tabla.det { max-height: 460px; }
-+.dsh-tabla table { width: 100%; border-collapse: collapse; font-size: .78rem; }
-+.dsh-tabla th { position: sticky; top: 0; z-index: 1; padding: 8px 9px; background: var(--tinta); color: #fff; font-weight: 600; text-align: center; white-space: nowrap; }
-+.dsh-tabla td { padding: 7px 9px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--linea); }
-+.dsh-tabla td:first-child { text-align: left; font-weight: 600; }
-+.dsh-tabla td.izq { text-align: left; font-weight: 400; }
-+.dsh-tabla td.centro { text-align: center; }
-+.dsh-tabla td.vacio { text-align: center; color: var(--texto-2); font-weight: 400; padding: 18px; }
-+.dsh-tabla td.tenue { color: var(--texto-2); }
-+.dsh-tabla tfoot td { position: sticky; bottom: 0; background: var(--fondo); border-top: 2px solid var(--tinta); font-weight: 700; }
-+.dsh-tabla tr.mes-actual td { background: var(--rojo-suave); font-weight: 700; }
-+.dsh-candado { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .7rem; font-weight: 700; }
-+.dsh-candado.abierto { background: var(--ok-bg); color: var(--bien); }
-+.dsh-candado.cerrado { background: var(--rojo-suave); color: var(--rojo); }
-+.dsh-pill { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: .7rem; font-weight: 600; background: var(--neutro-bg); color: var(--texto-2); }
-+.dsh-pill.vendido { background: var(--ok-bg); color: var(--bien); }
-+.dsh-pill.propuesta { background: var(--aviso-bg); color: var(--aviso-texto-2); }
-+
-+.dsh-mini-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 14px 16px 0; }
-+.dsh-mini { padding: 10px; background: var(--fondo); border-radius: 9px; text-align: center; }
-+.dsh-mt { font-size: .65rem; font-weight: 700; letter-spacing: .5px; color: var(--texto-2); }
-+.dsh-mv { margin-top: 3px; font-size: 1.25rem; font-weight: 600; }
-+.dsh-ms { margin-top: 2px; font-size: .7rem; color: var(--texto-2); }
-+.dsh-hgrid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; padding: 12px; }
-+.dsh-barras { position: relative; display: flex; align-items: flex-end; gap: 8px; height: 260px; padding: 22px 6px 22px; border-bottom: 1px solid var(--borde); }
-+.dsh-barra { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; }
-+.dsh-bcol { width: 100%; max-width: 46px; background: var(--pizarra); border-radius: 5px 5px 0 0; min-height: 1px; }
-+.dsh-bcol.actual { background: var(--rojo); }
-+.dsh-bval { font-size: .62rem; color: var(--texto-2); margin-bottom: 3px; white-space: nowrap; }
-+.dsh-blbl { position: absolute; bottom: -18px; font-size: .7rem; color: var(--texto-2); }
-+.dsh-prom { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--gris-suave); z-index: 1; pointer-events: none; margin-bottom: 22px; }
-+
-+.dsh-det { margin-top: 18px; }
-+.dsh-det > summary { cursor: pointer; list-style: none; padding: 11px 16px; background: var(--blanco); border-radius: 12px; font-weight: 600;
-+  box-shadow: 0 1px 3px rgba(31,36,48,.08); }
-+.dsh-det[open] > summary { border-radius: 12px 12px 0 0; }
-+.dsh-det .dsh-card { border-radius: 0 0 12px 12px; }
-+.dsh-detacc { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 12px 0; }
-+.dsh-buscar { max-width: 280px; }
-+
-+.dsh-metas { background: var(--blanco); border: 1px solid var(--borde); border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; }
-+.dsh-metas h3 { margin: 0 0 4px; }
-+.dsh-metas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 6px 16px; margin: 8px 0; }
-+.dsh-meta { display: flex; align-items: center; gap: 8px; }
-+.dsh-meta > span { flex: 0 0 150px; font-size: .8rem; font-weight: 600; }
-+.dsh-meta .campo { flex: 1; min-width: 0; }
-+
-+@media (max-width: 1000px) {
-+  .dsh-filtros, .dsh-kpis, .dsh-mini-grid { grid-template-columns: repeat(2, 1fr); }
-+  .dsh-g2, .dsh-g3, .dsh-hgrid { grid-template-columns: 1fr; }
-+  .dsh-cab { flex-direction: column; text-align: center; }
-+}
-+@media print { .dsh-filtros, .dsh-metas, .btn, .dsh-buscar { display: none !important; } .dsh-tabla.det, .dsh-tabla.lim { max-height: none; } }
-diff --git a/Servicio_Web/sitio/modulos/dashboard/dashboard.js b/Servicio_Web/sitio/modulos/dashboard/dashboard.js
-new file mode 100644
-index 0000000..677d052
---- /dev/null
-+++ b/Servicio_Web/sitio/modulos/dashboard/dashboard.js
-@@ -0,0 +1,319 @@
-+// ============================================================
-+// MÓDULO: Dashboard de Venta de Cartera (en vivo desde el Funnel en Supabase)
-+// Réplica del Dashboard_Venta_Cartera.html: 1) Resultado del mes  2) Avance por zona, vendedor y tipo
-+// 3) Candados para comisión  4) Comparativa mensual  + detalle con búsqueda y CSV.
-+// Reglas: metas y candados = Estatus Venta Vendida/Vendido; comparativa = sólo Vendida;
-+// propuestas = Estatus que empieza con "Propuest". Avance esperado por días hábiles (L-V).
-+// El VENDEDOR sólo ve sus ventas (dashboard_datos usa funnel_puede_ver) y su propia meta.
-+// Metas en la tabla dashboard_metas; las edita validador/admin desde «⚙ Metas».
-+// ============================================================
-+const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-+const ZONAS = ["Centro", "Norte", "Sur"];
-+
-+export const norm = (t) => String(t ?? "").normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
-+const div = (a, b) => (b ? a / b : 0);
-+const pct = (v, signo = false) => `${signo && v > 0 ? "+" : ""}${Number(v || 0).toFixed(1)}%`;
-+export const esVendido = (r) => ["vendida", "vendido"].includes(norm(r.estatus_venta));
-+export const esVendida = (r) => norm(r.estatus_venta) === "vendida";
-+export const esPropuesta = (r) => norm(r.estatus_venta).startsWith("propuest");
-+const nombreCorto = (n) => String(n || "").trim().split(/\s+/).slice(0, 2).join(" ");
-+const sumar = (regs) => regs.reduce((a, r) => a + Number(r.monto_venta || 0), 0);
-+
-+/** Días hábiles (lunes a viernes) del mes; si el mes ya pasó cuenta todos como transcurridos. */
-+export function diasHabiles(anio, mes, hoy = new Date()) {
-+  const ultimo = new Date(anio, mes, 0).getDate();
-+  const esActual = hoy.getFullYear() === anio && hoy.getMonth() + 1 === mes;
-+  const pasado = anio < hoy.getFullYear() || (anio === hoy.getFullYear() && mes < hoy.getMonth() + 1);
-+  let total = 0, transcurridos = 0;
-+  for (let d = 1; d <= ultimo; d++) {
-+    const ds = new Date(anio, mes - 1, d).getDay();
-+    if (ds !== 0 && ds !== 6) { total++; if (pasado || (esActual && d <= hoy.getDate())) transcurridos++; }
-+  }
-+  return { total, transcurridos, restantes: Math.max(total - transcurridos, 0) };
-+}
-+
-+/** Metas de vendedor: claves «vendedor:<parte del nombre>». Devuelve la meta que aplica a un nombre. */
-+export function metaDeVendedor(metas, nombre) {
-+  const n = norm(nombre);
-+  for (const [k, v] of Object.entries(metas)) {
-+    if (k.startsWith("vendedor:") && n.includes(norm(k.slice(9)))) return { clave: k.slice(9), meta: v, principal: true };
-+  }
-+  return { clave: null, meta: metas.complementario ?? 50000, principal: false };
-+}
-+
-+export default {
-+  id: "dashboard",
-+  titulo: "Dashboard",
-+  icono: "📊",
-+  roles: ["vendedor", "validador", "auxiliar", "control_doc", "admin"],
-+
-+  async montar(cont, ctx) {
-+    const { h, dinero, numero, toast, descargarCSV, cargarCSS } = ctx.ui;
-+    cargarCSS(new URL("./dashboard.css", import.meta.url).href);
-+    const mdp = (v) => { const n = Number(v || 0); return Math.abs(n) >= 1e6 ? `$${(n / 1e6).toFixed(2)} M` : Math.abs(n) >= 1e3 ? `$${(n / 1e3).toFixed(0)} mil` : dinero(n); };
-+    const soloPropio = ctx.perfil.rol === "vendedor";
-+    const hoy = new Date();
-+    let datos = [], metas = {}, anioCargado = null;
-+
-+    // ---------- filtros ----------
-+    const opt = (v, t) => h("option", { value: v }, t ?? v);
-+    const selAnio = h("select", { class: "campo", onchange: () => cargar() },
-+      ...[hoy.getFullYear(), hoy.getFullYear() - 1].map((a) => opt(String(a))));
-+    const selMes = h("select", { class: "campo", onchange: () => pintar() }, ...MESES.map((m, i) => opt(String(i + 1), m)));
-+    selMes.value = String(hoy.getMonth() + 1);
-+    const selZona = h("select", { class: "campo", onchange: () => pintar() }, opt("", "Todas"), ...ZONAS.concat("Sin zona").map((z) => opt(z)));
-+    const selTipo = h("select", { class: "campo", onchange: () => pintar() }, opt("", "Todos"), ...["Grupal", "JyP", "Dual"].map((t) => opt(t)));
-+    const selVend = h("select", { class: "campo", onchange: () => pintar() }, opt("", "Todos"));
-+    const selEst = h("select", { class: "campo", onchange: () => pintar() }, opt("", "Todos"), ...["Vendida", "Propuesta", "Cancelada"].map((t) => opt(t)));
-+    const filtro = (t, el) => h("div", { class: "dsh-filtro" }, h("label", {}, t), el);
-+    const btnMetas = ctx.esAdmin ? h("button", { class: "btn btn-secundario", onclick: () => panelMetas() }, "⚙ Metas") : null;
-+
-+    const cab = h("div", { class: "dsh-cab" });
-+    const k = {};
-+    const kpiEl = (id, titulo, principal) => {
-+      k[id] = { v: h("div", { class: "dsh-kv" }), s: h("div", { class: "dsh-ks" }) };
-+      const extra = principal ? [h("div", { class: "dsh-track" }, k[id].bar = h("span"), k[id].marca = h("i")), k[id].esp = h("div", { class: "dsh-esp" })] : [];
-+      return h("div", { class: `dsh-kpi${principal ? " principal" : ""}` }, h("div", { class: "dsh-kt" }, titulo),
-+        principal ? h("div", { class: "dsh-kfila" }, k[id].v, k[id].s) : k[id].v, principal ? null : k[id].s, ...extra);
-+    };
-+    const lectura = h("div", { class: "dsh-lectura" });
-+    const cajaZonas = h("div", { class: "dsh-cbody" }), cajaVend = h("div", { class: "dsh-cbody" }), cajaTipos = h("div", { class: "dsh-cbody" });
-+    const tZonas = h("div", { class: "dsh-tabla" }), tComp = h("div", { class: "dsh-tabla lim" }), tProp = h("div", { class: "dsh-tabla lim" });
-+    const hist = { kpis: h("div", { class: "dsh-mini-grid" }), barras: h("div", { class: "dsh-barras" }), tabla: h("div", { class: "dsh-tabla" }) };
-+    const buscador = h("input", { class: "campo dsh-buscar", placeholder: "🔎 Buscar folio, comprador, estado…", oninput: () => pintarDetalle() });
-+    const tDet = h("div", { class: "dsh-tabla det" });
-+    const lblDet = h("span", { class: "nota" });
-+    const seccion = (n, t, d) => h("div", { class: "dsh-sec" }, h("span", { class: "dsh-num" }, n), h("h2", {}, t), h("span", { class: "nota" }, d));
-+    const tarjeta = (t, cuerpo, sub) => h("div", { class: "dsh-card" }, h("div", { class: "dsh-ctit" }, t, sub ? h("small", {}, sub) : null), cuerpo);
-+    const panelMetasEl = h("div", { class: "dsh-metas", hidden: true });
-+
-+    cont.append(h("div", { class: "dsh" },
-+      cab,
-+      h("div", { class: "dsh-filtros" }, filtro("AÑO", selAnio), filtro("MES", selMes), filtro("ZONA", selZona), filtro("TIPO", selTipo),
-+        soloPropio ? null : filtro("VENDEDOR", selVend), filtro("ESTATUS", selEst),
-+        h("div", { class: "dsh-acc" }, h("button", { class: "btn btn-secundario", onclick: () => limpiar() }, "✕ Limpiar"),
-+          h("button", { class: "btn btn-secundario", onclick: () => cargar() }, "⟳"), btnMetas)),
-+      panelMetasEl,
-+      seccion(1, soloPropio ? "Mi resultado del mes" : "Resultado del mes", "Vendida contra la meta"),
-+      h("div", { class: "dsh-kpis" }, kpiEl("gen", "🎯 AVANCE DE LA META", true), kpiEl("ven", "💰 VENDIDO"), kpiEl("fal", "⏳ FALTA PARA LA META"),
-+        kpiEl("pro", "📈 PROYECCIÓN AL CIERRE"), kpiEl("prop", "📝 EN PROPUESTA")),
-+      lectura,
-+      seccion(2, soloPropio ? "Mi venta por zona y tipo" : "Avance por zona y vendedor", "La línea vertical marca el avance esperado a hoy"),
-+      h("div", { class: "dsh-g3" }, tarjeta("🗺️ Zonas", cajaZonas), tarjeta(soloPropio ? "👤 Mi meta" : "👤 Vendedores principales", cajaVend),
-+        tarjeta("📦 Tipo de cartera", cajaTipos)),
-+      seccion(3, "Candados para comisión", "Qué está liberado y cuánto falta"),
-+      h("div", { class: "dsh-g2" }, tarjeta(soloPropio ? "🔒 Mi candado" : "🔒 Candados por zona", tZonas),
-+        soloPropio ? null : tarjeta("👥 Vendedores complementarios", tComp, "Meta individual")),
-+      h("div", { style: { marginTop: "12px" } }, tarjeta("📝 Propuestas por vendedor", tProp, "Pendiente de convertirse en venta")),
-+      seccion(4, "Comparativa vs meses anteriores", "Sólo Estatus Venta = Vendida"),
-+      h("div", { class: "dsh-card" }, hist.kpis, h("div", { class: "dsh-hgrid" }, hist.barras, hist.tabla)),
-+      h("details", { class: "dsh-det" }, h("summary", {}, "📋 Detalle de registros del mes ", lblDet),
-+        h("div", { class: "dsh-card" }, h("div", { class: "dsh-detacc" }, buscador,
-+          h("button", { class: "btn btn-primario", onclick: () => exportar() }, "⬇ Exportar CSV")), tDet))));
-+
-+    // ---------- datos ----------
-+    async function cargar() {
-+      try {
-+        const anio = Number(selAnio.value);
-+        const [filas, ms] = await Promise.all([ctx.rpc("dashboard_datos", { p_anio: anio }), ctx.rpc("dashboard_metas_lista")]);
-+        datos = (filas || []).map((r) => ({ ...r, monto_venta: Number(r.monto_venta || 0), capital: Number(r.capital || 0), mes: Number(r.mes || 0) }));
-+        metas = Object.fromEntries((ms || []).map((m) => [m.clave, Number(m.valor)]));
-+        anioCargado = anio;
-+        const vendedores = [...new Set(datos.map((r) => r.vendedor).filter(Boolean))].sort();
-+        const prev = selVend.value;
-+        selVend.replaceChildren(opt("", "Todos"), ...vendedores.map((v) => opt(v)));
-+        selVend.value = vendedores.includes(prev) ? prev : "";
-+        pintar();
-+      } catch (e) { toast(e.message, "mal", 8000); }
-+    }
-+    function limpiar() { selZona.value = selTipo.value = selVend.value = selEst.value = ""; buscador.value = ""; selMes.value = String(hoy.getMonth() + 1); pintar(); }
-+
-+    const pasa = (r, conEstatus = true) => (!selZona.value || r.zona === selZona.value) && (!selTipo.value || r.tipo === selTipo.value) &&
-+      (!selVend.value || r.vendedor === selVend.value) && (!conEstatus || !selEst.value || r.estatus_venta === selEst.value);
-+    const delMes = () => datos.filter((r) => r.mes === Number(selMes.value) && pasa(r));
-+
-+    // meta que aplica a la vista: propia (vendedor), del vendedor filtrado, o la general
-+    function metaVista() {
-+      if (soloPropio) return { ...metaDeVendedor(metas, ctx.perfil.nombre || ctx.perfil.email), titulo: "tu meta" };
-+      if (selVend.value) return { ...metaDeVendedor(metas, selVend.value), titulo: `meta de ${nombreCorto(selVend.value)}` };
-+      if (selZona.value && metas[`zona:${selZona.value}`]) return { meta: metas[`zona:${selZona.value}`], titulo: `meta zona ${selZona.value}` };
-+      if (selTipo.value === "Grupal") return { meta: metas.grupal ?? 0, titulo: "meta Grupal" };
-+      if (selTipo.value === "JyP") return { meta: metas.jyp ?? 0, titulo: "meta JyP" };
-+      return { meta: metas.general ?? 0, titulo: "meta general" };
-+    }
-+
-+    // ---------- pintar ----------
-+    function pintar() {
-+      const anio = anioCargado || Number(selAnio.value), mes = Number(selMes.value);
-+      const D = diasHabiles(anio, mes, hoy);
-+      const ESP = Math.min(div(D.transcurridos, D.total) * 100, 100);
-+      const regs = delMes();
-+      const vendidos = regs.filter(esVendido), propuestas = regs.filter(esPropuesta);
-+      const mv = metaVista(), meta = Number(mv.meta || 0);
-+      const venta = sumar(vendidos), montoProp = sumar(propuestas);
-+      const avance = div(venta, meta) * 100, falta = Math.max(meta - venta, 0);
-+      const proy = div(venta, D.transcurridos) * D.total, avProy = div(proy, meta) * 100;
-+      const req = D.restantes > 0 ? falta / D.restantes : falta;
-+      const espMonto = meta * ESP / 100, brecha = venta - espMonto;
-+      const color = (p, e = ESP) => (p >= 100 || p >= e ? "var(--bien)" : p >= e * 0.8 ? "var(--alerta)" : "var(--rojo)");
-+      const clase = (p, e = ESP) => (p >= 100 || p >= e ? "verde" : p >= e * 0.8 ? "ambar" : "rojo");
-+
-+      cab.replaceChildren(h("div", {}, h("h1", {}, soloPropio ? `📊 Mi venta de cartera` : "📊 Venta de cartera"),
-+        h("p", {}, "Reporte de ", h("b", {}, `${MESES[mes - 1]} ${anio}`), ` · día hábil ${D.transcurridos} de ${D.total}`,
-+          soloPropio ? ` · ${ctx.perfil.nombre || ""}` : "")),
-+        h("div", { class: "dsh-upd" }, h("small", {}, "📅 ACTUALIZADO"), h("b", {}, hoy.toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" }))));
-+
-+      k.gen.v.textContent = meta ? pct(avance) : "—"; k.gen.v.className = `dsh-kv ${clase(avance)}`;
-+      k.gen.s.replaceChildren(dinero(venta), h("br"), `de ${dinero(meta)} (${mv.titulo})`);
-+      k.gen.bar.style.width = `${Math.min(avance, 100)}%`; k.gen.bar.style.background = color(avance);
-+      k.gen.marca.style.left = `calc(${ESP}% - 1px)`;
-+      k.gen.esp.textContent = `Esperado a hoy: ${pct(ESP)} (${mdp(espMonto)}) · ${brecha >= 0 ? `adelante ${mdp(brecha)}` : `atrás ${mdp(-brecha)}`}`;
-+      k.ven.v.textContent = mdp(venta); k.ven.s.textContent = `${numero(vendidos.length)} operaciones`;
-+      k.fal.v.textContent = falta > 0 ? mdp(falta) : "✔ Cumplida"; k.fal.v.className = `dsh-kv ${falta > 0 ? "rojo" : "verde"}`;
-+      k.fal.s.textContent = falta > 0 ? `${mdp(req)} por día hábil (${D.restantes} restantes)` : `Excedente ${mdp(venta - meta)}`;
-+      k.pro.v.textContent = mdp(proy); k.pro.v.className = `dsh-kv ${clase(avProy, 100)}`; k.pro.s.textContent = `${pct(avProy)} de la meta al ritmo actual`;
-+      k.prop.v.textContent = mdp(montoProp); k.prop.v.className = "dsh-kv ambar"; k.prop.s.textContent = `${numero(propuestas.length)} propuestas abiertas`;
-+      lectura.innerHTML = "";
-+      lectura.append(...(falta <= 0
-+        ? [soloPropio ? "💡 Tu meta" : "💡 La ", soloPropio ? "" : h("b", {}, mv.titulo), " de ", h("b", {}, dinero(meta)), " ya está ", h("b", {}, "cumplida"), " con ", h("b", {}, dinero(venta)),
-+          ". Quedan ", h("b", {}, dinero(montoProp)), " en propuesta."]
-+        : ["💡 Llevas ", h("b", {}, dinero(venta)), ` (${pct(avance)} de ${soloPropio ? "tu meta" : "la " + mv.titulo}) y vas `,
-+          h("b", {}, brecha >= 0 ? "adelante del ritmo" : `${dinero(-brecha)} atrás del ritmo`), ". Para cumplir faltan ", h("b", {}, dinero(falta)),
-+          ": ", h("b", {}, dinero(req)), " por día hábil. Hay ", h("b", {}, dinero(montoProp)), " en propuesta",
-+          montoProp >= falta ? ", suficiente para cerrar la meta si se convierte." : ", que no alcanza a cubrir lo que falta."]));
-+
-+      // 2. avance
-+      const fila = (nombre, v, m, extra = "") => {
-+        const av = m ? div(v, m) * 100 : null, c = av === null ? "var(--pizarra)" : color(av);
-+        return h("div", { class: "dsh-prog" },
-+          h("div", { class: "dsh-ptop" }, h("span", { class: "dsh-pnom" }, nombre), h("span", { class: "dsh-ppct", style: { color: c } }, av === null ? mdp(v) : pct(av))),
-+          h("div", { class: "dsh-track" }, h("span", { style: { width: `${Math.min(av ?? div(v, venta) * 100, 100)}%`, background: c } }),
-+            av === null ? null : h("i", { style: { left: `calc(${ESP}% - 1px)` } })),
-+          h("div", { class: "dsh-psub" }, h("span", {}, av === null ? `${pct(div(v, venta) * 100)} de lo vendido${extra}` : `${mdp(v)} de ${mdp(m)}${extra}`),
-+            h("span", {}, av === null ? "" : (m - v > 0 ? `Faltan ${mdp(m - v)}` : "✔ Cumplida"))));
-+      };
-+      const conMeta = !soloPropio;
-+      cajaZonas.replaceChildren(...ZONAS.map((z) => fila(z, sumar(vendidos.filter((r) => r.zona === z)), conMeta ? metas[`zona:${z}`] : null)));
-+      const principales = Object.keys(metas).filter((x) => x.startsWith("vendedor:")).map((x) => x.slice(9));
-+      cajaVend.replaceChildren(...(soloPropio
-+        ? [fila(nombreCorto(ctx.perfil.nombre) || "Mi venta", venta, meta, mv.principal ? " · meta principal" : " · meta complementaria")]
-+        : principales.map((p) => fila(p, sumar(vendidos.filter((r) => norm(r.vendedor).includes(norm(p)))), metas[`vendedor:${p}`]))));
-+      cajaTipos.replaceChildren(fila("Grupal", sumar(vendidos.filter((r) => r.tipo === "Grupal")), conMeta ? metas.grupal : null),
-+        fila("JyP", sumar(vendidos.filter((r) => r.tipo === "JyP")), conMeta ? metas.jyp : null),
-+        ...(vendidos.some((r) => r.tipo === "Dual") ? [fila("Dual", sumar(vendidos.filter((r) => r.tipo === "Dual")), null)] : []));
-+
-+      // 3. candados
-+      const candado = (av) => h("span", { class: `dsh-candado ${av >= 100 ? "abierto" : "cerrado"}` }, av >= 100 ? "🔓 Liberado" : "🔒 Pendiente");
-+      const tablaH = (cols, filas, pie) => h("table", {}, h("thead", {}, h("tr", {}, ...cols.map((c) => h("th", {}, c)))),
-+        h("tbody", {}, ...(filas.length ? filas : [h("tr", {}, h("td", { colspan: cols.length, class: "vacio" }, "Sin datos."))])), pie ? h("tfoot", {}, pie) : null);
-+      const celdaAv = (av) => h("td", { class: clase(av, 100), style: { fontWeight: 700 } }, pct(av));
-+      if (soloPropio) {
-+        tZonas.replaceChildren(tablaH(["Meta", "Vendido", "Avance", "Falta", "Candado"],
-+          [h("tr", {}, h("td", {}, dinero(meta)), h("td", {}, dinero(venta)), celdaAv(avance), h("td", {}, dinero(falta)), h("td", { class: "centro" }, candado(avance)))]));
-+      } else {
-+        let tm = 0, tv = 0;
-+        const filasZ = ZONAS.map((z) => { const m = Number(metas[`zona:${z}`] || 0), v = sumar(vendidos.filter((r) => r.zona === z)); tm += m; tv += v;
-+          const av = div(v, m) * 100;
-+          return h("tr", {}, h("td", {}, z), h("td", {}, dinero(m)), h("td", {}, dinero(v)), celdaAv(av), h("td", {}, dinero(Math.max(m - v, 0))), h("td", { class: "centro" }, candado(av))); });
-+        const sinZona = sumar(vendidos.filter((r) => !ZONAS.includes(r.zona)));
-+        if (sinZona > 0) { tv += sinZona; filasZ.push(h("tr", {}, h("td", { class: "tenue" }, "Sin zona"), h("td", {}, "-"), h("td", {}, dinero(sinZona)), h("td", {}, "-"), h("td", {}, "-"), h("td"))); }
-+        tZonas.replaceChildren(tablaH(["Zona", "Meta", "Vendido", "Avance", "Falta", "Candado"], filasZ,
-+          h("tr", {}, h("td", {}, "TOTAL"), h("td", {}, dinero(tm)), h("td", {}, dinero(tv)), h("td", {}, pct(div(tv, tm) * 100)), h("td", {}, dinero(Math.max(tm - tv, 0))), h("td"))));
-+      }
-+      const metaComp = Number(metas.complementario ?? 50000);
-+      const porVend = {};
-+      vendidos.forEach((r) => { if (!metaDeVendedor(metas, r.vendedor).principal) porVend[r.vendedor] = (porVend[r.vendedor] || 0) + r.monto_venta; });
-+      tComp.replaceChildren(tablaH(["Vendedor", "Vendido", "Avance", "Falta", "Candado"],
-+        Object.entries(porVend).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([v, s]) => { const av = div(s, metaComp) * 100;
-+          return h("tr", {}, h("td", {}, nombreCorto(v)), h("td", {}, dinero(s)), celdaAv(av), h("td", {}, dinero(Math.max(metaComp - s, 0))), h("td", { class: "centro" }, candado(av))); })));
-+      const pv = {};
-+      propuestas.forEach((r) => { (pv[r.vendedor] ||= { n: 0, m: 0 }); pv[r.vendedor].n++; pv[r.vendedor].m += r.monto_venta; });
-+      const fp = Object.entries(pv).sort((a, b) => b[1].m - a[1].m);
-+      const tn = fp.reduce((a, [, x]) => a + x.n, 0), tmn = fp.reduce((a, [, x]) => a + x.m, 0);
-+      tProp.replaceChildren(tablaH(["Vendedor", "Propuestas", "Monto propuesto", "Ticket promedio"],
-+        fp.map(([v, x]) => h("tr", {}, h("td", {}, nombreCorto(v)), h("td", {}, numero(x.n)), h("td", {}, dinero(x.m)), h("td", {}, dinero(div(x.m, x.n))))),
-+        fp.length ? h("tr", {}, h("td", {}, "TOTAL"), h("td", {}, numero(tn)), h("td", {}, dinero(tmn)), h("td", {}, dinero(div(tmn, tn)))) : null));
-+
-+      pintarHistorico(mes);
-+      pintarDetalle();
-+    }
-+
-+    function pintarHistorico(mesSel) {
-+      const meses = MESES.slice(0, mesSel).map((nombre, i) => ({ n: i + 1, nombre, venta: 0, ops: 0 }));
-+      datos.filter((r) => esVendida(r) && pasa(r, false) && r.mes >= 1 && r.mes <= mesSel)
-+        .forEach((r) => { const m = meses[r.mes - 1]; m.venta += r.monto_venta; m.ops++; });
-+      meses.forEach((m, i) => { const ant = i ? meses[i - 1].venta : 0; m.var = i && ant > 0 ? (m.venta - ant) / ant * 100 : null; });
-+      const total = meses.reduce((a, m) => a + m.venta, 0), prom = meses.length ? total / meses.length : 0;
-+      const act = meses[meses.length - 1], ant = meses[meses.length - 2];
-+      const vsProm = prom > 0 ? (act.venta - prom) / prom * 100 : 0;
-+      const mini = (t, v, s, cls = "") => h("div", { class: "dsh-mini" }, h("div", { class: "dsh-mt" }, t), h("div", { class: `dsh-mv ${cls}` }, v), h("div", { class: "dsh-ms" }, s));
-+      const cv = (v) => (v > 0 ? "verde" : v < 0 ? "rojo" : "");
-+      hist.kpis.replaceChildren(mini("VENTA DEL MES", mdp(act.venta), act.nombre),
-+        mini("VS MES ANTERIOR", act.var === null ? "-" : pct(act.var, true), ant ? `${ant.nombre}: ${mdp(ant.venta)}` : "Sin mes anterior", cv(act.var || 0)),
-+        mini("PROMEDIO MENSUAL", mdp(prom), `Enero a ${act.nombre}`), mini("MES VS PROMEDIO", pct(vsProm, true), vsProm >= 0 ? "Por arriba del promedio" : "Por debajo del promedio", cv(vsProm)));
-+      const max = Math.max(...meses.map((m) => m.venta), prom, 1);
-+      hist.barras.replaceChildren(h("div", { class: "dsh-prom", style: { bottom: `${prom / max * 100}%` }, title: `Promedio ${dinero(prom)}` }),
-+        ...meses.map((m) => h("div", { class: "dsh-barra", title: `${m.nombre}: ${dinero(m.venta)} · ${m.ops} ops.` },
-+          h("span", { class: "dsh-bval" }, m.venta ? mdp(m.venta) : ""),
-+          h("div", { class: `dsh-bcol${m.n === mesSel ? " actual" : ""}`, style: { height: `${m.venta / max * 100}%` } }),
-+          h("span", { class: "dsh-blbl" }, m.nombre.slice(0, 3)))));
-+      hist.tabla.replaceChildren(h("table", {}, h("thead", {}, h("tr", {}, ...["Mes", "Vendido", "Ops.", "Vs anterior"].map((c) => h("th", {}, c)))),
-+        h("tbody", {}, ...meses.map((m) => h("tr", { class: m.n === mesSel ? "mes-actual" : "" }, h("td", {}, m.nombre), h("td", {}, dinero(m.venta)), h("td", {}, numero(m.ops)),
-+          h("td", { class: m.var === null ? "" : cv(m.var) }, m.var === null ? (m.venta > 0 && m.n > 1 ? "▲ Inicia venta" : "-") : `${m.var > 0 ? "▲" : m.var < 0 ? "▼" : "●"} ${pct(m.var, true)}`)))),
-+        h("tfoot", {}, h("tr", {}, h("td", {}, "TOTAL"), h("td", {}, dinero(total)), h("td", {}, numero(meses.reduce((a, m) => a + m.ops, 0))), h("td")))));
-+    }
-+
-+    const COLS = [["folio", "Folio"], ["comprador", "Comprador"], ["vendedor", "Vendedor"], ["tipo", "Tipo"], ["zona", "Zona"], ["estado", "Estado"],
-+      ["capital", "Capital"], ["monto_venta", "Monto venta"], ["estatus_venta", "Estatus"], ["fecha_propuesta", "F. propuesta"], ["fecha_venta", "F. venta"],
-+      ["estatus_md", "MD"], ["estatus_control_doc", "Control doc."], ["estatus_final", "Estatus final"]];
-+    const detalle = () => { const q = norm(buscador.value); return delMes().filter((r) => !q || COLS.some(([c]) => norm(r[c]).includes(q))); };
-+    function pintarDetalle() {
-+      const filas = detalle();
-+      lblDet.textContent = `(${numero(filas.length)} registros)`;
-+      tDet.replaceChildren(h("table", {}, h("thead", {}, h("tr", {}, ...COLS.map(([, t]) => h("th", {}, t)))),
-+        h("tbody", {}, ...filas.map((r) => h("tr", {}, ...COLS.map(([c]) => {
-+          const v = r[c];
-+          if (c === "capital" || c === "monto_venta") return h("td", {}, dinero(v));
-+          if (c === "estatus_venta") return h("td", { class: "centro" }, h("span", { class: `dsh-pill ${esVendido(r) ? "vendido" : esPropuesta(r) ? "propuesta" : ""}` }, v || ""));
-+          return h("td", { class: "izq" }, v ?? "");
-+        }))))));
-+    }
-+    function exportar() {
-+      const filas = detalle();
-+      if (!filas.length) { toast("No hay registros para exportar.", "mal"); return; }
-+      descargarCSV(`Dashboard_Venta_${MESES[Number(selMes.value) - 1]}_${anioCargado}.csv`, COLS.map(([, t]) => t),
-+        filas.map((r) => Object.fromEntries(COLS.map(([c, t]) => [t, r[c] ?? ""]))));
-+    }
-+
-+    // ---------- metas (validador / admin) ----------
-+    function panelMetas() {
-+      if (!panelMetasEl.hidden) { panelMetasEl.hidden = true; return; }
-+      const fijas = [["general", "Meta general"], ["grupal", "Meta Grupal"], ["jyp", "Meta JyP"], ["complementario", "Meta complementario (por vendedor)"],
-+        ...ZONAS.map((z) => [`zona:${z}`, `Zona ${z}`])];
-+      const vend = Object.keys(metas).filter((x) => x.startsWith("vendedor:"));
-+      const entrada = (clave, etiqueta, borrable) => {
-+        const inp = h("input", { class: "campo", type: "number", min: 0, step: 1000, value: metas[clave] ?? "" });
-+        return h("div", { class: "dsh-meta" }, h("span", {}, etiqueta), inp,
-+          h("button", { class: "btn btn-marca btn-chico", onclick: async () => {
-+            try { await ctx.rpc("dashboard_guardar_meta", { p_clave: clave, p_valor: inp.value === "" ? null : Number(inp.value) }); toast("Meta guardada.", "bien"); await cargar(); }
-+            catch (e) { toast(e.message, "mal"); } } }, "Guardar"),
-+          borrable ? h("button", { class: "btn btn-secundario btn-chico", onclick: async () => {
-+            try { await ctx.rpc("dashboard_guardar_meta", { p_clave: clave, p_valor: null }); panelMetasEl.hidden = true; await cargar(); panelMetas(); }
-+            catch (e) { toast(e.message, "mal"); } } }, "Quitar") : null);
-+      };
-+      const nuevoNom = h("input", { class: "campo", placeholder: "Parte del nombre del vendedor (p. ej. Rubén)" });
-+      const nuevoVal = h("input", { class: "campo", type: "number", min: 0, step: 1000, placeholder: "Meta" });
-+      panelMetasEl.replaceChildren(h("h3", {}, "⚙ Metas del dashboard"),
-+        h("p", { class: "nota" }, "Las metas de vendedor se aplican a quien tenga ese texto en su nombre; los demás usan la meta complementaria."),
-+        h("div", { class: "dsh-metas-grid" }, ...fijas.map(([c, t]) => entrada(c, t, false)), ...vend.map((c) => entrada(c, `Vendedor: ${c.slice(9)}`, true))),
-+        h("div", { class: "dsh-meta" }, h("span", {}, "➕ Meta de vendedor"), nuevoNom, nuevoVal,
-+          h("button", { class: "btn btn-marca btn-chico", onclick: async () => {
-+            if (!nuevoNom.value.trim() || nuevoVal.value === "") { toast("Escribe el nombre y la meta.", "mal"); return; }
-+            try { await ctx.rpc("dashboard_guardar_meta", { p_clave: `vendedor:${nuevoNom.value.trim()}`, p_valor: Number(nuevoVal.value) });
-+              panelMetasEl.hidden = true; await cargar(); panelMetas(); } catch (e) { toast(e.message, "mal"); } } }, "Agregar")));
-+      panelMetasEl.hidden = false;
-+    }
-+
-+    await cargar();
-+  },
-+};
-diff --git a/Servicio_Web/sitio/modulos/modulos.json b/Servicio_Web/sitio/modulos/modulos.json
-index 1734e1f..62a73b1 100644
---- a/Servicio_Web/sitio/modulos/modulos.json
-+++ b/Servicio_Web/sitio/modulos/modulos.json
-@@ -21,6 +21,11 @@
-       "archivo": "funnel/funnel.js",
-       "activo": true
-     },
-+    {
-+      "id": "dashboard",
-+      "archivo": "dashboard/dashboard.js",
-+      "activo": true
-+    },
-     {
-       "id": "compradores",
-       "archivo": "compradores/compradores.js",
-@@ -57,4 +62,4 @@
-       "activo": false
+diff --git a/Servicio_Web/sitio/modulos/funnel/funnel.css b/Servicio_Web/sitio/modulos/funnel/funnel.css
+index 4b5a279..62fbfb0 100644
+--- a/Servicio_Web/sitio/modulos/funnel/funnel.css
++++ b/Servicio_Web/sitio/modulos/funnel/funnel.css
+@@ -80,3 +80,18 @@
+ .env-bloque.env-ok { border-color: var(--ok-borde-2); background: var(--ok-bg-suave); }
+ .env-bloque.env-no { border-color: var(--rojo-borde); background: var(--rojo-suave); }
+ .env-linea { margin: 2px 0; }
++/* responsable, reasignar y comentarios */
++.fun-resp { display: flex; flex-direction: column; gap: 6px; }
++.fun-resp b { display: block; font-size: 1rem; }
++.fun-reasignar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 0 10px; padding: 8px 10px;
++  border: 1px solid var(--borde); border-radius: 8px; background: var(--neutro-bg, #f6f7f9); }
++.fun-reasignar .campo { flex: 1 1 220px; max-width: 360px; }
++.fun-coment { list-style: none; padding: 0; margin: 0 0 8px; max-height: 260px; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
++.fun-coment li { padding: 6px 10px; border-radius: 8px; background: var(--neutro-bg, #f6f7f9); border: 1px solid var(--linea); }
++.fun-coment li.mio { background: var(--rojo-suave); border-color: var(--rojo-borde); }
++.fun-coment li.nota { background: none; border: 0; padding: 2px 0; }
++.fun-coment-enc { display: flex; gap: 8px; align-items: baseline; }
++.fun-coment-enc small { color: var(--texto-2); font-size: .74rem; }
++.fun-coment-enc .btn-x { margin-left: auto; border: 0; background: none; cursor: pointer; font-size: .8rem; opacity: .6; }
++.fun-coment-enc .btn-x:hover { opacity: 1; }
++.fun-coment-txt { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .9rem; }
+diff --git a/Servicio_Web/sitio/modulos/funnel/funnel.js b/Servicio_Web/sitio/modulos/funnel/funnel.js
+index 75fa3a4..b0d1618 100644
+--- a/Servicio_Web/sitio/modulos/funnel/funnel.js
++++ b/Servicio_Web/sitio/modulos/funnel/funnel.js
+@@ -26,7 +26,7 @@ const OPC = {
+ // Secciones del formulario, igual que las columnas de SharePoint. venta=true: el vendedor dueño también la edita.
+ const SECCIONES = [
+   ["🧾 Venta", true, [["mes", "Mes", "mes"], ["comprador", "Comprador"], ["estado", "Estado", "estado"], ["municipios", "Municipio's"],
+-    ["fecha_propuesta", "Fecha Propuesta", "fecha"], ["fecha_venta", "Fecha Venta", "fecha"], ["vendedor", "Vendedor"],
++    ["fecha_propuesta", "Fecha Propuesta", "fecha"], ["fecha_venta", "Fecha Venta", "fecha"],
+     ["propuesta_url", "Propuesta", "url"]]],
+   ["💰 Importes y estatus", false, [["estatus_venta", "Estatus Venta", "estatus_venta"], ["tipo", "Tipo", "tipo"],
+     ["capital", "Capital", "num"], ["monto_venta", "Monto Venta", "num"], ["comprobante_pago", "Comprobante (liga histórica)", "url"]],
+@@ -44,6 +44,8 @@ const ETAPAS = [
+   ["propuesta", "1 · Propuesta"], ["md", "2 · MD"], ["doc", "3 · Control documental"], ["juridico", "4 · Jurídico"],
+   ["cierre", "5 · Cierre"], ["cerrada", "✔ Cerrada"], ["cancelada", "✖ Cancelada"],
+ ];
++// Fechas que llena la base sola (plazos de ⏱ Plazos); sólo un maestro las corrige.
++const AUTOMATICAS = new Set(["fecha_inicio_md", "fecha_limite_md", "fecha_inicio_admin", "fecha_limite_admin"]);
+ const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+ const hoy = () => new Date().toISOString().slice(0, 10);
+ 
+@@ -86,6 +88,11 @@ export default {
+     let datos = [], filtroEtapa = null, abierta = null;
+     const selMes = h("select", { class: "campo", onchange: () => pintar() });
+     const selVend = h("select", { class: "campo", onchange: () => pintar() });
++    const selTipo = h("select", { class: "campo", onchange: () => pintar() }, h("option", { value: "" }, "Todos los tipos"),
++      ...[["J&P", "JyP"], ["Grupal", "Grupal"], ["Dual", "Dual"]].map(([v, t2]) => h("option", { value: v }, t2)));
++    const maestro = ctx.esAdmin;
++    let usuarios = [];   // posibles responsables (para reasignar)
++    const panelReasignar = h("div", { class: "fun-reasignar", hidden: true });
+     const buscar = h("input", { class: "campo", placeholder: "🔍 Folio, comprador, estado, ticket…", oninput: () => pintar() });
+     const chkAtraso = h("input", { type: "checkbox", onchange: () => pintar() });
+     const embudo = h("div", { class: "fun-embudo" });
+@@ -120,7 +127,8 @@ export default {
+             f.respuesta === "ACEPTADA" ? "👍" : f.respuesta === "RECHAZADA" ? "👎" : "🌐") : "",
+           !f.publicada_en && f.enviada_en ? h("span", { title: `Enviada a ${f.correo_comprador} (${new Date(f.enviada_en).toLocaleDateString("es-MX")})` }, "📧") : "",
+           f.n_comprobantes ? h("span", { title: `${f.n_comprobantes} comprobante(s) de pago` }, "🧾") : "",
+-          f.n_documentos ? h("span", { title: `${f.n_documentos} documento(s) del comprador` }, `📂${f.n_documentos}`) : "") },
++          f.n_documentos ? h("span", { title: `${f.n_documentos} documento(s) del comprador` }, `📂${f.n_documentos}`) : "",
++          f.n_comentarios ? h("span", { title: `${f.n_comentarios} comentario(s)` }, `💬${f.n_comentarios}`) : "") },
+       { clave: "numero_ticket_contrato", titulo: "Ticket" },
+       { clave: "numero_guia", titulo: "Guía" },
+     ], { idFila: (f) => f.folio, claseFila: (f) => (abierta?.folio === f.folio ? "sel" : f.estatus_venta === "Cancelada" ? "bloq" : ""),
+@@ -139,11 +147,15 @@ export default {
+           h("div", { class: "fila fun-filtros" },
+             h("h3", { style: { margin: 0, flex: "0 0 auto" } }, "📈 Funnel de ventas"),
+             h("div", { style: { flex: "0 1 170px" } }, selMes), h("div", { style: { flex: "0 1 210px" } }, selVend),
++            h("div", { style: { flex: "0 1 150px" } }, selTipo),
+             h("div", { style: { flex: "1 1 200px" } }, buscar),
+             h("label", { style: { flex: "0 0 auto" } }, chkAtraso, " Sólo en atraso"),
+             lbl,
++            maestro ? h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, title: "Asignar las ventas filtradas a un vendedor",
++              onclick: () => reasignarFiltradas() }, "👤 Reasignar") : null,
+             h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, onclick: () => exportar() }, "⬇ Exportar"),
+             h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, onclick: () => cargar() }, "⟳")),
++          panelReasignar,
+           t.el)),
+       det);
+     cont.append(raiz, listaVend);
+@@ -154,6 +166,7 @@ export default {
+       catch (e) { toast(e.message, "mal"); return; }
+       datos.forEach((f) => { f.mes = normalizaMes(f.mes) || mes(f); });
+       const meses = [...new Set(datos.map((f) => f.mes).filter(Boolean))];
++      datos.forEach((f) => { if (!f.vendedor_user) f.vendedor = f.vendedor ? `${f.vendedor} (sin usuario)` : "Sin asignar"; });
+       const vends = [...new Set(datos.map((f) => f.vendedor).filter(Boolean))].sort();
+       const pm = selMes.value, pv = selVend.value;
+       selMes.replaceChildren(h("option", { value: "" }, "Todos los meses"), ...meses.map((m) => h("option", { value: m }, m)));
+@@ -167,6 +180,7 @@ export default {
+     function base() {
+       const q = buscar.value.trim().toUpperCase();
+       return datos.filter((f) => (!selMes.value || f.mes === selMes.value) && (!selVend.value || f.vendedor === selVend.value) &&
++        (!selTipo.value || f.tipo === selTipo.value) &&
+         (!chkAtraso.checked || atraso(f)) &&
+         (!q || [f.folio, f.comprador, f.estado, f.municipios, f.vendedor, f.numero_ticket_contrato, f.numero_guia]
+           .join(" ").toUpperCase().includes(q)));
+@@ -221,13 +235,15 @@ export default {
+             onclick: () => generar(esBase) }, esBase ? "⬇ Generar base final" : "⬇ Generar propuesta (CSV)");
+         }
+         const v = f[clave] ?? "";
++        if (AUTOMATICAS.has(clave) && !maestro) editable = false;
+         let el;
+         if (OPC[tipo]) {
+           el = h("select", { class: "campo", disabled: !editable }, h("option", { value: "" }, "—"),
+             ...OPC[tipo].map((o) => h("option", { value: o }, o)));
+           if (v && !OPC[tipo].includes(v)) el.append(h("option", { value: v }, v));
+           el.value = v;
+-        } else if (tipo === "fecha") el = h("input", { class: "campo", type: "date", value: v || "", disabled: !editable });
++        } else if (tipo === "fecha") el = h("input", { class: "campo", type: "date", value: v || "", disabled: !editable,
++          title: AUTOMATICAS.has(clave) ? "Automática: se calcula con los plazos por etapa" : "" });
+         else if (tipo === "num") el = h("input", { class: "campo", type: "number", step: "0.01", value: v === "" ? "" : v, disabled: !editable });
+         else el = h("input", { class: "campo", value: v, disabled: !editable, placeholder: tipo === "url" ? "https://…" : "",
+           list: clave === "vendedor" ? "fun-vendedores" : null });
+@@ -258,6 +274,7 @@ export default {
+             atraso(f) ? h("div", { class: "fun-atraso-txt" }, `⏰ ${atraso(f)}`) : null),
+           h("button", { class: "btn btn-secundario btn-chico", onclick: cerrar }, "✖")),
+         h("div", { class: "fun-avance" }, pasos(f), h("span", { class: "nota" }, `Actualizado ${new Date(f.actualizado).toLocaleString("es-MX")} · ${f.actualizado_por || ""}`)),
++        bloqueResponsable(f),
+         ...SECCIONES.map(([titulo, esVenta, lista, docs]) => h("section", { class: "fun-sec" },
+           h("h4", {}, titulo),
+           h("div", { class: "fun-grid" }, ...lista.filter(([clave]) => !(clave === "comprobante_pago" && !f[clave])).map(([clave, etiqueta, tipo]) =>
+@@ -270,6 +287,7 @@ export default {
+           bloqueDocumentos(ctx, { folio: f.folio, tipo: "comprador", editable: editaTodo, titulo: "Expediente del comprador",
+             ayuda: "Identificación, acta constitutiva, poderes, comprobante de domicilio, contrato firmado… (PDF, fotos o Word).",
+             alConteo: (n) => { f.n_documentos = n; t.redibujar(); } })),
++        bloqueComentarios(f),
+         adjuntos.length ? h("section", { class: "fun-sec" }, h("h4", {}, `📎 Adjuntos en SharePoint (${adjuntos.length})`),
+           h("ul", { class: "fun-adj" }, ...adjuntos.map((a) => h("li", {}, h("a", { href: a.url, target: "_blank", rel: "noopener" }, a.nombre))))) : null,
+         h("div", { class: "fun-pie" },
+@@ -288,6 +306,85 @@ export default {
+         catch (e) { toast(e.message, "mal", 8000); btnGuardar.disabled = false; }
+       }
      }
-   ]
--}
-\ No newline at end of file
++    async function cargarUsuarios() {
++      if (!usuarios.length) usuarios = (await ctx.rpc("funnel_vendedores")) || [];
++      return usuarios;
++    }
++    const selectorUsuario = (actual) => {
++      const sel = h("select", { class: "campo" }, h("option", { value: "" }, "— elige el vendedor responsable —"));
++      cargarUsuarios().then((us) => {
++        sel.append(...us.map((u) => h("option", { value: u.user_id }, `${u.nombre} · ${u.rol}`)));
++        if (actual) sel.value = actual;
++      }).catch((e) => toast(e.message, "mal"));
++      return sel;
++    };
++    async function asignar(folios, userId) {
++      if (!userId) { toast("Elige el vendedor.", "mal"); return false; }
++      try {
++        const n = await ctx.rpc("funnel_asignar_vendedor", { p_folios: folios, p_user: userId });
++        toast(`${numero(n)} venta(s) asignadas a ${usuarios.find((u) => u.user_id === userId)?.nombre || "el vendedor"}.`, "bien");
++        await cargar(); return true;
++      } catch (e) { toast(e.message, "mal", 8000); return false; }
++    }
++
++    // Vendedor responsable: lo ve todo el que ve la venta; sólo un maestro lo cambia
++    function bloqueResponsable(f) {
++      const txt = h("div", {}, h("span", { class: "etiqueta" }, "Vendedor responsable"),
++        h("b", {}, f.vendedor_user ? f.vendedor : "⚠ Sin usuario asignado"),
++        !f.vendedor_user && f.vendedor && f.vendedor !== "Sin asignar" ? h("div", { class: "nota" }, `En SharePoint: ${f.vendedor.replace(" (sin usuario)", "")}`) : null);
++      if (!maestro) return h("section", { class: "fun-sec fun-resp" }, txt);
++      const sel = selectorUsuario(f.vendedor_user);
++      return h("section", { class: "fun-sec fun-resp" }, txt,
++        h("div", { class: "fila", style: { gap: "6px" } }, sel,
++          h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, onclick: () => asignar([f.folio], sel.value) }, "👤 Reasignar")));
++    }
++
++    function reasignarFiltradas() {
++      const v = filtroEtapa ? base().filter((f) => etapa(f) === filtroEtapa) : base();
++      if (!panelReasignar.hidden) { panelReasignar.hidden = true; return; }
++      const sel = selectorUsuario(null);
++      panelReasignar.hidden = false;
++      panelReasignar.replaceChildren(
++        h("span", {}, `Asignar las ${numero(v.length)} ventas filtradas a:`), sel,
++        h("button", { class: "btn btn-marca", onclick: async () => {
++          if (!v.length) { toast("No hay ventas en el filtro.", "mal"); return; }
++          if (!(await ctx.ui.confirmar("Reasignar ventas", `¿Asignar ${numero(v.length)} venta(s) a ${sel.selectedOptions[0]?.textContent || ""}?\n` +
++            "El vendedor anterior deja de verlas.", "Reasignar"))) return;
++          if (await asignar(v.map((f) => f.folio), sel.value)) panelReasignar.hidden = true;
++        } }, "Asignar"),
++        h("button", { class: "btn btn-secundario", onclick: () => { panelReasignar.hidden = true; } }, "Cancelar"));
++    }
++
++    // Comentarios de la venta (hilo)
++    function bloqueComentarios(f) {
++      const lista = h("ul", { class: "fun-coment" }, h("li", { class: "nota" }, "Cargando…"));
++      const texto = h("textarea", { class: "campo", rows: 2, placeholder: "Escribe un comentario para el equipo…" });
++      const btn = h("button", { class: "btn btn-primario", style: { flex: "0 0 auto" }, onclick: async () => {
++        if (!texto.value.trim()) { texto.focus(); return; }
++        btn.disabled = true;
++        try { await ctx.rpc("funnel_comentar", { p_folio: f.folio, p_texto: texto.value }); texto.value = ""; await pintarLista(); f.n_comentarios = (f.n_comentarios || 0) + 1; t.redibujar(); }
++        catch (e) { toast(e.message, "mal"); }
++        btn.disabled = false;
++      } }, "💬 Comentar");
++      async function pintarLista() {
++        let cs;
++        try { cs = (await ctx.rpc("funnel_comentarios_lista", { p_folio: f.folio })) || []; } catch (e) { lista.replaceChildren(h("li", { class: "nota" }, e.message)); return; }
++        lista.replaceChildren(...(cs.length ? cs.map((c) => h("li", { class: c.mio ? "mio" : "" },
++          h("div", { class: "fun-coment-enc" }, h("b", {}, c.autor || ""), h("small", {}, new Date(c.fecha).toLocaleString("es-MX")),
++            c.mio || maestro ? h("button", { class: "btn-x", title: "Borrar", onclick: async () => {
++              if (!(await ctx.ui.confirmar("Borrar comentario", "¿Borrar este comentario?", "Borrar"))) return;
++              try { await ctx.rpc("funnel_borrar_comentario", { p_id: c.id }); f.n_comentarios = Math.max(0, (f.n_comentarios || 1) - 1); t.redibujar(); pintarLista(); }
++              catch (e) { toast(e.message, "mal"); }
++            } }, "🗑") : null),
++          h("div", { class: "fun-coment-txt" }, c.texto)))
++          : [h("li", { class: "nota" }, "Sin comentarios todavía.")]));
++        lista.scrollTop = lista.scrollHeight;
++      }
++      pintarLista();
++      return h("section", { class: "fun-sec" }, h("h4", {}, "💬 Comentarios"), lista,
++        h("div", { class: "fila", style: { gap: "6px", alignItems: "flex-end" } }, texto, btn));
++    }
++
+     function cerrar() { abierta = null; det.hidden = true; raiz.classList.remove("con-detalle"); t.redibujar(); }
+ 
+     function exportar() {
+diff --git a/Servicio_Web/sitio/modulos/restituciones/restituciones.css b/Servicio_Web/sitio/modulos/restituciones/restituciones.css
+index cfd2c93..a180d6f 100644
+--- a/Servicio_Web/sitio/modulos/restituciones/restituciones.css
++++ b/Servicio_Web/sitio/modulos/restituciones/restituciones.css
+@@ -11,3 +11,7 @@
+ .rst-estado { margin-top: 8px; font-weight: 600; }
+ @media (max-width: 900px) { .rst { grid-template-columns: 1fr; } }
+ .rst-der .tabla td { max-width: 170px; }
++.rst-venta { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--borde); color: var(--tinta); font-weight: 400; }
++.rst-venta-tit { margin-bottom: 6px; }
++.rst-venta-tit small { color: var(--texto-2); }
++.rst-venta .nota { margin-top: 6px; }
+diff --git a/Servicio_Web/sitio/modulos/restituciones/restituciones.js b/Servicio_Web/sitio/modulos/restituciones/restituciones.js
+index 1428f68..02756ad 100644
+--- a/Servicio_Web/sitio/modulos/restituciones/restituciones.js
++++ b/Servicio_Web/sitio/modulos/restituciones/restituciones.js
+@@ -125,7 +125,37 @@ export default {
+         h("div", { class: "rst-datos" },
+           dato("Capital", dinero(o.capital)), dato("Créditos", numero(o.integrantes)), dato("Mora", dias(o.dias)),
+           dato("Estado", o.estados || "—"), dato("Municipio", o.municipios || "—")),
+-        h("div", { class: "rst-estado" }, estado));
++        h("div", { class: "rst-estado" }, estado),
++        bloqueVenta(o));
++    }
++
++    // Venta a la que pertenece el crédito / grupo
++    function bloqueVenta(o) {
++      const v = o.venta;
++      if (!v) {
++        return o.vendido && !o.disponible_en_base
++          ? h("div", { class: "rst-venta nota" }, "Venta anterior a la página: no hay liga crédito → venta en el sistema.")
++          : null;
++      }
++      const titulo = h("div", { class: "rst-venta-tit" }, "🧾 Venta a la que pertenece: ",
++        h("b", {}, v.folio || v.id_propuesta), v.folio && v.id_propuesta && v.folio !== v.id_propuesta ? h("small", {}, ` · ${v.id_propuesta}`) : null);
++      if (v.restringida) {
++        return h("div", { class: "rst-venta" }, titulo,
++          h("div", { class: "rst-datos" }, dato("Comprador", v.comprador || "—"), dato("Vendedor", v.vendedor || "—")),
++          h("div", { class: "nota" }, "La venta es de otro responsable; el detalle sólo lo ven su vendedor, admin y validador."));
++      }
++      return h("div", { class: "rst-venta" }, titulo,
++        h("div", { class: "rst-datos" },
++          dato("Comprador", v.comprador || "—"), dato("Vendedor", v.vendedor || "—"), dato("Tipo", v.tipo || "—"),
++          dato("Estatus", v.estatus_venta || v.estatus_propuesta || "—"),
++          dato("Fecha venta", v.fecha_venta ? fecha(v.fecha_venta) : "—"),
++          dato("Fecha propuesta", v.fecha_propuesta ? fecha(v.fecha_propuesta) : "—"),
++          dato("Capital venta", v.capital != null ? dinero(v.capital) : "—"),
++          dato("Monto venta", v.monto_venta != null ? dinero(v.monto_venta) : "—"),
++          dato("Precio", v.centavos != null ? `${Math.round(v.centavos * 100)}¢` : "—"),
++          dato("Partidas", v.partidas != null ? numero(v.partidas) : "—"),
++          v.estatus_control_doc ? dato("Control doc.", v.estatus_control_doc) : null,
++          v.numero_guia ? dato("Guía", v.numero_guia) : null));
+     }
+     const dato = (t, v) => h("div", {}, h("span", {}, t), h("b", {}, v));
+ 
+diff --git a/Servicio_Web/sitio/modulos/revision/revision.js b/Servicio_Web/sitio/modulos/revision/revision.js
+index 7ae4640..2e7f536 100644
+--- a/Servicio_Web/sitio/modulos/revision/revision.js
++++ b/Servicio_Web/sitio/modulos/revision/revision.js
+@@ -3,6 +3,9 @@
+ // Propuestas EN REVISIÓN: ver partidas, quitar las que no deben venderse,
+ // aprobar (avisa al auxiliar de venta) o rechazar (todo regresa a Disponible).
+ // ============================================================
++import { descargarCuentasRevision } from "../venta/layout.js";
++import { botonPropuestaFinal } from "../venta/propuesta_final.js";
++
+ export default {
+   id: "revision",
+   titulo: "Revisión",
+@@ -41,6 +44,12 @@ export default {
+     const btnQuitar = h("button", { class: "btn btn-secundario", disabled: true, onclick: () => quitarSel() }, "✂ Quitar marcadas");
+     const btnRechazar = h("button", { class: "btn btn-secundario", disabled: true, onclick: () => revisar(false) }, "✖ Rechazar");
+     const btnAprobar = h("button", { class: "btn btn-marca", disabled: true, onclick: () => revisar(true) }, "✔ Aprobar");
++    const btnCuentas = h("button", { class: "btn btn-secundario", disabled: true, title: "Referencias para preguntar si siguen disponibles para venta",
++      onclick: async () => {
++        try { const n = await descargarCuentasRevision(ctx, actual); toast(`${numero(n)} cuentas descargadas.`, "bien"); }
++        catch (e) { toast(e.message, "mal"); }
++      } }, "⬇ Cuentas");
++    const cajaFinal = h("span", { style: { display: "contents" } });
+     const tDet = tabla([
+       { clave: "tipo", titulo: "Cartera" },
+       { clave: "clave", titulo: "Grupo / vReference" },
+@@ -63,7 +72,7 @@ export default {
+         h("div", { class: "tarjeta" },
+           h("div", { class: "fila", style: { flexWrap: "wrap" } },
+             h("div", { style: { flex: "1 1 260px" } }, titulo, sub),
+-            h("div", { class: "fila", style: { flex: "0 0 auto", gap: "6px" } }, btnQuitar, btnRechazar, btnAprobar))),
++            h("div", { class: "fila", style: { flex: "0 0 auto", gap: "6px", flexWrap: "wrap" } }, btnCuentas, cajaFinal, btnQuitar, btnRechazar, btnAprobar))),
+         h("div", { class: "kpis" }, kCap.el, kRango.el, kVenta.el, kPart.el, kMora.el),
+         h("div", { class: "tarjeta" },
+           h("div", { class: "fila", style: { marginBottom: "6px" } },
+@@ -90,7 +99,8 @@ export default {
+       actual = null; quitar.clear(); tDet.setFilas([]);
+       titulo.textContent = "Selecciona una propuesta"; sub.textContent = "";
+       [kCap, kRango, kVenta, kPart, kMora].forEach((k) => k.set("—"));
+-      [btnQuitar, btnRechazar, btnAprobar].forEach((b) => (b.disabled = true));
++      [btnQuitar, btnRechazar, btnAprobar, btnCuentas].forEach((b) => (b.disabled = true));
++      cajaFinal.replaceChildren();
+       tLista.redibujar(); pintarQuitar();
+     }
+ 
+@@ -113,7 +123,8 @@ export default {
+       kVenta.set(dinero(p.valor_venta), `${p.centavos} centavos por peso`);
+       kPart.set(numero(partidas.length), `${numero(partidas.reduce((s, f) => s + f.integrantes, 0))} créditos`);
+       kMora.set(dias(p.dias_mora));
+-      btnRechazar.disabled = btnAprobar.disabled = false;
++      btnRechazar.disabled = btnAprobar.disabled = btnCuentas.disabled = false;
++      cajaFinal.replaceChildren(botonPropuestaFinal(ctx, p, () => cargar()));
+       pintarQuitar();
+     }
+ 
+diff --git a/Servicio_Web/sitio/modulos/venta/bitacora.js b/Servicio_Web/sitio/modulos/venta/bitacora.js
+index 0bfeda0..a75153a 100644
+--- a/Servicio_Web/sitio/modulos/venta/bitacora.js
++++ b/Servicio_Web/sitio/modulos/venta/bitacora.js
+@@ -5,6 +5,7 @@
+ //  - Descargas: CSV de la propuesta (siempre) y base final Funnel (cuando ya está aprobada).
+ // ============================================================
+ import { descargarLayout, descargarPropuestaCSV } from "./layout.js";
++import { botonPropuestaFinal } from "./propuesta_final.js";
+ 
+ const ESTATUS = [
+   ["EN REVISIÓN", "🕒 En revisión"], ["APROBADA", "✅ Aprobadas"], ["EN VENTA", "💼 En venta"],
+@@ -197,6 +198,7 @@ export default {
+           btnBase,
+           puedeComplementar(p) ? h("button", { class: "btn btn-secundario",
+             onclick: () => { location.hash = `#/venta?complementar=${encodeURIComponent(p.id_propuesta)}`; } }, "➕ Complementar") : null,
++          ctx.esAdmin && ["EN REVISIÓN", "APROBADA", "APARTADA"].includes(p.estatus) ? botonPropuestaFinal(ctx, p, () => cargar()) : null,
+           puedeLiberar(p) ? h("button", { class: "btn btn-secundario", onclick: () => liberar(p) }, "↩ Liberar") : null),
+         !baseOk && !["LIBERADA", "RECHAZADA"].includes(p.estatus)
+           ? h("div", { class: "nota", style: { margin: "-4px 0 8px" } }, "La base final se habilita cuando el validador aprueba la venta.") : null,
+diff --git a/Servicio_Web/sitio/modulos/venta/layout.js b/Servicio_Web/sitio/modulos/venta/layout.js
+index 4dd77e3..1731058 100644
+--- a/Servicio_Web/sitio/modulos/venta/layout.js
++++ b/Servicio_Web/sitio/modulos/venta/layout.js
+@@ -35,18 +35,41 @@ export async function descargarLayout(ctx, propuesta) {
+     EstatusPropuesta: propuesta.estatus || "APARTADA",
+     Comprador: propuesta.comprador || "",
+   }));
+-  // Nombre con la nomenclatura de la venta: VTA-0300_BaseFinal.csv
+-  ctx.ui.descargarCSV(`${propuesta.id_propuesta}_BaseFinal.csv`, todas, salida, "latin1");
++  // Nombre con la nomenclatura de la venta y el comprador: VTA-0300_Comprador_BaseFinal.csv
++  ctx.ui.descargarCSV(nombreArchivo(propuesta, "BaseFinal"), todas, salida, "latin1");
+   return salida.length;
+ }
+ 
+-/** CSV de la propuesta (un renglón por crédito), generado al momento: VTA-0300_Propuesta.csv */
++/** Nombre de archivo con folio y comprador: VTA-0301_Jonathan_Caballero_Propuesta.csv */
++export function nombreArchivo(p, sufijo) {
++  const comp = (p.comprador || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
++    .replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60);
++  return `${p.id_propuesta}${comp ? `_${comp}` : ""}_${sufijo}.csv`;
 +}
-diff --git a/Servicio_Web/sitio/pruebas/dashboard.test.mjs b/Servicio_Web/sitio/pruebas/dashboard.test.mjs
++
++/** CSV de la propuesta (un renglón por crédito), generado al momento, con nombre, saldos y fechas. */
+ export async function descargarPropuestaCSV(ctx, p) {
+-  const filas = await ctx.rpc("creditos_propuesta", { p_id: p.id_propuesta });
++  const filas = await ctx.rpc("propuesta_descarga", { p_id: p.id_propuesta });
+   if (!filas?.length) throw new Error("La propuesta no tiene créditos.");
+-  const cols = ["IdPropuesta", "Estatus", "Vendedor", "Comprador", "TipoCartera", "vGroupId", "vReference", "Estado", "Municipio", "DiasMora", "Capital"];
+-  ctx.ui.descargarCSV(`${p.id_propuesta}_Propuesta.csv`, cols, filas.map((f) => ({
++  const cols = ["IdPropuesta", "Estatus", "Vendedor", "Comprador", "TipoCartera", "vGroupId", "NombreGrupo", "vReference", "NombreCliente",
++    "Estado", "Municipio", "Colonia", "CP", "DiasMora", "Capital", "MontoOriginal", "SaldoTotal", "SaldoVencido",
++    "FechaApertura", "UltimoPago", "Frecuencia"];
++  ctx.ui.descargarCSV(nombreArchivo(p, "Propuesta"), cols, filas.map((f) => ({
+     IdPropuesta: p.id_propuesta, Estatus: p.estatus, Vendedor: p.usuario, Comprador: p.comprador || "", TipoCartera: f.tipo,
+-    vGroupId: f.vgroupid || "", vReference: f.vreference, Estado: f.estado, Municipio: f.municipio, DiasMora: f.dias, Capital: f.capital })));
++    vGroupId: f.vgroupid || "", NombreGrupo: f.grupo || "", vReference: f.vreference, NombreCliente: f.nombre || "",
++    Estado: f.estado, Municipio: f.municipio, Colonia: f.colonia || "", CP: f.cp || "", DiasMora: f.dias, Capital: f.capital,
++    MontoOriginal: f.monto_original ?? "", SaldoTotal: f.saldo_total ?? "", SaldoVencido: f.saldo_vencido ?? "",
++    FechaApertura: f.fecha_apertura || "", UltimoPago: f.ultimo_pago || "", Frecuencia: f.frecuencia || "" })));
++  return filas.length;
++}
++
++/** Revisión: sólo las referencias, para preguntar si siguen disponibles para venta. */
++export async function descargarCuentasRevision(ctx, p) {
++  const filas = await ctx.rpc("creditos_propuesta", { p_id: p.id_propuesta });
++  if (!filas?.length) throw new Error("La propuesta no tiene créditos.");
++  const cols = ["IdPropuesta", "Comprador", "TipoCartera", "vReference", "vGroupId", "Capital"];
++  ctx.ui.descargarCSV(nombreArchivo(p, "Cuentas_Revision"), cols, filas.map((f) => ({
++    IdPropuesta: p.id_propuesta, Comprador: p.comprador || "", TipoCartera: f.tipo, vReference: f.vreference,
++    vGroupId: f.vgroupid || "", Capital: f.capital })));
+   return filas.length;
+ }
+diff --git a/Servicio_Web/sitio/modulos/venta/propuesta_final.js b/Servicio_Web/sitio/modulos/venta/propuesta_final.js
 new file mode 100644
-index 0000000..4edc06e
+index 0000000..e9b2cb2
 --- /dev/null
-+++ b/Servicio_Web/sitio/pruebas/dashboard.test.mjs
-@@ -0,0 +1,63 @@
-+import { esperar, ctxMontaje, blobCapturado, limpiarBlob } from "./ayuda.mjs";
-+import test from "node:test";
++++ b/Servicio_Web/sitio/modulos/venta/propuesta_final.js
+@@ -0,0 +1,104 @@
++// ============================================================
++// PROPUESTA FINAL (validador / admin)
++// Se sube el archivo (CSV o Excel) con las cuentas que SÍ se venden. Lo que no venga en el archivo sale
++// de la propuesta y regresa a la base como disponible. Columnas reconocidas: vReference / Referencia y
++// vGroupId / Grupo; si no hay encabezado se toma la primera columna. En Grupal basta un integrante para
++// conservar su grupo completo.
++// ============================================================
++const XLSX_CDN = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
++
++/** Filas (arreglos de texto) de un CSV: detecta separador , ; o tabulador y respeta comillas. */
++export function leerCSV(texto) {
++  const lineas = texto.replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim() !== "");
++  if (!lineas.length) return [];
++  const sep = [",", ";", "\t"].sort((a, b) => lineas[0].split(b).length - lineas[0].split(a).length)[0];
++  return lineas.map((l) => {
++    const celdas = []; let actual = "", comillas = false;
++    for (let i = 0; i < l.length; i++) {
++      const c = l[i];
++      if (c === '"') { if (comillas && l[i + 1] === '"') { actual += '"'; i++; } else comillas = !comillas; }
++      else if (c === sep && !comillas) { celdas.push(actual); actual = ""; }
++      else actual += c;
++    }
++    celdas.push(actual);
++    return celdas.map((x) => x.trim());
++  });
++}
++
++/** Saca las referencias y grupos de las filas del archivo. */
++export function extraerCuentas(filas) {
++  if (!filas.length) return { refs: [], grupos: [] };
++  const enc = filas[0].map((c) => c.toLowerCase().replace(/[^a-z]/g, ""));
++  const iRef = enc.findIndex((c) => ["vreference", "referencia", "reference", "vref"].includes(c));
++  const iGrp = enc.findIndex((c) => ["vgroupid", "grupo", "groupid", "idgrupo"].includes(c));
++  const conEncabezado = iRef >= 0 || iGrp >= 0;
++  const datos = conEncabezado ? filas.slice(1) : filas;
++  const limpio = (v) => String(v ?? "").trim();
++  const refs = new Set(), grupos = new Set();
++  for (const f of datos) {
++    if (conEncabezado) {
++      if (iRef >= 0 && limpio(f[iRef])) refs.add(limpio(f[iRef]));
++      if (iGrp >= 0 && limpio(f[iGrp])) grupos.add(limpio(f[iGrp]));
++    } else if (limpio(f[0])) refs.add(limpio(f[0]));   // sin encabezado: cualquier clave en la 1a columna
++  }
++  return { refs: [...refs], grupos: [...grupos] };
++}
++
++async function leerArchivo(archivo) {
++  if (/\.xlsx?$/i.test(archivo.name)) {
++    const XLSX = await import(XLSX_CDN);
++    const libro = XLSX.read(await archivo.arrayBuffer(), { type: "array" });
++    const hoja = libro.Sheets[libro.SheetNames[0]];
++    return XLSX.utils.sheet_to_json(hoja, { header: 1, raw: false, defval: "" }).map((f) => f.map((c) => String(c).trim()));
++  }
++  const buf = await archivo.arrayBuffer();
++  let texto = new TextDecoder("utf-8").decode(buf);
++  if (texto.includes("�")) texto = new TextDecoder("latin1").decode(buf);   // CSV de Excel en Latin-1
++  return leerCSV(texto);
++}
++
++/**
++ * Botón «📄 Subir propuesta final» para una propuesta. alTerminar() se llama después de aplicarla.
++ */
++export function botonPropuestaFinal(ctx, p, alTerminar) {
++  const { h, toast, confirmar, numero, dinero } = ctx.ui;
++  const input = h("input", { type: "file", accept: ".csv,.txt,.xlsx,.xls", hidden: true, onchange: () => aplicar(input.files[0]) });
++  const btn = h("button", { class: "btn btn-secundario", title: "Archivo con las cuentas que SÍ se venden; lo demás se libera",
++    onclick: () => input.click() }, "📄 Subir propuesta final");
++
++  async function aplicar(archivo) {
++    input.value = "";
++    if (!archivo) return;
++    let cuentas;
++    try { cuentas = extraerCuentas(await leerArchivo(archivo)); }
++    catch (e) { toast(`No se pudo leer ${archivo.name}: ${e.message}`, "mal", 8000); return; }
++    if (!cuentas.refs.length && !cuentas.grupos.length) { toast("El archivo no trae vReference ni vGroupId.", "mal", 8000); return; }
++    // cuentas de la propuesta: en Grupal, un integrante listado conserva su grupo
++    let creditos;
++    try { creditos = await ctx.rpc("creditos_propuesta", { p_id: p.id_propuesta }); } catch (e) { toast(e.message, "mal"); return; }
++    const enArchivo = new Set([...cuentas.refs, ...cuentas.grupos]);
++    const refs = new Set(), grupos = new Set();
++    for (const c of creditos) {
++      if (c.tipo === "Grupal") { if (enArchivo.has(c.vgroupid) || enArchivo.has(c.vreference)) grupos.add(c.vgroupid); }
++      else if (enArchivo.has(c.vreference)) refs.add(c.vreference);
++    }
++    const partidas = new Set(creditos.map((c) => (c.tipo === "Grupal" ? `G:${c.vgroupid}` : `J:${c.vreference}`))).size;
++    const quedan = refs.size + grupos.size;
++    if (!quedan) { toast(`Ninguna cuenta de ${archivo.name} pertenece a ${p.id_propuesta}.`, "mal", 9000); return; }
++    const conocidas = new Set(creditos.flatMap((c) => [c.vreference, c.vgroupid].filter(Boolean)));
++    const ajenas = [...enArchivo].filter((x) => !conocidas.has(x));
++    if (!(await confirmar("Propuesta final", `${p.id_propuesta} · ${archivo.name}\n\n` +
++      `Se quedan ${numero(quedan)} de ${numero(partidas)} partidas.\n` +
++      `${numero(partidas - quedan)} partidas se quitan y regresan a la base como DISPONIBLES.` +
++      (ajenas.length ? `\n\n⚠ ${numero(ajenas.length)} cuentas del archivo no son de esta propuesta (no se agregan): ${ajenas.slice(0, 5).join(", ")}${ajenas.length > 5 ? "…" : ""}` : "") +
++      "\n\nNo se puede deshacer.", "Aplicar"))) return;
++    btn.disabled = true;
++    try {
++      const r = await ctx.rpc("propuesta_final", { p_id: p.id_propuesta, p_refs: [...refs], p_grupos: [...grupos] });
++      toast(`${p.id_propuesta}: quedan ${numero(r.quedan)} partidas (capital ${dinero(r.capital)}); ${numero(r.quitadas)} regresaron a disponibles.`, "bien", 9000);
++      alTerminar?.();
++    } catch (e) { toast(e.message, "mal", 9000); }
++    btn.disabled = false;
++  }
++  return h("span", { style: { display: "contents" } }, btn, input);
++}
+diff --git a/Servicio_Web/sitio/nucleo/app.js b/Servicio_Web/sitio/nucleo/app.js
+index a9b8f95..d6cc7cf 100644
+--- a/Servicio_Web/sitio/nucleo/app.js
++++ b/Servicio_Web/sitio/nucleo/app.js
+@@ -43,11 +43,7 @@ export function traducir(msg) {
+   return msg || "Error desconocido";
+ }
+ 
+-async function rpc(funcion, args = {}) {
+-  const { data, error } = await sb.rpc(funcion, args);
+-  if (error) throw new Error(traducir(error.message));
+-  return data;
+-}
++const rpc = (funcion, args = {}) => ui.rpcPaginado(sb, funcion, args, traducir);
+ 
+ // ---------- Login ----------
+ function pantallaLogin(mensaje = "") {
+diff --git a/Servicio_Web/sitio/nucleo/ui.js b/Servicio_Web/sitio/nucleo/ui.js
+index 1dfb86d..f29ea4e 100644
+--- a/Servicio_Web/sitio/nucleo/ui.js
++++ b/Servicio_Web/sitio/nucleo/ui.js
+@@ -268,3 +268,22 @@ export function tabla(columnas, opciones = {}) {
+     filaDe(tr) { const k = tr?.dataset?.id; return filas.find((f) => String(id(f)) === k); },
+   };
+ }
++
++// ---------- Llamadas a funciones de la base ----------
++/**
++ * Llama una función de Supabase y junta TODAS sus filas. La API regresa como máximo 1,000 filas por
++ * llamada (max_rows); si la función regresa justo ese tope se piden las páginas siguientes.
++ * Así no se cortan el catálogo geográfico, la búsqueda de créditos ni el Funnel.
++ */
++export async function rpcPaginado(cliente, funcion, args = {}, traducir = (m) => m) {
++  const { data, error } = await cliente.rpc(funcion, args);
++  if (error) throw new Error(traducir(error.message));
++  if (!Array.isArray(data) || data.length < 1000 || data.length % 1000) return data;
++  const pagina = data.length, todo = [...data];
++  for (let desde = pagina; ; desde += pagina) {
++    const r = await cliente.rpc(funcion, args).range(desde, desde + pagina - 1);
++    if (r.error) throw new Error(traducir(r.error.message));
++    todo.push(...r.data);
++    if (r.data.length < pagina) return todo;
++  }
++}
+diff --git a/Servicio_Web/sitio/pruebas/modulos.test.mjs b/Servicio_Web/sitio/pruebas/modulos.test.mjs
+index 2edb77d..5a0532f 100644
+--- a/Servicio_Web/sitio/pruebas/modulos.test.mjs
++++ b/Servicio_Web/sitio/pruebas/modulos.test.mjs
+@@ -257,6 +257,47 @@ test("Funnel: embudo, atraso y edición de una venta", async () => {
+   const det = c.querySelector(".fun-det");
+   assert.ok(!det.hidden);
+   assert.ok(det.textContent.includes("VTA-0300"));
++  assert.ok(det.textContent.includes("Comentarios"));
++  assert.ok(det.textContent.includes("Vendedor responsable"));
++});
++
++test("Funnel: filtro por tipo de venta, comentarios y fechas automáticas", async () => {
++  const base = { mes: "Enero 2026", capital: 1000, monto_venta: 260, estado: "JALISCO", estatus_venta: "Vendida",
++    estatus_md: "En Proceso", actualizado: "2026-01-01T10:00:00Z", es_mia: true, vendedor_user: "u1", vendedor: "Ana" };
++  const ventas = [
++    { ...base, folio: "VTA-0401", tipo: "J&P", comprador: "Uno", fecha_limite_md: "2999-01-01" },
++    { ...base, folio: "VTA-0402", tipo: "Dual", comprador: "Dos", n_comentarios: 2 },
++    { ...base, folio: "VTA-0403", tipo: "Grupal", comprador: "Tres", vendedor_user: null, vendedor: "Rubén" },
++  ];
++  const llamadas = [];
++  const ctx = await ctxMontaje({
++    rpc: (fn, args) => {
++      llamadas.push([fn, args]);
++      if (fn === "funnel_lista") return ventas;
++      if (fn === "funnel_comentarios_lista") return [{ id: 1, autor: "Aux", texto: "Falta comprobante", fecha: "2026-01-02T10:00:00Z", mio: false }];
++      return null;
++    },
++    tieneRol: () => false, esAdmin: false,
++  });
++  const c = cont();
++  await (await import("../modulos/funnel/funnel.js")).default.montar(c, ctx);
++  const selTipo = [...c.querySelectorAll("select")].find((s) => [...s.options].some((o) => o.value === "Dual"));
++  selTipo.value = "Dual"; selTipo.dispatchEvent(new Event("change"));
++  assert.deepEqual(visibles(c).map((tr) => tr.textContent).filter((t) => t.includes("VTA-")).map((t) => t.match(/VTA-\d+/)[0]), ["VTA-0402"]);
++  assert.ok(c.textContent.includes("💬2"));
++  fila(c, "VTA-0402").dispatchEvent(new Event("click", { bubbles: true }));
++  await esperar(5);
++  const det = c.querySelector(".fun-det");
++  assert.ok(det.textContent.includes("Falta comprobante"));
++  // fechas límite: automáticas (deshabilitadas) para quien no es maestro
++  const fechas = [...det.querySelectorAll("input[type=date]")].filter((i) => /Automática/.test(i.title));
++  assert.equal(fechas.length, 4);
++  assert.ok(fechas.every((i) => i.disabled));
++  // el vendedor ya no es un campo editable
++  assert.ok(!llamadas.some(([fn]) => fn === "funnel_vendedores"));
++  // ventas sin usuario aparecen marcadas
++  selTipo.value = ""; selTipo.dispatchEvent(new Event("change"));
++  assert.ok(fila(c, "VTA-0403").textContent.includes("sin usuario"));
+ });
+ 
+ // ---------- Compradores ----------
+@@ -281,6 +322,7 @@ test("Restituciones: valida un crédito y lista el historial", async () => {
+     rpc: (fn) => (fn === "validar_restitucion" ? {
+       tipo: "JyP", clave: "V1", buscado: "V1", capital: 1000, integrantes: 1, dias: 10, estados: "JALISCO", municipios: "G",
+       vendido: true, bloqueado: false, id_propuesta: "VTA-0300", estatus_propuesta: "APROBADA", usuario_propuesta: "Ana", disponible_en_base: false,
++      venta: { folio: "VTA-0300", id_propuesta: "VTA-0300", comprador: "Jonathan", vendedor: "Victor", tipo: "JyP", estatus_venta: "Vendida", fecha_venta: "2026-11-10", capital: 5000, monto_venta: 1300, centavos: 0.26, partidas: 31, restringida: false },
+     } : null),
+     filas: (t) => (t === "restituciones" ? [{ id_restitucion: "RST-0001", fecha: "2026-01-01", usuario: "Ana", motivo: "Liquidado", clave_original: "V0", capital_original: 100, clave_reemplazo: "V1", capital_reemplazo: 120, diferencia: 20, tipo_cartera: "JyP" }] : []),
+   });
+@@ -292,6 +334,8 @@ test("Restituciones: valida un crédito y lista el historial", async () => {
+   [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Validar en bases")).click();
+   await esperar(5);
+   assert.ok(c.querySelector(".rst-ficha").textContent.includes("VTA-0300"));
++  const venta = c.querySelector(".rst-venta").textContent;
++  assert.ok(venta.includes("Jonathan") && venta.includes("Victor") && venta.includes("26¢") && venta.includes("Vendida"));
+   const buscar = [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Buscar reemplazo"));
+   assert.equal(buscar.disabled, false);
+ });
+diff --git a/Servicio_Web/sitio/pruebas/propuesta_final.test.mjs b/Servicio_Web/sitio/pruebas/propuesta_final.test.mjs
+new file mode 100644
+index 0000000..bc20c60
+--- /dev/null
++++ b/Servicio_Web/sitio/pruebas/propuesta_final.test.mjs
+@@ -0,0 +1,25 @@
++// Archivo de propuesta final y nombres de descarga.
++import { test } from "node:test";
 +import assert from "node:assert/strict";
++import "./ayuda.mjs";
++import { leerCSV, extraerCuentas } from "../modulos/venta/propuesta_final.js";
++import { nombreArchivo } from "../modulos/venta/layout.js";
 +
-+const cont = () => { const d = document.createElement("div"); document.body.append(d); return d; };
-+const hoy = new Date(), MES = hoy.getMonth() + 1, ANIO = hoy.getFullYear();
-+const METAS = [{ clave: "general", valor: 1500000 }, { clave: "grupal", valor: 750000 }, { clave: "jyp", valor: 750000 },
-+  { clave: "complementario", valor: 50000 }, { clave: "zona:Centro", valor: 675000 }, { clave: "zona:Norte", valor: 525000 },
-+  { clave: "zona:Sur", valor: 300000 }, { clave: "vendedor:Sandibel", valor: 975000 }, { clave: "vendedor:Maricela", valor: 525000 }];
-+const fila = (o) => ({ anio: ANIO, mes: MES, capital: 0, zona: "Centro", tipo: "Grupal", estatus_venta: "Vendida", vendedor: "Sandibel Lara Lopez", ...o });
-+
-+test("dashboard: diasHabiles y metaDeVendedor", async () => {
-+  const { diasHabiles, metaDeVendedor } = await import("../modulos/dashboard/dashboard.js");
-+  const d = diasHabiles(2026, 11, new Date(2026, 10, 18));   // noviembre 2026, miércoles 18
-+  assert.equal(d.total, 21); assert.equal(d.transcurridos, 13); assert.equal(d.restantes, 8);
-+  assert.equal(diasHabiles(2026, 10, new Date(2026, 10, 18)).transcurridos, 22);   // mes pasado: completo
-+  const metas = { complementario: 50000, "vendedor:Sandibel": 975000 };
-+  assert.equal(metaDeVendedor(metas, "Sandibel Lara López").meta, 975000);
-+  assert.equal(metaDeVendedor(metas, "Rubén Orozco").meta, 50000);
++test("leerCSV detecta separador y respeta comillas", () => {
++  assert.deepEqual(leerCSV("vReference;Capital\r\n1000-1;\"1,500.00\"\r\n"), [["vReference", "Capital"], ["1000-1", "1,500.00"]]);
++  assert.deepEqual(leerCSV("﻿a,b\n\"x,1\",2\n"), [["a", "b"], ["x,1", "2"]]);
 +});
 +
-+test("dashboard: vista de admin con metas, zonas, candados, comparativa y CSV", async () => {
-+  const datos = [fila({ folio: "VTA-1", monto_venta: 300000 }), fila({ folio: "VTA-2", monto_venta: 100000, zona: "Norte", tipo: "JyP", vendedor: "Ruben Orozco Panecatl" }),
-+    fila({ folio: "VTA-3", monto_venta: 80000, estatus_venta: "Propuesta" }),
-+    fila({ folio: "VTA-0", monto_venta: 200000, mes: MES > 1 ? MES - 1 : MES })];
-+  const ctx = await ctxMontaje({ perfil: { rol: "admin", nombre: "Daniel" }, esAdmin: true,
-+    rpc: (fn) => (fn === "dashboard_datos" ? datos : fn === "dashboard_metas_lista" ? METAS : null) });
-+  const c = cont();
-+  await (await import("../modulos/dashboard/dashboard.js")).default.montar(c, ctx);
-+  await esperar(5);
-+  const t = c.textContent;
-+  assert.ok(t.includes("Resultado del mes") && t.includes("Vendedores principales"));
-+  assert.ok(t.includes("$400 mil"), "vendido del mes = 300k + 100k");
-+  assert.ok(t.includes("26.7%"), "avance contra meta general 1.5M");
-+  assert.ok(t.includes("$80 mil") && t.includes("1 propuestas abiertas"));
-+  assert.ok(t.includes("Ruben Orozco"), "complementario con nombre corto");
-+  assert.ok(t.includes("🔒 Pendiente"));
-+  assert.ok(c.querySelector(".dsh-barras") && t.includes("VS MES ANTERIOR"));
-+  assert.ok([...c.querySelectorAll("button")].some((b) => b.textContent.includes("⚙ Metas")));
-+  // filtro de vendedor usa su meta principal
-+  const sel = [...c.querySelectorAll("select")].find((s) => [...s.options].some((o) => o.value === "Sandibel Lara Lopez"));
-+  sel.value = "Sandibel Lara Lopez"; sel.dispatchEvent(new Event("change"));
-+  assert.ok(c.textContent.includes("meta de Sandibel Lara"));
-+  limpiarBlob();
-+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Exportar CSV")).click();
-+  const csv = await blobCapturado().text();
-+  assert.ok(csv.includes("VTA-1") && !csv.includes("VTA-2"));
++test("extraerCuentas reconoce encabezados y, sin encabezado, toma la primera columna", () => {
++  assert.deepEqual(extraerCuentas([["IdPropuesta", "vReference", "vGroupId"], ["VTA-1", "R1", ""], ["VTA-1", "R2", "G9"], ["VTA-1", "R1", ""]]),
++    { refs: ["R1", "R2"], grupos: ["G9"] });
++  assert.deepEqual(extraerCuentas([["Referencia"], ["0000343399-2"]]), { refs: ["0000343399-2"], grupos: [] });
++  assert.deepEqual(extraerCuentas([["0000343399-2"], ["1000391636-7"]]), { refs: ["0000343399-2", "1000391636-7"], grupos: [] });
++  assert.deepEqual(extraerCuentas([]), { refs: [], grupos: [] });
 +});
 +
-+test("dashboard: el vendedor ve sólo su resultado contra su meta", async () => {
-+  const datos = [fila({ folio: "VTA-9", monto_venta: 25000, vendedor: "Rubén Orozco Panecatl", es_mio: true })];
-+  const ctx = await ctxMontaje({ perfil: { rol: "vendedor", nombre: "Rubén Orozco Panecatl" },
-+    rpc: (fn) => (fn === "dashboard_datos" ? datos : fn === "dashboard_metas_lista" ? METAS : null) });
-+  const c = cont();
-+  await (await import("../modulos/dashboard/dashboard.js")).default.montar(c, ctx);
-+  await esperar(5);
-+  const t = c.textContent;
-+  assert.ok(t.includes("Mi resultado del mes") && t.includes("Mi candado"));
-+  assert.ok(t.includes("50.0%"), "25k de meta complementaria 50k");
-+  assert.ok(!t.includes("Vendedores principales"));
-+  assert.ok(![...c.querySelectorAll("button")].some((b) => b.textContent.includes("⚙ Metas")));
-+  assert.ok(![...c.querySelectorAll("label")].some((l) => l.textContent === "VENDEDOR"));
++test("nombreArchivo incluye folio y comprador sin acentos ni símbolos", () => {
++  assert.equal(nombreArchivo({ id_propuesta: "VTA-0301", comprador: "jonathan caballero" }, "Propuesta"), "VTA-0301_jonathan_caballero_Propuesta.csv");
++  assert.equal(nombreArchivo({ id_propuesta: "VTA-0302", comprador: "José Peña / S.A." }, "BaseFinal"), "VTA-0302_Jose_Pena_S_A_BaseFinal.csv");
++  assert.equal(nombreArchivo({ id_propuesta: "VTA-0303", comprador: "" }, "Cuentas_Revision"), "VTA-0303_Cuentas_Revision.csv");
 +});
-diff --git a/Servicio_Web/supabase/modulos/37_dashboard.sql b/Servicio_Web/supabase/modulos/37_dashboard.sql
+diff --git a/Servicio_Web/sitio/pruebas/ui.test.mjs b/Servicio_Web/sitio/pruebas/ui.test.mjs
+index 33f1f49..48411eb 100644
+--- a/Servicio_Web/sitio/pruebas/ui.test.mjs
++++ b/Servicio_Web/sitio/pruebas/ui.test.mjs
+@@ -150,3 +150,24 @@ test("pedirTexto regresa el texto escrito", async () => {
+   velo.querySelector(".btn-primario").dispatchEvent(new Event("click"));
+   assert.equal(await p, "nuevo");
+ });
++
++test("rpcPaginado junta todas las páginas cuando la API corta en 1,000 filas", async () => {
++  const total = 2350, llamadas = [];
++  const cliente = {
++    rpc(fn, args) {
++      llamadas.push(fn);
++      const pagina = (desde) => ({ data: Array.from({ length: Math.max(0, Math.min(1000, total - desde)) }, (_, i) => desde + i), error: null });
++      const p = Promise.resolve(pagina(0));
++      p.range = (desde) => Promise.resolve(pagina(desde));
++      return p;
++    },
++  };
++  const filas = await ui.rpcPaginado(cliente, "buscar_grupos", {});
++  assert.equal(filas.length, total);
++  assert.equal(filas[2349], 2349);
++  assert.equal(llamadas.length, 3);
++  const pocas = { rpc: () => Object.assign(Promise.resolve({ data: [1, 2, 3], error: null }), { range: () => assert.fail("no debe paginar") }) };
++  assert.deepEqual(await ui.rpcPaginado(pocas, "x"), [1, 2, 3]);
++  const conError = { rpc: () => Promise.resolve({ data: null, error: { message: "boom" } }) };
++  await assert.rejects(ui.rpcPaginado(conError, "x", {}, (m) => `trad:${m}`), /trad:boom/);
++});
+diff --git a/Servicio_Web/supabase/modulos/30_geo_sin_acentos.sql b/Servicio_Web/supabase/modulos/30_geo_sin_acentos.sql
 new file mode 100644
-index 0000000..4819acd
+index 0000000..d72b61a
 --- /dev/null
-+++ b/Servicio_Web/supabase/modulos/37_dashboard.sql
-@@ -0,0 +1,120 @@
++++ b/Servicio_Web/supabase/modulos/30_geo_sin_acentos.sql
+@@ -0,0 +1,30 @@
 +-- ============================================================
-+-- DASHBOARD DE VENTA DE CARTERA (réplica del Dashboard_Venta_Cartera.html, ahora en vivo desde el Funnel)
-+--  - dashboard_metas: metas editables por admin/validador (general, grupal, jyp, complementario,
-+--    zona:<Zona>, vendedor:<parte del nombre>).
-+--  - zonas_estado: catálogo Estado -> Zona (llave sin acentos y en mayúsculas).
-+--  - dashboard_datos(anio): ventas del Funnel que el usuario PUEDE VER (funnel_puede_ver): el vendedor sólo
-+--    las suyas; auxiliar, control documental, validador y admin todas. Mes tomado de la columna Mes
-+--    ("Noviembre 2026") o de la fecha de venta / propuesta.
-+-- Requiere 31 (funnel_puede_ver). Idempotente.
++-- BÚSQUEDA POR ESTADO / MUNICIPIO SIN IMPORTAR ACENTOS
++--  BASE_JYP escribe sin acentos ("NAUCALPAN DE JUAREZ") y BASE_GRUPAL con acentos ("Naucalpan de Juárez").
++--  En ventas DUALES el filtro de municipio sólo encontraba uno de los dos tipos (salían sólo créditos JyP).
++--  Las columnas de búsqueda estado_n / municipio_n ahora quitan acentos, así JyP y Grupal coinciden.
++-- Requiere 21. Idempotente.
 +-- ============================================================
-+create table if not exists public.dashboard_metas (
-+    clave text primary key,
-+    valor numeric not null check (valor >= 0),
-+    actualizado timestamptz not null default now(),
-+    actualizado_por text
-+);
-+alter table public.dashboard_metas enable row level security;
-+revoke all on public.dashboard_metas from anon, authenticated;
-+insert into public.dashboard_metas (clave, valor) values
-+    ('general', 1500000), ('grupal', 750000), ('jyp', 750000), ('complementario', 50000),
-+    ('zona:Centro', 675000), ('zona:Norte', 525000), ('zona:Sur', 300000),
-+    ('vendedor:Sandibel', 975000), ('vendedor:Maricela', 525000)
-+on conflict (clave) do nothing;
++do $$
++begin
++    if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'cartera_jyp'
++                  and column_name = 'estado_n' and generation_expression not like '%_sin_acentos%') then
++        drop index if exists public.cartera_jyp_geo_n;
++        alter table public.cartera_jyp drop column estado_n, drop column municipio_n;
++        alter table public.cartera_jyp
++            add column estado_n text generated always as (public._sin_acentos(regexp_replace(trim(coalesce(estado, '')), '\s+', ' ', 'g'))) stored,
++            add column municipio_n text generated always as (public._sin_acentos(regexp_replace(trim(coalesce(municipio, '')), '\s+', ' ', 'g'))) stored;
++        create index cartera_jyp_geo_n on public.cartera_jyp (estado_n, municipio_n);
++    end if;
++    if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'cartera_grupal'
++                  and column_name = 'estado_n' and generation_expression not like '%_sin_acentos%') then
++        drop index if exists public.cartera_grupal_geo_n;
++        alter table public.cartera_grupal drop column estado_n, drop column municipio_n;
++        alter table public.cartera_grupal
++            add column estado_n text generated always as (public._sin_acentos(regexp_replace(trim(coalesce(estado, '')), '\s+', ' ', 'g'))) stored,
++            add column municipio_n text generated always as (public._sin_acentos(regexp_replace(trim(coalesce(municipio, '')), '\s+', ' ', 'g'))) stored;
++        create index cartera_grupal_geo_n on public.cartera_grupal (estado_n, municipio_n);
++    end if;
++end $$;
++analyze public.cartera_jyp;
++analyze public.cartera_grupal;
+diff --git a/Servicio_Web/supabase/modulos/31_funnel_responsable.sql b/Servicio_Web/supabase/modulos/31_funnel_responsable.sql
+new file mode 100644
+index 0000000..da1ba45
+--- /dev/null
++++ b/Servicio_Web/supabase/modulos/31_funnel_responsable.sql
+@@ -0,0 +1,299 @@
++-- ============================================================
++-- FUNNEL: VENDEDOR RESPONSABLE (usuario), VISIBILIDAD, REASIGNACIÓN, COMENTARIOS Y FECHAS LÍMITE
++--  - Cada venta tiene un vendedor responsable que es un USUARIO (funnel_ventas.vendedor_user).
++--    Las ventas de la página lo toman de quien armó la propuesta; las históricas se ligan por nombre
++--    y las que no tienen usuario quedan "sin asignar" hasta que un admin las asigne.
++--  - Ve la venta: su responsable, auxiliar de venta, control documental y los maestros (validador, admin).
++--    Edita: su responsable, auxiliar y maestros. El RESPONSABLE sólo lo cambia un maestro (reasignar).
++--  - Comentarios por venta (hilo) con aviso 🔔 al responsable / validador.
++--  - Fechas límite automáticas con los plazos de etapas_plazos (29):
++--      al marcar Vendida      → Inicio MD = fecha de venta, Límite MD = + plazo "md"
++--      al terminar MD         → Inicio Admin = hoy, Límite Admin = + plazo "doc"
++--    Sólo se llenan si están vacías (un maestro las puede corregir).
++-- Requiere 19-29. Idempotente.
++-- ============================================================
++alter table public.funnel_ventas add column if not exists vendedor_user uuid references auth.users (id) on delete set null;
++create index if not exists funnel_vendedor_user on public.funnel_ventas (vendedor_user);
 +
-+create table if not exists public.zonas_estado (
-+    estado_n text primary key,
-+    zona text not null
-+);
-+alter table public.zonas_estado enable row level security;
-+revoke all on public.zonas_estado from anon, authenticated;
-+insert into public.zonas_estado (estado_n, zona) values
-+    ('AGUASCALIENTES', 'Norte'), ('BAJA CALIFORNIA', 'Norte'), ('BAJA CALIFORNIA SUR', 'Norte'), ('CAMPECHE', 'Sur'),
-+    ('CHIAPAS', 'Sur'), ('CHIHUAHUA', 'Norte'), ('CIUDAD DE MEXICO', 'Centro'), ('CDMX', 'Centro'), ('DISTRITO FEDERAL', 'Centro'),
-+    ('COAHUILA', 'Norte'), ('COAHUILA DE ZARAGOZA', 'Norte'), ('COLIMA', 'Norte'), ('DURANGO', 'Norte'),
-+    ('ESTADO DE MEXICO', 'Centro'), ('MEXICO', 'Centro'), ('EDO DE MEXICO', 'Centro'), ('EDO. DE MEXICO', 'Centro'),
-+    ('GUANAJUATO', 'Centro'), ('GUERRERO', 'Centro'), ('HIDALGO', 'Centro'), ('JALISCO', 'Norte'),
-+    ('MICHOACAN', 'Centro'), ('MICHOACAN DE OCAMPO', 'Centro'), ('MORELOS', 'Centro'), ('NAYARIT', 'Norte'),
-+    ('NUEVO LEON', 'Norte'), ('OAXACA', 'Sur'), ('PUEBLA', 'Centro'), ('QUERETARO', 'Centro'), ('QUERETARO DE ARTEAGA', 'Centro'),
-+    ('QUINTANA ROO', 'Sur'), ('SAN LUIS POTOSI', 'Norte'), ('SINALOA', 'Norte'), ('SONORA', 'Norte'), ('TABASCO', 'Sur'),
-+    ('TAMAULIPAS', 'Norte'), ('TLAXCALA', 'Centro'), ('VERACRUZ', 'Sur'), ('VERACRUZ DE IGNACIO DE LA LLAVE', 'Sur'),
-+    ('YUCATAN', 'Sur'), ('ZACATECAS', 'Norte')
-+on conflict (estado_n) do nothing;
++-- ligar lo que ya existe: ventas de la página → quien armó la propuesta; históricas → por nombre
++update public.funnel_ventas f set vendedor_user = p.user_id
++  from public.propuestas p where p.id_propuesta = f.id_propuesta and f.vendedor_user is null and p.user_id is not null;
++update public.funnel_ventas f set vendedor_user = (
++        select pe.user_id from public.perfiles pe
++         where pe.activo and pe.rol <> 'comprador' and coalesce(trim(pe.nombre), '') <> ''
++           and not exists (select 1 from regexp_split_to_table(public._sin_acentos(pe.nombre), '\s+') w
++                            where length(w) >= 3 and position(w in public._sin_acentos(f.vendedor)) = 0)
++         order by length(pe.nombre) desc limit 1)
++ where f.vendedor_user is null and coalesce(trim(f.vendedor), '') <> '';
 +
-+create or replace function public._mes_numero(p_texto text) returns integer
-+language sql immutable set search_path = public as $$
-+    select case
-+        when t ~ '^ene' then 1 when t ~ '^feb' then 2 when t ~ '^mar' then 3 when t ~ '^abr' then 4
-+        when t ~ '^may' then 5 when t ~ '^jun' then 6 when t ~ '^jul' then 7 when t ~ '^ago' then 8
-+        when t ~ '^(sep|set)' then 9 when t ~ '^oct' then 10 when t ~ '^nov' then 11 when t ~ '^dic' then 12 end
-+    from (select lower(trim(coalesce(p_texto, ''))) t) x
++-- ventas nuevas de la página: el responsable es quien armó la propuesta
++create or replace function public._funnel_responsable() returns trigger
++language plpgsql security definer set search_path = public as $$
++begin
++    if new.vendedor_user is null and new.id_propuesta is not null then
++        select user_id into new.vendedor_user from public.propuestas where id_propuesta = new.id_propuesta;
++    end if;
++    return new;
++end $$;
++revoke all on function public._funnel_responsable() from public, anon, authenticated;
++drop trigger if exists funnel_responsable on public.funnel_ventas;
++create trigger funnel_responsable before insert on public.funnel_ventas
++    for each row execute function public._funnel_responsable();
++
++-- ¿Quién ve / quién edita una venta?
++create or replace function public.funnel_puede_ver(p_folio text) returns boolean
++language sql stable security definer set search_path = public as $$
++    select public.es_activo() and (
++        public.tiene_rol(array['auxiliar', 'control_doc'])
++        or exists (select 1 from public.funnel_ventas f where f.folio = p_folio and f.vendedor_user = auth.uid()))
 +$$;
++create or replace function public.funnel_puede_editar(p_folio text) returns boolean
++language sql stable security definer set search_path = public as $$
++    select public.es_activo() and (
++        public.tiene_rol(array['auxiliar'])
++        or exists (select 1 from public.funnel_ventas f where f.folio = p_folio and f.vendedor_user = auth.uid()))
++$$;
++revoke all on function public.funnel_puede_ver(text) from public, anon;
++grant execute on function public.funnel_puede_ver(text) to authenticated;
 +
-+create or replace function public.dashboard_datos(p_anio integer default null)
-+returns table (folio text, anio integer, mes integer, comprador text, capital numeric, monto_venta numeric,
-+               estado text, municipio text, zona text, tipo text, estatus_venta text,
-+               fecha_propuesta date, fecha_venta date, vendedor text, vendedor_user uuid, es_mio boolean,
-+               estatus_md text, estatus_control_doc text, estatus_juridico text, estatus_final text)
++-- Documentos: sólo quien ve la venta
++drop policy if exists documentos_lectura on public.funnel_documentos;
++create policy documentos_lectura on public.funnel_documentos for select to authenticated using (public.funnel_puede_ver(folio));
++drop policy if exists "documentos_venta_ver" on storage.objects;
++create policy "documentos_venta_ver" on storage.objects for select to authenticated
++    using (bucket_id = 'documentos-venta' and public.funnel_puede_ver(split_part(name, '/', 1)));
++
++-- Usuarios que pueden ser responsables (para el selector del admin)
++create or replace function public.funnel_vendedores()
++returns table (user_id uuid, nombre text, email text, rol text)
 +language plpgsql stable security definer set search_path = public as $$
 +begin
 +    perform public._exigir_activo();
-+    return query
-+    with v as (
-+        select f.*,
-+               coalesce(public._mes_numero(f.mes), extract(month from coalesce(f.fecha_venta, f.fecha_propuesta))::integer) m,
-+               coalesce(substring(f.mes from '(20\d\d)')::integer,
-+                        extract(year from coalesce(f.fecha_venta, f.fecha_propuesta, f.actualizado))::integer) a
-+          from public.funnel_ventas f
-+         where public.funnel_puede_ver(f.folio)
-+    )
-+    select v.folio, v.a, v.m, v.comprador, coalesce(v.capital, 0), coalesce(v.monto_venta, 0),
-+           v.estado, v.municipios,
-+           coalesce(z.zona, 'Sin zona'),
-+           case when v.tipo ilike '%grupal%' then 'Grupal' when v.tipo ilike '%dual%' then 'Dual'
-+                when v.tipo ~* '(j\s*&\s*p|jyp|j y p)' then 'JyP' else coalesce(nullif(v.tipo, ''), 'Sin tipo') end,
-+           v.estatus_venta, v.fecha_propuesta, v.fecha_venta,
-+           coalesce(nullif(trim(p.nombre), ''), v.vendedor, 'Sin vendedor'), v.vendedor_user,
-+           v.vendedor_user is not distinct from auth.uid(),
-+           v.estatus_md, v.estatus_control_doc, v.estatus_juridico, v.estatus_final
-+      from v
-+      left join public.perfiles p on p.user_id = v.vendedor_user
-+      left join public.zonas_estado z on z.estado_n = upper(public._sin_acentos(regexp_replace(trim(coalesce(v.estado, '')), '\s+', ' ', 'g')))
-+     where p_anio is null or v.a = p_anio
-+     order by v.a, v.m, v.folio;
++    return query select p.user_id, coalesce(nullif(trim(p.nombre), ''), p.email), p.email, p.rol
++                   from public.perfiles p where p.activo and p.rol <> 'comprador' order by 2;
 +end $$;
 +
-+create or replace function public.dashboard_metas_lista()
-+returns table (clave text, valor numeric, actualizado timestamptz, actualizado_por text)
-+language plpgsql stable security definer set search_path = public as $$
++-- Reasignar (sólo maestros). Acepta varias ventas a la vez.
++create or replace function public.funnel_asignar_vendedor(p_folios text[], p_user uuid)
++returns integer
++language plpgsql volatile security definer set search_path = public as $$
++declare v_nombre text; v_quien text; v_n integer; r record;
++begin
++    if not public.es_admin() then raise exception 'Sólo un administrador o el validador reasignan ventas' using errcode = '42501'; end if;
++    select coalesce(nullif(trim(nombre), ''), email) into v_nombre from public.perfiles
++     where user_id = p_user and activo and rol <> 'comprador';
++    if v_nombre is null then raise exception 'Ese usuario no existe o está inactivo'; end if;
++    select coalesce(nombre, email) into v_quien from public.perfiles where user_id = auth.uid();
++    for r in select folio, id_propuesta, vendedor from public.funnel_ventas
++              where folio = any (p_folios) and vendedor_user is distinct from p_user loop
++        update public.funnel_ventas set vendedor_user = p_user, vendedor = v_nombre, actualizado = now(), actualizado_por = v_quien
++         where folio = r.folio;
++        if r.id_propuesta is not null then
++            insert into public.propuesta_eventos (id_propuesta, usuario, evento, detalle)
++            values (r.id_propuesta, v_quien, 'Reasignada', coalesce(r.vendedor, 'sin asignar') || ' → ' || v_nombre);
++        end if;
++    end loop;
++    select count(*) into v_n from public.funnel_ventas where folio = any (p_folios) and vendedor_user = p_user;
++    perform public._notificar(null, p_user, '📈 Te asignaron ' || cardinality(p_folios) || ' venta(s)',
++        left(array_to_string(p_folios, ', '), 200) || ' (' || v_quien || ')', 'funnel');
++    return v_n;
++end $$;
++
++-- funnel_guardar: el vendedor ya no se edita aquí (se reasigna); permisos por responsable
++create or replace function public.funnel_guardar(p_folio text, p_datos jsonb)
++returns void
++language plpgsql security definer set search_path = public as $$
++declare
++    v_f public.funnel_ventas; v_quien text; k text;
++    v_back   text[] := array['estatus_md','fecha_inicio_md','fecha_limite_md','base_completa_venta','estatus_control_doc',
++                             'fecha_inicio_admin','fecha_limite_admin','estatus_juridico','estatus_final','base_final',
++                             'fecha_ticket_contrato','numero_ticket_contrato','numero_guia','capital','monto_venta','tipo','estatus_venta'];
++    v_venta  text[] := array['comprador','estado','municipios','fecha_venta','propuesta_url','comprobante_pago','fecha_propuesta','mes'];
 +begin
 +    perform public._exigir_activo();
-+    return query select m.clave, m.valor, m.actualizado, m.actualizado_por from public.dashboard_metas m order by m.clave;
++    select * into v_f from public.funnel_ventas where folio = p_folio for update;
++    if not found then raise exception 'No existe la venta %', p_folio; end if;
++    if not public.funnel_puede_editar(p_folio) then
++        raise exception 'Sólo el vendedor responsable de %, el auxiliar de venta o un maestro pueden editarla', p_folio using errcode = '42501';
++    end if;
++    for k in select jsonb_object_keys(p_datos) loop
++        if k = 'vendedor' then raise exception 'El vendedor responsable sólo lo cambia un administrador con «Reasignar»'; end if;
++        if not (k = any (v_back) or k = any (v_venta)) then raise exception 'Campo no editable: %', k; end if;
++        if k in ('fecha_inicio_md', 'fecha_limite_md', 'fecha_inicio_admin', 'fecha_limite_admin') and not public.es_admin() then
++            raise exception 'Las fechas de inicio y límite son automáticas; sólo un maestro las corrige';
++        end if;
++    end loop;
++    select coalesce(nombre, email) into v_quien from public.perfiles where user_id = auth.uid();
++
++    update public.funnel_ventas f set
++        comprador              = case when p_datos ? 'comprador' then nullif(trim(p_datos->>'comprador'), '') else f.comprador end,
++        capital                = case when p_datos ? 'capital' then nullif(p_datos->>'capital', '')::numeric else f.capital end,
++        monto_venta            = case when p_datos ? 'monto_venta' then nullif(p_datos->>'monto_venta', '')::numeric else f.monto_venta end,
++        estado                 = case when p_datos ? 'estado' then nullif(trim(p_datos->>'estado'), '') else f.estado end,
++        municipios             = case when p_datos ? 'municipios' then nullif(trim(p_datos->>'municipios'), '') else f.municipios end,
++        tipo                   = case when p_datos ? 'tipo' then nullif(p_datos->>'tipo', '') else f.tipo end,
++        estatus_venta          = case when p_datos ? 'estatus_venta' then coalesce(nullif(p_datos->>'estatus_venta', ''), 'Propuesta') else f.estatus_venta end,
++        fecha_propuesta        = case when p_datos ? 'fecha_propuesta' then nullif(p_datos->>'fecha_propuesta', '')::date else f.fecha_propuesta end,
++        fecha_venta            = case when p_datos ? 'fecha_venta' then nullif(p_datos->>'fecha_venta', '')::date else f.fecha_venta end,
++        estatus_md             = case when p_datos ? 'estatus_md' then nullif(p_datos->>'estatus_md', '') else f.estatus_md end,
++        fecha_inicio_md        = case when p_datos ? 'fecha_inicio_md' then nullif(p_datos->>'fecha_inicio_md', '')::date else f.fecha_inicio_md end,
++        fecha_limite_md        = case when p_datos ? 'fecha_limite_md' then nullif(p_datos->>'fecha_limite_md', '')::date else f.fecha_limite_md end,
++        base_completa_venta    = case when p_datos ? 'base_completa_venta' then nullif(trim(p_datos->>'base_completa_venta'), '') else f.base_completa_venta end,
++        estatus_control_doc    = case when p_datos ? 'estatus_control_doc' then nullif(p_datos->>'estatus_control_doc', '') else f.estatus_control_doc end,
++        fecha_inicio_admin     = case when p_datos ? 'fecha_inicio_admin' then nullif(p_datos->>'fecha_inicio_admin', '')::date else f.fecha_inicio_admin end,
++        fecha_limite_admin     = case when p_datos ? 'fecha_limite_admin' then nullif(p_datos->>'fecha_limite_admin', '')::date else f.fecha_limite_admin end,
++        estatus_juridico       = case when p_datos ? 'estatus_juridico' then nullif(p_datos->>'estatus_juridico', '') else f.estatus_juridico end,
++        estatus_final          = case when p_datos ? 'estatus_final' then nullif(p_datos->>'estatus_final', '') else f.estatus_final end,
++        base_final             = case when p_datos ? 'base_final' then nullif(trim(p_datos->>'base_final'), '') else f.base_final end,
++        propuesta_url          = case when p_datos ? 'propuesta_url' then nullif(trim(p_datos->>'propuesta_url'), '') else f.propuesta_url end,
++        comprobante_pago       = case when p_datos ? 'comprobante_pago' then nullif(trim(p_datos->>'comprobante_pago'), '') else f.comprobante_pago end,
++        fecha_ticket_contrato  = case when p_datos ? 'fecha_ticket_contrato' then nullif(p_datos->>'fecha_ticket_contrato', '')::date else f.fecha_ticket_contrato end,
++        numero_ticket_contrato = case when p_datos ? 'numero_ticket_contrato' then nullif(trim(p_datos->>'numero_ticket_contrato'), '') else f.numero_ticket_contrato end,
++        numero_guia            = case when p_datos ? 'numero_guia' then nullif(trim(p_datos->>'numero_guia'), '') else f.numero_guia end,
++        mes                    = case when p_datos ? 'mes' then nullif(trim(p_datos->>'mes'), '') else f.mes end,
++        actualizado = now(), actualizado_por = v_quien
++     where f.folio = p_folio;
++
++    if v_f.id_propuesta is not null then
++        insert into public.propuesta_eventos (id_propuesta, usuario, evento, detalle)
++        select v_f.id_propuesta, v_quien, 'Funnel',
++               string_agg(initcap(replace(k2, '_', ' ')) || ': ' || coalesce(nullif(p_datos->>k2, ''), '—'), ' · ')
++          from jsonb_object_keys(p_datos) k2;
++    end if;
 +end $$;
 +
-+create or replace function public.dashboard_guardar_meta(p_clave text, p_valor numeric)
++-- Fechas límite automáticas
++create or replace function public._funnel_fechas_auto() returns trigger
++language plpgsql security definer set search_path = public as $$
++declare v_md integer; v_doc integer; v_hoy date := (now() at time zone 'America/Mexico_City')::date;
++begin
++    select max(dias) filter (where etapa = 'md'), max(dias) filter (where etapa = 'doc') into v_md, v_doc from public.etapas_plazos;
++    if new.estatus_venta = 'Vendida' and (tg_op = 'INSERT' or old.estatus_venta is distinct from 'Vendida') then
++        new.fecha_inicio_md := coalesce(new.fecha_inicio_md, new.fecha_venta, v_hoy);
++        new.fecha_limite_md := coalesce(new.fecha_limite_md, new.fecha_inicio_md + coalesce(v_md, 2));
++    end if;
++    if new.estatus_md = 'Informacion Enviada' and (tg_op = 'INSERT' or old.estatus_md is distinct from 'Informacion Enviada') then
++        new.fecha_inicio_admin := coalesce(new.fecha_inicio_admin, v_hoy);
++        new.fecha_limite_admin := coalesce(new.fecha_limite_admin, new.fecha_inicio_admin + coalesce(v_doc, 15));
++    end if;
++    return new;
++end $$;
++revoke all on function public._funnel_fechas_auto() from public, anon, authenticated;
++drop trigger if exists funnel_fechas_auto on public.funnel_ventas;
++create trigger funnel_fechas_auto before insert or update of estatus_venta, estatus_md on public.funnel_ventas
++    for each row execute function public._funnel_fechas_auto();
++
++-- Comentarios
++create table if not exists public.funnel_comentarios (
++    id      bigserial primary key,
++    folio   text not null references public.funnel_ventas (folio) on delete cascade,
++    user_id uuid references auth.users (id) on delete set null,
++    autor   text,
++    texto   text not null check (length(trim(texto)) between 1 and 2000),
++    fecha   timestamptz not null default now()
++);
++create index if not exists funnel_comentarios_folio on public.funnel_comentarios (folio, fecha);
++alter table public.funnel_comentarios enable row level security;
++revoke all on public.funnel_comentarios from anon, authenticated;
++
++create or replace function public.funnel_comentarios_lista(p_folio text)
++returns table (id bigint, autor text, texto text, fecha timestamptz, mio boolean)
++language plpgsql stable security definer set search_path = public as $$
++begin
++    if not public.funnel_puede_ver(p_folio) then raise exception 'Sin acceso a %', p_folio using errcode = '42501'; end if;
++    return query select c.id, c.autor, c.texto, c.fecha, c.user_id = auth.uid()
++                   from public.funnel_comentarios c where c.folio = p_folio order by c.fecha;
++end $$;
++
++create or replace function public.funnel_comentar(p_folio text, p_texto text)
++returns bigint
++language plpgsql volatile security definer set search_path = public as $$
++declare v_id bigint; v_quien text; v_resp uuid;
++begin
++    if not public.funnel_puede_ver(p_folio) then raise exception 'Sin acceso a %', p_folio using errcode = '42501'; end if;
++    if coalesce(trim(p_texto), '') = '' then raise exception 'Escribe el comentario'; end if;
++    select coalesce(nombre, email) into v_quien from public.perfiles where user_id = auth.uid();
++    insert into public.funnel_comentarios (folio, user_id, autor, texto) values (p_folio, auth.uid(), v_quien, left(trim(p_texto), 2000))
++    returning id into v_id;
++    select vendedor_user into v_resp from public.funnel_ventas where folio = p_folio;
++    -- avisa al responsable (si no es quien escribe) y, si escribe el responsable, al validador
++    perform public._notificar(case when v_resp = auth.uid() then array['validador'] else array[]::text[] end,
++        case when v_resp is distinct from auth.uid() then v_resp end,
++        '💬 Comentario en ' || p_folio, v_quien || ': ' || left(trim(p_texto), 160), 'funnel');
++    return v_id;
++end $$;
++
++create or replace function public.funnel_borrar_comentario(p_id bigint)
 +returns void
 +language plpgsql volatile security definer set search_path = public as $$
-+declare v_quien text;
 +begin
-+    if not public.es_admin() then raise exception 'Sólo el validador o un administrador cambian las metas' using errcode = '42501'; end if;
-+    p_clave := trim(coalesce(p_clave, ''));
-+    if p_clave !~ '^(general|grupal|jyp|complementario|zona:.+|vendedor:.+)$' then
-+        raise exception 'Clave de meta no válida: %', p_clave;
-+    end if;
-+    select coalesce(nombre, email) into v_quien from public.perfiles where user_id = auth.uid();
-+    if p_valor is null then
-+        delete from public.dashboard_metas where clave = p_clave and clave not in ('general', 'grupal', 'jyp', 'complementario');
-+        return;
-+    end if;
-+    insert into public.dashboard_metas (clave, valor, actualizado, actualizado_por) values (p_clave, p_valor, now(), v_quien)
-+    on conflict (clave) do update set valor = excluded.valor, actualizado = now(), actualizado_por = v_quien;
++    delete from public.funnel_comentarios where id = p_id and (user_id = auth.uid() or public.es_admin());
++    if not found then raise exception 'Sólo quien lo escribió o un maestro lo puede borrar'; end if;
++end $$;
++
++-- funnel_lista: sólo las ventas que el usuario puede ver + responsable + comentarios
++drop function if exists public.funnel_lista();
++create or replace function public.funnel_lista()
++returns table (folio text, id_propuesta text, comprador text, capital numeric, monto_venta numeric, estado text,
++               municipios text, tipo text, estatus_venta text, fecha_propuesta date, fecha_venta date, vendedor text,
++               estatus_md text, fecha_inicio_md date, fecha_limite_md date, base_completa_venta text,
++               estatus_control_doc text, fecha_inicio_admin date, fecha_limite_admin date, estatus_juridico text,
++               estatus_final text, base_final text, propuesta_url text, comprobante_pago text,
++               fecha_ticket_contrato date, numero_ticket_contrato text, numero_guia text, origen text,
++               actualizado timestamptz, actualizado_por text, estatus_propuesta text, es_mia boolean,
++               mes text, ligas_desc jsonb, adjuntos jsonb, n_comprobantes bigint, n_documentos bigint,
++               correo_comprador text, enviada_en timestamptz, enviada_por text, envios integer,
++               comprador_id bigint, comprador_cat text, publicada_en timestamptz, publicada_por text, vistas integer,
++               ultima_vista timestamptz, respuesta text, respuesta_en timestamptz, respuesta_por text, respuesta_comentario text,
++               vendedor_user uuid, n_comentarios bigint, ultimo_comentario timestamptz)
++language plpgsql stable security definer set search_path = public as $$
++declare v_todo boolean;
++begin
++    perform public._exigir_activo();
++    v_todo := public.tiene_rol(array['auxiliar', 'control_doc']);
++    return query
++    with vis as (select fv.* from public.funnel_ventas fv where v_todo or fv.vendedor_user = auth.uid()),
++    geo as (
++        select d.id_propuesta,
++               string_agg(distinct initcap(lower(coalesce(j.estado, g.estado))), ', ') estados,
++               string_agg(distinct coalesce(j.municipio, g.municipio), ', ') munis
++          from public.propuesta_detalle d
++          left join public.cartera_jyp j on d.tipo_cartera = 'JyP' and j.vreference = d.vreference
++          left join public.cartera_grupal g on d.tipo_cartera = 'Grupal' and g.vgroupid = d.vgroupid and g.vreference = d.vreference
++         where d.id_propuesta in (select v.id_propuesta from vis v where v.id_propuesta is not null)
++         group by d.id_propuesta
++    )
++    select f.folio, f.id_propuesta, f.comprador, f.capital, f.monto_venta,
++           coalesce(nullif(f.estado, ''), geo.estados), coalesce(nullif(f.municipios, ''), left(geo.munis, 300)),
++           f.tipo, f.estatus_venta, f.fecha_propuesta, f.fecha_venta, f.vendedor,
++           f.estatus_md, f.fecha_inicio_md, f.fecha_limite_md, f.base_completa_venta,
++           f.estatus_control_doc, f.fecha_inicio_admin, f.fecha_limite_admin, f.estatus_juridico,
++           f.estatus_final, f.base_final, f.propuesta_url, f.comprobante_pago,
++           f.fecha_ticket_contrato, f.numero_ticket_contrato, f.numero_guia, f.origen,
++           f.actualizado, f.actualizado_por, p.estatus, coalesce(f.vendedor_user = auth.uid(), false),
++           f.mes, f.ligas_desc, f.adjuntos,
++           (select count(*) from public.funnel_documentos d where d.folio = f.folio and d.tipo = 'comprobante_pago'),
++           (select count(*) from public.funnel_documentos d where d.folio = f.folio and d.tipo = 'comprador'),
++           f.correo_comprador, f.enviada_en, f.enviada_por, f.envios,
++           f.comprador_id, c.nombre, f.publicada_en, f.publicada_por, f.vistas, f.ultima_vista,
++           f.respuesta, f.respuesta_en, f.respuesta_por, f.respuesta_comentario,
++           f.vendedor_user,
++           (select count(*) from public.funnel_comentarios k where k.folio = f.folio),
++           (select max(k.fecha) from public.funnel_comentarios k where k.folio = f.folio)
++      from vis f
++      left join public.propuestas p on p.id_propuesta = f.id_propuesta
++      left join public.compradores c on c.id = f.comprador_id
++      left join geo on geo.id_propuesta = f.id_propuesta
++     order by coalesce(f.fecha_venta, f.fecha_propuesta) desc nulls last, f.folio desc;
 +end $$;
 +
 +do $$
 +declare f text;
 +begin
-+    foreach f in array array['dashboard_datos(integer)', 'dashboard_metas_lista()', 'dashboard_guardar_meta(text,numeric)'] loop
++    foreach f in array array['funnel_lista()', 'funnel_vendedores()', 'funnel_asignar_vendedor(text[],uuid)', 'funnel_guardar(text,jsonb)',
++                             'funnel_comentarios_lista(text)', 'funnel_comentar(text,text)', 'funnel_borrar_comentario(bigint)',
++                             'funnel_puede_editar(text)'] loop
++        execute format('revoke all on function public.%s from public, anon', f);
++        execute format('grant execute on function public.%s to authenticated', f);
++    end loop;
++end $$;
+diff --git a/Servicio_Web/supabase/modulos/32_descargas_propuesta_final.sql b/Servicio_Web/supabase/modulos/32_descargas_propuesta_final.sql
+new file mode 100644
+index 0000000..72b594d
+--- /dev/null
++++ b/Servicio_Web/supabase/modulos/32_descargas_propuesta_final.sql
+@@ -0,0 +1,106 @@
++-- ============================================================
++-- DESCARGA DE LA PROPUESTA (más columnas) y PROPUESTA FINAL
++--  - propuesta_descarga(id): un renglón por crédito con nombre, saldos y fechas tomados de la fila original
++--    de la base (propuesta_detalle.datos). JyP no trae nombre del cliente en BASE_JYP.
++--  - propuesta_final(id, refs, grupos): el validador / admin sube el archivo con las cuentas que SÍ se venden;
++--    todo lo demás sale de la propuesta y se LIBERA (vuelve a disponible). Recalcula capital, precio y mora.
++--    Sirve para propuestas EN REVISIÓN, APROBADA o APARTADA (migradas); no para EN VENTA (ya tiene sub base).
++-- Requiere 10-31. Idempotente.
++-- ============================================================
++create or replace function public.propuesta_descarga(p_id text)
++returns table (tipo text, vgroupid text, grupo text, vreference text, nombre text, estado text, municipio text, colonia text,
++               cp text, dias numeric, capital numeric, monto_original numeric, saldo_total numeric, saldo_vencido numeric,
++               fecha_apertura text, ultimo_pago text, frecuencia text)
++language plpgsql stable security definer set search_path = public as $$
++begin
++    perform public._exigir_activo();
++    return query
++    select d.tipo_cartera, d.vgroupid, d.datos->>'vGroup', d.vreference, d.datos->>'vName',
++           coalesce(j.estado, g.estado), coalesce(j.municipio, g.municipio),
++           coalesce(nullif(j.colonia, ''), nullif(g.colonia, ''), d.datos->>'Colonia', d.datos->>'vColonia'),
++           coalesce(d.datos->>'CP', d.datos->>'C.P'),
++           coalesce(j.dias, g.dias), round(d.npendingk, 2),
++           public._num(d.datos->>'nAmount'), public._num(d.datos->>'nTotBalance'),
++           public._num(coalesce(d.datos->>'nDueBalance', d.datos->>'nDueBalance_y', d.datos->>'nDueBalance_x')),
++           d.datos->>'vOpenned', d.datos->>'vUltPago', d.datos->>'vFrecuencia'
++      from public.propuesta_detalle d
++      left join public.cartera_jyp j on d.tipo_cartera = 'JyP' and j.vreference = d.vreference
++      left join public.cartera_grupal g on d.tipo_cartera = 'Grupal' and g.vgroupid = d.vgroupid and g.vreference = d.vreference
++     where d.id_propuesta = p_id
++     order by d.tipo_cartera, d.vgroupid nulls first, d.vreference;
++end $$;
++
++-- Archivo de propuesta final: p_refs / p_grupos = lo que SE QUEDA
++create or replace function public.propuesta_final(p_id text, p_refs text[], p_grupos text[])
++returns json
++language plpgsql volatile security definer set search_path = public as $$
++declare v_p public.propuestas; v_quitar_refs text[]; v_quitar_grupos text[]; v_total integer; v_quitadas integer := 0;
++        v_cap numeric; v_mora numeric; v_quedan integer; v_quien text; v_no_estan text[];
++begin
++    if not public.es_admin() then raise exception 'Sólo el validador o un administrador suben la propuesta final' using errcode = '42501'; end if;
++    p_refs := coalesce(p_refs, '{}'); p_grupos := coalesce(p_grupos, '{}');
++    select * into v_p from public.propuestas where id_propuesta = p_id for update;
++    if not found then raise exception 'No existe la propuesta %', p_id; end if;
++    if v_p.estatus not in ('EN REVISIÓN', 'APROBADA', 'APARTADA') then
++        raise exception 'La propuesta % está %; la propuesta final sólo aplica EN REVISIÓN, APROBADA o APARTADA', p_id, v_p.estatus;
++    end if;
++    select count(*) into v_total from public.apartados_activos where id_propuesta = p_id;
++
++    -- cuentas del archivo que no son de esta propuesta (se reportan, no se agregan)
++    select coalesce(array_agg(x), '{}') into v_no_estan from (
++        select r x from unnest(p_refs) r where not exists (select 1 from public.propuesta_detalle d where d.id_propuesta = p_id and d.tipo_cartera = 'JyP' and d.vreference = r)
++        union all
++        select g from unnest(p_grupos) g where not exists (select 1 from public.propuesta_detalle d where d.id_propuesta = p_id and d.tipo_cartera = 'Grupal' and d.vgroupid = g)) s;
++
++    select coalesce(array_agg(distinct d.vreference), '{}') into v_quitar_refs
++      from public.propuesta_detalle d where d.id_propuesta = p_id and d.tipo_cartera = 'JyP' and not (d.vreference = any (p_refs));
++    select coalesce(array_agg(distinct d.vgroupid), '{}') into v_quitar_grupos
++      from public.propuesta_detalle d where d.id_propuesta = p_id and d.tipo_cartera = 'Grupal' and not (d.vgroupid = any (p_grupos));
++    if cardinality(v_quitar_refs) + cardinality(v_quitar_grupos) = v_total then
++        raise exception 'Ninguna cuenta del archivo pertenece a %; revisa que sea la propuesta correcta', p_id;
++    end if;
++
++    if cardinality(v_quitar_refs) + cardinality(v_quitar_grupos) > 0 then
++        delete from public.propuesta_detalle d
++         where d.id_propuesta = p_id
++           and ((d.tipo_cartera = 'JyP' and d.vreference = any (v_quitar_refs))
++                or (d.tipo_cartera = 'Grupal' and d.vgroupid = any (v_quitar_grupos)));
++        delete from public.apartados_activos a
++         where a.id_propuesta = p_id
++           and a.clave = any (array(select 'J:' || x from unnest(v_quitar_refs) x) || array(select 'G:' || x from unnest(v_quitar_grupos) x));
++        get diagnostics v_quitadas = row_count;
++        select count(*) into v_quedan from public.apartados_activos where id_propuesta = p_id;
++
++        select coalesce(sum(d.npendingk), 0), avg(coalesce(j.dias, g.dias)) into v_cap, v_mora
++          from public.propuesta_detalle d
++          left join public.cartera_jyp j on d.tipo_cartera = 'JyP' and j.vreference = d.vreference
++          left join public.cartera_grupal g on d.tipo_cartera = 'Grupal' and g.vgroupid = d.vgroupid and g.vreference = d.vreference
++         where d.id_propuesta = p_id;
++        update public.propuestas
++           set capital = round(v_cap, 2), valor_venta = round(v_cap * centavos, 2),
++               dias_mora = coalesce(round(v_mora, 1), dias_mora), partidas_quitadas = partidas_quitadas + v_quitadas
++         where id_propuesta = p_id;
++    end if;
++
++    select coalesce(nombre, email) into v_quien from public.perfiles where user_id = auth.uid();
++    insert into public.propuesta_eventos (id_propuesta, usuario, evento, detalle)
++    values (p_id, v_quien, 'Propuesta final',
++            format('Quedan %s de %s partidas; %s liberadas', v_total - v_quitadas, v_total, v_quitadas)
++            || case when cardinality(v_no_estan) > 0 then format('; %s cuentas del archivo no eran de la propuesta', cardinality(v_no_estan)) else '' end);
++    perform public._notificar(array['validador'], v_p.user_id, '📄 Propuesta final de ' || p_id,
++        format('%s · quedan %s partidas, %s regresaron a disponibles (%s)', coalesce(v_p.comprador, ''), v_total - v_quitadas, v_quitadas, v_quien),
++        'bitacora');
++    return json_build_object('quedan', v_total - v_quitadas, 'quitadas', v_quitadas, 'total', v_total,
++        'no_estan', to_json(v_no_estan[1:50]), 'n_no_estan', cardinality(v_no_estan),
++        'capital', (select capital from public.propuestas where id_propuesta = p_id),
++        'valor_venta', (select valor_venta from public.propuestas where id_propuesta = p_id));
++end $$;
++
++do $$
++declare f text;
++begin
++    foreach f in array array['propuesta_descarga(text)', 'propuesta_final(text,text[],text[])'] loop
 +        execute format('revoke all on function public.%s from public, anon', f);
 +        execute format('grant execute on function public.%s to authenticated', f);
 +    end loop;

@@ -103,7 +103,8 @@ async function cargarModulos(perfil) {
   }));
   return importados
     .map((mod, i) => (mod ? { ...mod, id: mod.id || lista[i].id } : null))
-    .filter((mod) => mod && (MAESTROS.includes(perfil.rol) || (mod.roles || ["vendedor", "admin"]).includes(perfil.rol)));
+    // rolesExactos: el módulo sólo lo ven los roles listados (los maestros no lo ven por ser maestros)
+    .filter((mod) => mod && ((!mod.rolesExactos && MAESTROS.includes(perfil.rol)) || (mod.roles || ["vendedor", "admin"]).includes(perfil.rol)));
 }
 
 let moduloActual = null;

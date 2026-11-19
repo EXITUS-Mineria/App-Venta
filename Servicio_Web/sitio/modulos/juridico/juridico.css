@@ -1,0 +1,109 @@
+.jur { display: flex; gap: 12px; align-items: flex-start; }
+.jur-izq { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.jur-filtros { flex-wrap: wrap; margin: 8px 0 10px; justify-content: flex-start; }
+.jur-filtros .nota { white-space: nowrap; }
+.jur-izq .tabla tbody tr { cursor: pointer; }
+
+/* Pestañas */
+.jur-pestanas { display: flex; gap: 4px; border-bottom: 1px solid var(--linea); }
+.jur-tab { background: none; border: 0; border-bottom: 3px solid transparent; padding: 6px 12px; font-weight: 700; color: var(--texto-2); cursor: pointer; font-size: .9rem; }
+.jur-tab:hover { color: var(--tinta); }
+.jur-tab.activo { color: var(--rojo); border-bottom-color: var(--rojo); }
+
+/* Embudo por etapa con sus opciones */
+.jur-embudo { display: grid; grid-template-columns: .7fr 1fr 1.25fr 1fr 1.35fr; gap: 6px; }
+.jur-embudo.sin-cero { grid-template-columns: 1fr 1.25fr 1fr 1.35fr; }
+.jur-paso { background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radio); padding: 0 0 6px; min-width: 0; display: flex; flex-direction: column; }
+.jur-paso.activo { outline: 2px solid var(--rojo); }
+.jur-paso-enc { background: none; border: 0; text-align: left; cursor: pointer; padding: 8px 9px 4px; display: flex; flex-direction: column; gap: 2px; }
+.jur-paso-enc:hover { background: var(--hover); }
+.jur-paso-enc b { font-size: 1.35rem; line-height: 1.1; }
+.jur-paso-enc span { font-size: .72rem; font-weight: 700; color: var(--texto-2); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jur-paso-enc small { color: var(--texto-2); font-size: .74rem; }
+.jur-barra { height: 6px; background: var(--linea); border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
+.jur-barra span { display: block; height: 100%; background: var(--gris-suave); }
+.jur-paso.e1 .jur-barra span { background: #8DB8E2; } .jur-paso.e2 .jur-barra span { background: #5B8FC7; }
+.jur-paso.e3 .jur-barra span { background: #F2B705; } .jur-paso.e4 .jur-barra span { background: var(--tinta); }
+.jur-ops { display: flex; flex-wrap: wrap; gap: 3px; padding: 0 7px; }
+.jur-op { font-size: .72rem; border: 1px solid var(--borde); background: var(--fondo); border-radius: 10px; padding: 1px 7px; cursor: pointer; white-space: nowrap; }
+.jur-op:hover { background: var(--hover); }
+.jur-op.fav { background: #E6F4E7; border-color: #9CCC9F; }
+.jur-op.neg { background: var(--rojo-suave); border-color: var(--rojo-borde); }
+.jur-op.activo { outline: 2px solid var(--rojo); }
+
+/* Avance y situación */
+.jur-pasos { display: inline-flex; gap: 3px; }
+.jur-pasos i { width: 10px; height: 10px; border-radius: 50%; background: var(--linea); border: 1px solid var(--borde); }
+.jur-pasos i.ok { background: #8DB8E2; border-color: #5B8FC7; }
+.jur-pasos i.act { background: var(--alerta); border-color: #C99400; }
+.jur-pasos i.fav { background: var(--bien); border-color: var(--bien); }
+.jur-pasos i.neg { background: var(--rojo); border-color: var(--rojo-oscuro); }
+.jur-pasos i.salto { background: repeating-linear-gradient(45deg, var(--linea), var(--linea) 2px, var(--blanco) 2px, var(--blanco) 4px); }
+.jur-sit { display: inline-block; font-size: .74rem; font-weight: 700; border-radius: 10px; padding: 1px 8px; border: 1px solid var(--borde); background: var(--fondo); white-space: nowrap; }
+.jur-sit.e1, .jur-sit.e2 { background: #E7F1FB; border-color: #8DB8E2; color: #1F4E79; }
+.jur-sit.e3 { background: #FFF6D6; border-color: #F2B705; color: #7A5A00; }
+.jur-sit.e4 { background: #ECEEF2; border-color: var(--gris); }
+.jur-sit.fav { background: #E6F4E7; border-color: #9CCC9F; color: var(--bien); }
+.jur-sit.neg { background: var(--rojo-suave); border-color: var(--rojo-borde); color: var(--rojo-oscuro); }
+.jur-dias { font-weight: 700; font-size: .82rem; }
+.jur-dias.verde { color: var(--bien); } .jur-dias.amarillo { color: #A07800; } .jur-dias.rojo { color: var(--rojo); }
+.jur-marcas { display: inline-flex; gap: 3px; cursor: help; }
+
+/* Matriz por abogado y calidad */
+.jur-matriz td.clic { cursor: pointer; color: var(--rojo-oscuro); font-weight: 600; }
+.jur-matriz td.clic:hover { background: var(--rojo-suave); }
+.jur-matriz td.cero { color: var(--gris-suave); }
+.jur-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+.jur-chip { background: #FFF6D6; border: 1px solid #F2B705; border-radius: 12px; padding: 2px 10px; font-size: .82rem; }
+
+/* Detalle */
+.jur-det { flex: 0 0 min(540px, 44vw); background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radio);
+  padding: 12px 14px; position: sticky; top: 76px; max-height: calc(100vh - 92px); overflow: auto; }
+.jur-det[hidden] { display: none; }
+.jur-det-enc { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.jur-det-enc b { font-size: 1.25rem; }
+.jur-alerta { color: var(--rojo); font-weight: 700; font-size: .84rem; margin-top: 3px; }
+.jur-alerta.amarilla { color: #7A5A00; }
+.jur-avance { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px; }
+.jur-avance .jur-pasos i { width: 14px; height: 14px; }
+.jur-sec { border-left: 3px solid transparent; padding-left: 8px; margin-left: -11px; }
+.jur-sec.con { border-left-color: #8DB8E2; } .jur-sec.fav { border-left-color: var(--bien); } .jur-sec.neg { border-left-color: var(--rojo); }
+.jur-sec h4 { margin: 12px 0 2px; font-size: .82rem; text-transform: uppercase; letter-spacing: .3px; color: var(--rojo-oscuro);
+  border-bottom: 1px solid var(--linea); padding-bottom: 3px; }
+.jur-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+.jur-grid label .etiqueta { margin-top: 6px; color: var(--texto-2); }
+.jur-grid label.ancho { grid-column: 1 / -1; }
+.jur-check { margin-top: 8px; font-size: .88rem; }
+.jur-det .campo:disabled { background: var(--fondo); color: var(--tinta); }
+.jur-det .campo.cambiado { border-color: var(--alerta); background: #FFFBEA; }
+.jur-obs { white-space: pre-wrap; font-family: inherit; font-size: .84rem; background: var(--fondo); border: 1px solid var(--linea);
+  border-radius: 6px; padding: 6px 8px; margin: 2px 0 4px; max-height: 160px; overflow: auto; }
+.jur-nota { align-items: flex-start; }
+.jur-nota textarea { resize: vertical; min-height: 54px; }
+.jur-adj { margin: 4px 0 0; padding-left: 18px; font-size: .84rem; columns: 2; }
+.jur-adj a { color: var(--rojo-oscuro); }
+.jur-hist summary { cursor: pointer; font-weight: 700; font-size: .85rem; margin-top: 12px; }
+.jur-hist-l { list-style: none; padding: 0; margin: 6px 0; font-size: .82rem; display: flex; flex-direction: column; gap: 5px; }
+.jur-hist-l li { border-bottom: 1px solid var(--linea); padding-bottom: 4px; white-space: pre-wrap; }
+.jur-hist-l small { color: var(--texto-2); }
+.jur-pie { position: sticky; bottom: -12px; background: var(--blanco); padding: 10px 0 2px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.jur.con-detalle .jur-lista th:nth-child(n+10), .jur.con-detalle .jur-lista td:nth-child(n+10),
+.jur.con-detalle .jur-lista th:nth-child(6), .jur.con-detalle .jur-lista td:nth-child(6) { display: none; }
+.jur.con-detalle .jur-embudo, .jur.con-detalle .jur-embudo.sin-cero { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 1100px) {
+  .jur { flex-direction: column; } .jur-det { flex: 1 1 auto; width: 100%; position: static; max-height: none; }
+  .jur-embudo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Documentos (mismo estilo que el Funnel) */
+.doc-bloque { margin-top: 8px; border: 1px solid var(--linea); border-radius: var(--radio); padding: 8px 10px; background: var(--fondo); }
+.doc-enc { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.doc-lista { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.doc-lista li { display: flex; align-items: center; gap: 6px; background: var(--blanco); border: 1px solid var(--linea); border-radius: 6px; padding: 4px 6px; font-size: .86rem; }
+.doc-lista li a { color: var(--rojo-oscuro); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 0 1 auto; }
+.doc-lista li small { color: var(--texto-2); flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc-lista li.doc-vacio { background: none; border: 0; color: var(--texto-2); font-style: italic; padding: 2px 0; }
+.doc-ico { flex: 0 0 auto; }
+.doc-zona { border: 2px dashed var(--borde); border-radius: var(--radio); padding: 10px; text-align: center; cursor: pointer; background: var(--blanco); font-size: .85rem; }
+.doc-zona b { color: var(--rojo-oscuro); }
+.doc-zona:hover, .doc-zona:focus, .doc-zona.sobre { border-color: var(--rojo); background: var(--rojo-suave); outline: none; }

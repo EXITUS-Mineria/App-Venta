@@ -18,6 +18,26 @@ export default {
 
     let original = null;
 
+    // ---- panel: venta → crédito / grupo ----
+    let ventas = [];
+    const inBuscaVenta = h("input", { class: "campo", placeholder: "🔎 Folio, comprador o vendedor", oninput: () => llenarVentas() });
+    const selVenta = h("select", { class: "campo", onchange: () => elegirVenta() });
+    const inBuscaPart = h("input", { class: "campo", placeholder: "🔎 Filtrar por clave o nombre", oninput: () => filtrarPartidas() });
+    let partidas = [];
+    const tPart = tabla([
+      { clave: "elegir", titulo: "", formato: (_, f) => f.restituido
+        ? h("span", { class: "nota", title: `Restituido en ${f.restituido}` }, "🔒")
+        : h("button", { class: "btn btn-marca btn-chico", onclick: () => elegirPartida(f) }, "Elegir") },
+      { clave: "clave", titulo: "Grupo / vReference" },
+      { clave: "nombre", titulo: "Nombre / grupo" },
+      { clave: "integrantes", titulo: "Créd.", num: true },
+      { clave: "capital", titulo: "Capital", num: true, formato: (v) => (v == null ? "—" : dinero(v)) },
+      { clave: "saldo_total", titulo: "Saldo", num: true, formato: (v) => (v == null ? "—" : dinero(v)) },
+      { clave: "dias", titulo: "Mora", num: true, formato: (v) => (v == null ? "—" : dias(v)) },
+    ], { idFila: (f) => f.tipo + f.clave, vacio: "Elige una venta para ver sus créditos y grupos." });
+    tPart.el.style.maxHeight = "220px";
+    const lblPart = h("span", { class: "nota" });
+
     // ---- panel: original ----
     const inTexto = h("input", { class: "campo", placeholder: "vReference o grupo (vGroupId), también de ventas viejas",
       onkeydown: (e) => { if (e.key === "Enter") validar(); } });
@@ -74,13 +94,19 @@ export default {
     cont.append(h("div", { class: "rst" },
       h("div", { class: "rst-izq" },
         h("div", { class: "tarjeta" },
-          h("h3", {}, "1 · Crédito o grupo a restituir"),
+          h("h3", {}, "1 · Venta"),
+          h("div", { class: "fila" }, inBuscaVenta),
+          h("div", { class: "fila", style: { marginTop: "6px" } }, selVenta),
+          h("h3", { style: { marginTop: "12px" } }, "2 · Crédito o grupo a restituir"),
+          h("div", { class: "fila", style: { marginBottom: "6px" } }, inBuscaPart, lblPart),
+          tPart.el,
+          h("span", { class: "etiqueta", style: { marginTop: "10px" } }, "…o escríbelo directamente"),
           h("div", { class: "fila" }, inTexto, h("span", { style: { flex: "0 0 auto" } }, btnValidar)),
           h("p", { class: "nota", style: { margin: "6px 0 10px" } },
             "Si escribes la vReference de un integrante de grupo se restituye el grupo completo."),
           ficha, cajaCapital),
         h("div", { class: "tarjeta" },
-          h("h3", {}, "2 · Motivo y criterio"),
+          h("h3", {}, "3 · Motivo y criterio"),
           h("span", { class: "etiqueta" }, "Motivo"), selMotivo,
           h("div", { class: "fila", style: { marginTop: "4px" } },
             h("div", {}, h("span", { class: "etiqueta" }, "Capital similar ± (máx. 5,000)"), inTol),
@@ -90,7 +116,7 @@ export default {
       h("div", { class: "rst-der" },
         h("div", { class: "tarjeta" },
           h("div", { class: "fila", style: { marginBottom: "8px" } },
-            h("h3", { style: { margin: 0, flex: "0 0 auto" } }, "3 · Reemplazos sugeridos"), lblCand),
+            h("h3", { style: { margin: 0, flex: "0 0 auto" } }, "4 · Reemplazos sugeridos"), lblCand),
           tCand.el),
         h("div", { class: "tarjeta" },
           h("div", { class: "fila", style: { marginBottom: "8px", justifyContent: "flex-start" } },
@@ -99,6 +125,48 @@ export default {
             h("span", { style: { flex: 1 } }),
             h("button", { class: "btn btn-secundario btn-chico", style: { flex: "0 0 auto" }, onclick: () => cargarHistorial() }, "⟳")),
           tHist.el))));
+
+    // ---- ventas y partidas ----
+    const etiquetaVenta = (v) => `${v.folio}${v.comprador ? " · " + v.comprador : ""}${v.vendedor ? " · " + v.vendedor : ""} · ${numero(v.partidas)} partidas${v.origen === "histórico" ? " (histórica)" : ""}`;
+    async function cargarVentas() {
+      try { ventas = (await ctx.rpc("restitucion_ventas")) || []; } catch (e) { ventas = []; toast(e.message, "mal"); }
+      llenarVentas();
+    }
+    function llenarVentas() {
+      const q = inBuscaVenta.value.trim().toLowerCase();
+      const lista = ventas.filter((v) => !q || [v.folio, v.id_propuesta, v.comprador, v.vendedor].some((x) => String(x || "").toLowerCase().includes(q)));
+      const previo = selVenta.value;
+      selVenta.replaceChildren(h("option", { value: "" }, lista.length ? `— Selecciona la venta (${numero(lista.length)}) —` : "Sin ventas"),
+        ...lista.map((v) => h("option", { value: v.folio }, etiquetaVenta(v))));
+      if (lista.some((v) => v.folio === previo)) selVenta.value = previo;
+      else if (q && lista.length === 1) { selVenta.value = lista[0].folio; elegirVenta(); }
+    }
+    async function elegirVenta(folio) {
+      if (folio) { if (!ventas.some((v) => v.folio === folio)) return; inBuscaVenta.value = ""; llenarVentas(); selVenta.value = folio; }
+      partidas = []; inBuscaPart.value = ""; lblPart.textContent = "";
+      if (!selVenta.value) { tPart.setFilas([]); return; }
+      try {
+        partidas = ((await ctx.rpc("restitucion_partidas", { p_folio: selVenta.value })) || [])
+          .map((f) => ({ ...f, capital: f.capital == null ? null : Number(f.capital), saldo_total: f.saldo_total == null ? null : Number(f.saldo_total) }));
+      } catch (e) { toast(e.message, "mal"); }
+      filtrarPartidas();
+    }
+    function filtrarPartidas() {
+      const q = inBuscaPart.value.trim().toLowerCase();
+      const lista = partidas.filter((f) => !q || [f.clave, f.nombre].some((x) => String(x || "").toLowerCase().includes(q)));
+      tPart.setFilas(lista);
+      const rest = partidas.filter((f) => f.restituido).length;
+      lblPart.textContent = partidas.length ? `${numero(lista.length)} de ${numero(partidas.length)}${rest ? ` · ${rest} ya restituidas` : ""}` : "";
+    }
+    // llegada desde el módulo «Ventas duplicadas» (sólo admin): elige la venta, el grupo y el motivo
+    async function restituirDuplicado(f, folio) {
+      if (folio) await elegirVenta(folio);
+      if (!selVenta.value) inBuscaVenta.value = "";
+      if (!f.restituido) selMotivo.value = "Venta duplicada";
+      inTexto.value = f.clave; validar();
+      cont.querySelector(".rst-izq")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    }
+    function elegirPartida(f) { inTexto.value = f.clave; validar(); }
 
     function actualizarBoton() { btnBuscar.disabled = !(original && original.vendido && !original.bloqueado && original.capital > 0); }
 
@@ -113,6 +181,9 @@ export default {
         original.sinCapital = !(original.capital > 0);
         cajaCapital.hidden = !(original.sinCapital && original.vendido && !original.bloqueado);
         pintarFicha();
+        const folioVenta = original.venta?.folio || original.venta?.id_propuesta || original.id_propuesta;
+        const yaEnVenta = selVenta.value && partidas.some((f) => f.clave === original.clave);
+        if (folioVenta && folioVenta !== selVenta.value && !yaEnVenta) elegirVenta(folioVenta);
       } catch (e) {
         ficha.className = "rst-ficha mal";
         ficha.replaceChildren(h("b", {}, "✖ "), e.message);
@@ -245,7 +316,7 @@ export default {
         cajaCapital.hidden = true; inCapital.value = "";
         ficha.className = "rst-ficha vacia"; ficha.textContent = "Escribe la vReference o el grupo y da clic en Validar.";
         tCand.setFilas([]); lblCand.textContent = ""; actualizarBoton();
-        ctx.refrescarAvisos(); cargarHistorial();
+        ctx.refrescarAvisos(); cargarHistorial(); if (selVenta.value) elegirVenta();
       } catch (e) { toast(e.message, "mal", 9000); }
     }
 
@@ -258,7 +329,13 @@ export default {
         capital_reemplazo: Number(r.capital_reemplazo), diferencia: Number(r.diferencia) })));
     }
 
-    inTexto.focus();
-    await cargarHistorial();
+    inBuscaVenta.focus();
+    await Promise.all([cargarHistorial(), cargarVentas()]);
+    // llegada desde «Ventas duplicadas»: #/restituciones?venta=VTA-0205&clave=G199051
+    const qs = new URLSearchParams((location.hash.split("?")[1]) || "");
+    if (qs.get("clave")) {
+      await restituirDuplicado({ clave: qs.get("clave"), restituido: null }, qs.get("venta") || "");
+      try { window.history.replaceState(null, "", "#/restituciones"); } catch { /* sin historial */ }
+    }
   },
 };

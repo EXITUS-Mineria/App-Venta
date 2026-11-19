@@ -22,6 +22,11 @@
       "activo": true
     },
     {
+      "id": "dashboard",
+      "archivo": "dashboard/dashboard.js",
+      "activo": true
+    },
+    {
       "id": "compradores",
       "archivo": "compradores/compradores.js",
       "activo": true
@@ -29,6 +34,11 @@
     {
       "id": "restituciones",
       "archivo": "restituciones/restituciones.js",
+      "activo": true
+    },
+    {
+      "id": "duplicados",
+      "archivo": "duplicados/duplicados.js",
       "activo": true
     },
     {
