@@ -519,3 +519,120 @@ test("Bases: pinta las cargas recibidas", async () => {
   await (await import("../modulos/cargas/cargas.js")).default.montar(c, ctx);
   assert.ok(c.textContent.includes("Base JyP.csv"));
 });
+
+// ---------- Exclusiones, portal (interés, ofertas, lealtad, noticias) ----------
+test("Exclusiones: del archivo de gestiones sólo cuentan las promesas, una por referencia con la fecha más reciente", async () => {
+  const { extraerExclusiones, aFecha } = await import("../modulos/cargas/exclusiones.js");
+  const r = extraerExclusiones([
+    ["vReference", "FechaGestion", "Descripcion_Resultado", "Monto"],
+    ["a1", "10/11/2026", "PROMESA DE PAGO", "500"],
+    ["A1", "2026-11-20", "Promesa de pago", "700"],
+    ["B2", "2026-11-21", "NO CONTESTA", ""],
+    ["C3", "46345", "CONVENIO", "$1,200"],
+    ["", "2026-11-21", "PROMESA", ""],
+  ], "promesa");
+  assert.equal(r.filas.length, 2);
+  const a1 = r.filas.find((f) => f.ref === "A1");
+  assert.equal(a1.fecha, "2026-11-20");
+  assert.equal(a1.monto, 700);
+  assert.equal(r.filas.find((f) => f.ref === "C3").monto, 1200);
+  assert.equal(r.descartadas, 2);
+  assert.equal(r.columnas.resultado, "Descripcion_Resultado");
+  assert.equal(aFecha("05/03/26"), "2026-03-05");
+  // lista negra sin encabezado: primera columna
+  const ln = extraerExclusiones([["X-1"], ["x-2"], ["X-1"]], "lista_negra");
+  assert.deepEqual(ln.filas.map((f) => f.ref).sort(), ["X-1", "X-2"]);
+});
+
+test("Bases: muestra las exclusiones y su interruptor", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, a) => {
+      llam.push([fn, a]);
+      if (fn === "exclusiones_resumen") return [{ origen: "promesa", cargados: 10, vigentes: 8, jyp_fuera: 5, grupos_fuera: 1, activo: true }];
+      if (fn === "config_lista") return [{ clave: "excluir_promesas", valor: true }, { clave: "excluir_lista_negra", valor: false }, { clave: "dias_promesa", valor: 15 }];
+      return null;
+    },
+  });
+  const c = cont();
+  await (await import("../modulos/cargas/cargas.js")).default.montar(c, ctx);
+  assert.ok(c.textContent.includes("Promesas de pago"));
+  assert.ok(c.textContent.includes("fuera de la base: 5 JyP y 1 grupos"));
+  const sw = c.querySelector('[data-origen="lista_negra"] .excl-sw');
+  assert.equal(sw.checked, false);
+  sw.checked = true; sw.dispatchEvent(new window.Event("change"));
+  await esperar(5);
+  assert.ok(llam.some(([f, a]) => f === "config_guardar" && a.p_clave === "excluir_lista_negra" && a.p_valor === true));
+});
+
+test("Portal: Inicio muestra nivel de lealtad y casos de éxito", async () => {
+  const ctx = await ctxMontaje({
+    rpc: (fn) => (fn === "portal_inicio" ? { comprador: "ACME", propuestas: 0, propuestas_pendientes: 0, compras: 3, monto_compras: 15000, solicitudes_abiertas: 0 }
+      : fn === "portal_mi_nivel" ? { activo: true, nivel: "Bronce", color: "#b0773b", compras_12m: 3, monto_12m: 150000, beneficios: "Medio centavo de descuento",
+          siguiente: { nivel: "Plata", faltan_compras: 1, faltan_monto: 150000, beneficios: "1 centavo" } }
+      : fn === "portal_noticias" ? [{ id: 1, titulo: "Sentencia favorable", resumen: "Recuperación en 90 días", contenido: "Detalle", categoria: "Caso de éxito", fecha: "2026-11-20" }]
+      : null),
+    perfil: { rol: "comprador", nombre: "ACME" },
+  });
+  const c = cont();
+  await (await import("../modulos/portal/portal.js")).modulos.find((m) => m.id === "inicio").montar(c, ctx);
+  await esperar(5);
+  assert.ok(c.textContent.includes("Bronce"));
+  assert.ok(c.textContent.includes("Para nivel Plata"));
+  assert.ok(c.textContent.includes("Sentencia favorable"));
+});
+
+test("Portal: propuesta pendiente muestra interés de otros compradores y permite ofertar", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, a) => {
+      llam.push([fn, a]);
+      if (fn === "portal_propuestas") return [{ folio: "VTA-0400", situacion: "PENDIENTE", creditos: 10, capital: 100000, precio: null, tipo: "J&P", estados: "Jalisco", publicada_en: "2026-11-20" }];
+      if (fn === "portal_config") return { ver_interes: true, ofertas: true, lealtad: true };
+      if (fn === "portal_mis_ofertas") return [];
+      if (fn === "portal_interes") return { activo: true, solicitudes: 2, propuestas: 0, por_estado: [{ estado: "Jalisco", compradores: 2 }] };
+      if (fn === "portal_ofertar") return { id: 1, monto: 15000, capital: 100000 };
+      return null;
+    },
+    perfil: { rol: "comprador", nombre: "ACME" },
+  });
+  const c = cont();
+  await (await import("../modulos/portal/portal.js")).modulos.find((m) => m.id === "propuestas").montar(c, ctx);
+  await esperar(10);
+  assert.ok(c.textContent.includes("2 comprador(es) más buscan cartera"));
+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Ofertar mi precio")).click();
+  const inp = c.querySelector(".pt-oferta-form input[type=number]");
+  inp.value = "15"; inp.dispatchEvent(new window.Event("input"));
+  assert.ok(c.textContent.includes("15,000"));
+  [...c.querySelectorAll("button")].find((b) => b.textContent === "Enviar oferta").click();
+  await esperar(5);
+  const of = llam.find(([f]) => f === "portal_ofertar");
+  assert.equal(of[1].p_folio, "VTA-0400");
+  assert.equal(of[1].p_centavos, 0.15);
+});
+
+test("Compradores: responde una oferta con contraoferta", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, a) => {
+      llam.push([fn, a]);
+      if (fn === "ofertas_lista") return [{ id: 7, folio: "VTA-0400", comprador: "ACME", nivel: "Plata", centavos: 0.12, capital: 100000, monto: 12000,
+        centavos_propuesta: 0.16, precio_propuesta: 16000, estatus: "NUEVA", fecha: "2026-11-20" }];
+      return fn.endsWith("_lista") || fn === "compradores_nombres_funnel" ? [] : null;
+    },
+    esAdmin: true,
+  });
+  const c = cont();
+  await (await import("../modulos/compradores/compradores.js")).default.montar(c, ctx);
+  [...c.querySelectorAll(".cmp-tabs button")].find((b) => b.textContent.includes("Ofertas")).click();
+  await esperar(5);
+  assert.ok(c.textContent.includes("12 ¢"));
+  fila(c, "VTA-0400").click();
+  const contra = c.querySelector('.cmp-panel input[type=number]');
+  contra.value = "14";
+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Contraofertar")).click();
+  await esperar(5);
+  const r = llam.find(([f]) => f === "oferta_responder");
+  assert.equal(r[1].p_estatus, "CONTRAOFERTA");
+  assert.equal(r[1].p_contra, 0.14);
+});

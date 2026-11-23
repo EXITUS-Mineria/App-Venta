@@ -104,3 +104,22 @@ tr.pt-fuera td:first-child { text-decoration: none; }
 .pt-guia:hover { background: var(--bien); color: #fff; }
 .pt-pasos li { min-width: 0; }
 @media (max-width: 640px) { .pt-guia { white-space: normal; overflow-wrap: anywhere; font-size: .64rem; padding: 2px 6px; } }
+
+/* Lealtad, noticias, interés y ofertas */
+.pt-nivel { margin-top: 14px; }
+.pt-nivel-enc { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.pt-nivel-insignia { color: #fff; font-weight: 700; padding: 4px 12px; border-radius: 999px; background: var(--tinta, #1F2430); }
+.pt-nivel-ben { margin: 8px 0 4px; }
+.pt-barra { height: 8px; background: var(--linea); border-radius: 999px; overflow: hidden; margin: 6px 0 4px; }
+.pt-barra span { display: block; height: 100%; background: var(--rojo, #B01217); }
+.pt-noticias { margin-top: 14px; }
+.pt-noticias h3 { margin: 0 0 8px; }
+.pt-noticias-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.pt-noticia { background: var(--blanco, #fff); border: 1px solid var(--borde, #D9DDE3); border-left: 4px solid var(--rojo, #B01217); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.pt-noticia p { margin: 0; font-size: .9rem; }
+.pt-noticia-cat { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--rojo, #B01217); font-weight: 600; }
+.pt-noticia-cont { white-space: pre-wrap; font-size: .88rem; }
+.pt-noticia-acc { gap: 6px; justify-content: flex-start; margin-top: auto; }
+.pt-interes { margin-top: 8px; padding: 8px 12px; border-radius: 8px; background: var(--aviso-bg, #FFF4E0); font-size: .88rem; }
+.pt-oferta { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; font-size: .9rem; }
+.pt-oferta-form { gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-start; }
