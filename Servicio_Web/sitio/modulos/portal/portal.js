@@ -2,7 +2,8 @@
 // PORTAL DEL COMPRADOR (rol "comprador")
 // Lo carga el núcleo en lugar de modulos.json. Sólo usa funciones portal_* de la base,
 // que devuelven únicamente los datos del comprador con sesión.
-//   🏠 Inicio · 🛒 Solicitar nueva compra · 📋 Mis propuestas · ✅ Mis compras
+//   🏠 Inicio (nivel de lealtad y casos de éxito) · 🛒 Solicitar nueva compra
+//   📋 Mis propuestas (interés de otros compradores y oferta de precio) · ✅ Mis compras
 // ============================================================
 const BUCKET = "documentos-venta";
 const css = (ctx) => ctx.ui.cargarCSS(new URL("./portal.css", import.meta.url).href);
@@ -100,6 +101,8 @@ const inicio = {
     const { h, dinero, numero, toast } = ctx.ui;
     let d;
     try { d = await ctx.rpc("portal_inicio"); } catch (e) { toast(e.message, "mal"); return; }
+    const nivelBox = h("div", { class: "tarjeta pt-nivel", hidden: true });
+    const noticiasBox = h("div", { class: "pt-noticias", hidden: true });
     const tarjeta = (id, icono, titulo, texto, extra, destacado) =>
       h("a", { class: `pt-menu-item ${destacado ? "destacado" : ""}`, href: `#/${id}` },
         h("div", { class: "pt-menu-ico" }, icono), h("b", {}, titulo), h("span", {}, texto), extra ? h("div", { class: "pt-menu-extra" }, extra) : null);
@@ -115,9 +118,52 @@ const inicio = {
           d.propuestas_pendientes ? `🔴 ${numero(d.propuestas_pendientes)} por responder` : `${numero(d.propuestas)} propuesta(s)`,
           d.propuestas_pendientes > 0),
         tarjeta("compras", "✅", "Mis compras", "Tus compras, su avance y sus documentos.",
-          `${numero(d.compras)} compra(s) · ${dinero(d.monto_compras)}`))));
+          `${numero(d.compras)} compra(s) · ${dinero(d.monto_compras)}`)),
+      nivelBox, noticiasBox));
+    const [nivel, noticias] = await Promise.all([ctx.rpc("portal_mi_nivel").catch(() => null), ctx.rpc("portal_noticias").catch(() => [])]);
+    pintarNivel(ctx, nivelBox, nivel);
+    pintarNoticias(ctx, noticiasBox, noticias || []);
   },
 };
+
+// Nivel de lealtad del comprador (si está activo en ⚙️ Portal)
+function pintarNivel(ctx, caja, n) {
+  const { h, dinero, numero } = ctx.ui;
+  if (!n || !n.activo || !n.nivel) { caja.hidden = true; return; }
+  const sig = n.siguiente;
+  const pct = sig ? Math.min(100, Math.max(
+    sig.faltan_compras != null ? (n.compras_12m / Math.max(1, n.compras_12m + sig.faltan_compras)) * 100 : 0,
+    sig.faltan_monto != null && Number(n.monto_12m) + Number(sig.faltan_monto) > 0 ? (Number(n.monto_12m) / (Number(n.monto_12m) + Number(sig.faltan_monto))) * 100 : 0)) : 100;
+  caja.hidden = false;
+  caja.replaceChildren(
+    h("div", { class: "pt-nivel-enc" },
+      h("span", { class: "pt-nivel-insignia", style: { background: n.color || "" } }, "🏅 ", n.nivel),
+      h("span", { class: "nota" }, `${numero(n.compras_12m)} compra(s) · ${dinero(n.monto_12m)} en los últimos 12 meses`)),
+    n.beneficios ? h("div", { class: "pt-nivel-ben" }, n.beneficios) : null,
+    sig ? h("div", { class: "pt-nivel-sig" },
+      h("div", { class: "pt-barra" }, h("span", { style: { width: `${pct.toFixed(0)}%`, background: n.color || "" } })),
+      h("small", {}, `Para nivel ${sig.nivel}: ${numero(sig.faltan_compras)} compra(s) más o ${dinero(sig.faltan_monto)} más. `, sig.beneficios || ""))
+      : h("small", { class: "nota" }, "Tienes el nivel más alto. ¡Gracias por tu confianza!"));
+}
+
+// Casos de éxito de demandas digitales (noticias que publica Exitus)
+function pintarNoticias(ctx, caja, lista) {
+  const { h } = ctx.ui;
+  if (!lista.length) { caja.hidden = true; return; }
+  caja.hidden = false;
+  caja.replaceChildren(h("h3", {}, "📰 Casos de éxito · demandas digitales"),
+    h("div", { class: "pt-noticias-grid" }, ...lista.map((n) => {
+      const det = n.contenido ? h("div", { class: "pt-noticia-cont", hidden: true }, n.contenido) : null;
+      return h("article", { class: "pt-noticia" },
+        h("div", { class: "pt-noticia-cat" }, n.categoria || "Caso de éxito", " · ", fechaCorta(n.fecha)),
+        h("b", {}, n.titulo),
+        n.resumen ? h("p", {}, n.resumen) : null,
+        det,
+        h("div", { class: "fila pt-noticia-acc" },
+          det ? h("button", { class: "btn btn-secundario btn-chico", onclick: (e) => { det.hidden = !det.hidden; e.target.textContent = det.hidden ? "Leer más" : "Ocultar"; } }, "Leer más") : null,
+          n.enlace && /^https:\/\//i.test(n.enlace) ? h("a", { class: "btn btn-secundario btn-chico", href: n.enlace, target: "_blank", rel: "noopener noreferrer" }, "Ver nota ↗") : null));
+    })));
+}
 
 // ---------- 🛒 Solicitar nueva compra ----------
 const TIPOS = [["Cualquiera", "Cualquiera"], ["JyP", "Individual (JyP)"], ["Grupal", "Grupal"]];
@@ -273,8 +319,12 @@ const propuestas = {
     }
 
     async function cargar() {
-      let datos;
-      try { datos = await ctx.rpc("portal_propuestas"); } catch (e) { toast(e.message, "mal"); return; }
+      let datos, cfg = {}, misOfertas = [];
+      try {
+        [datos, cfg, misOfertas] = await Promise.all([ctx.rpc("portal_propuestas"), ctx.rpc("portal_config").catch(() => ({})),
+          ctx.rpc("portal_mis_ofertas").catch(() => [])]);
+      } catch (e) { toast(e.message, "mal"); return; }
+      cfg = cfg || {}; misOfertas = misOfertas || [];
       if (!datos.length) { lista.replaceChildren(h("div", { class: "tarjeta nota" }, "Todavía no tienes propuestas. Puedes pedir una en «🛒 Solicitar nueva compra».")); return; }
       lista.replaceChildren(...datos.map((p) => {
         const det = h("div", { class: "pt-det" });
@@ -320,12 +370,62 @@ const propuestas = {
             h("div", { class: "ancho" }, h("small", {}, "Estados"), h("b", {}, p.estados || "—"))),
           p.municipios ? h("div", { class: "nota pt-munis" }, `Municipios: ${p.municipios}`) : null,
           p.respuesta_en ? h("div", { class: "nota" }, `Respondiste el ${fechaCorta(p.respuesta_en)}${p.respuesta_comentario ? `: «${p.respuesta_comentario}»` : ""}`) : null,
+          pendiente && cfg.ver_interes ? interes(ctx, p.folio) : null,
+          cfg.ofertas || misOfertas.some((o) => o.folio === p.folio) ? ofertaBox(ctx, p, misOfertas.find((o) => o.folio === p.folio), pendiente && cfg.ofertas, cargar) : null,
           det);
       }));
     }
     await cargar();
   },
 };
+
+// Aviso de interés: otros compradores buscan cartera en la misma zona (sin nombres)
+function interes(ctx, folio) {
+  const { h, numero } = ctx.ui;
+  const caja = h("div", { class: "pt-interes", hidden: true });
+  ctx.rpc("portal_interes", { p_folio: folio }).then((r) => {
+    if (!r || !r.activo) return;
+    const n = Math.max(r.solicitudes || 0, r.propuestas || 0);
+    if (!n) return;
+    const est = (r.por_estado || []).slice(0, 4).map((e) => `${e.estado} (${numero(e.compradores)})`).join(", ");
+    caja.hidden = false;
+    caja.replaceChildren(h("b", {}, `🔥 ${numero(n)} comprador(es) más ${n === 1 ? "busca" : "buscan"} cartera en la zona de esta propuesta`),
+      h("span", {}, est ? ` · ${est}` : "", ". Si te interesa, respóndela pronto: los créditos que no se aceptan se ofrecen a otros compradores."));
+  }).catch(() => {});
+  return caja;
+}
+
+// Oferta de precio: centavos por peso de capital
+const cent = (v) => `${(Number(v) * 100).toLocaleString("es-MX", { maximumFractionDigits: 2 })} ¢`;
+const EST_OFERTA = { NUEVA: ["Enviada, en revisión", "pend"], ACEPTADA: ["Aceptada", "ok"], RECHAZADA: ["No aceptada", "no"], CONTRAOFERTA: ["Contraoferta", "proc"] };
+function ofertaBox(ctx, p, ultima, puede, recargar) {
+  const { h, dinero, toast } = ctx.ui;
+  const capital = Number(p.capital) || 0;
+  const inp = h("input", { class: "campo", type: "number", min: 1, max: 99, step: "0.1", placeholder: "¢", style: { width: "90px" } });
+  const com = h("input", { class: "campo", placeholder: "Comentario (opcional)", style: { maxWidth: "260px" } });
+  const calc = h("span", { class: "nota" });
+  inp.addEventListener("input", () => { const c = Number(inp.value); calc.textContent = c > 0 && c < 100 ? `≈ ${dinero((capital * c) / 100)} por ${dinero(capital)} de capital` : ""; });
+  const form = h("div", { class: "fila pt-oferta-form", hidden: true },
+    h("span", {}, "Ofrezco"), inp, h("span", {}, "centavos por peso"), com, calc,
+    h("button", { class: "btn btn-marca btn-chico", onclick: async () => {
+      const c = Number(inp.value);
+      if (!(c > 0 && c < 100)) { toast("Escribe tu oferta en centavos por peso (1 a 99).", "mal"); return; }
+      try {
+        const r = await ctx.rpc("portal_ofertar", { p_folio: p.folio, p_centavos: c / 100, p_comentario: com.value.trim() });
+        toast(`Oferta enviada: ${cent(c / 100)} por peso (≈ ${dinero(r.monto)}). Tu ejecutivo te responderá.`, "bien", 7000);
+        recargar();
+      } catch (e) { toast(e.message, "mal", 8000); }
+    } }, "Enviar oferta"));
+  const est = ultima ? EST_OFERTA[ultima.estatus] || [ultima.estatus, ""] : null;
+  return h("div", { class: "pt-oferta" },
+    ultima ? h("div", {}, "💰 Tu oferta: ", h("b", {}, cent(ultima.centavos)), ` (≈ ${dinero(ultima.monto)}) `,
+      h("span", { class: `pt-pill ${est[1]}` }, est[0]),
+      ultima.contra_centavos ? h("span", {}, " · te proponemos ", h("b", {}, cent(ultima.contra_centavos))) : null,
+      ultima.respuesta ? h("span", { class: "nota" }, ` · «${ultima.respuesta}»`) : null) : null,
+    puede ? h("button", { class: "btn btn-secundario btn-chico", onclick: () => { form.hidden = !form.hidden; if (!form.hidden) inp.focus(); } },
+      ultima ? "💰 Cambiar mi oferta" : "💰 Ofertar mi precio") : null,
+    puede ? form : null);
+}
 
 // ---------- ✅ Mis compras ----------
 // Etapas después de la compra; cada una con su plazo en días (tabla etapas_plazos)
