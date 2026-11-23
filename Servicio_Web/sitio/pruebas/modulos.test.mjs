@@ -198,7 +198,10 @@ test("Ventas duplicadas: KPIs, filtro y justificar", async () => {
   sel.value = "Pendiente"; sel.dispatchEvent(new window.Event("change"));
   assert.ok(fila(c, "G199051")); assert.equal(fila(c, "1001469165-2"), undefined);
   [...c.querySelectorAll("button")].find((b) => b.textContent.startsWith("VTA-0205")).click();
-  assert.equal(irA, "restituciones?venta=VTA-0205&clave=G199051");
+  await esperar(5);
+  assert.equal(irA, null, "ya no sale del módulo");
+  assert.ok(document.querySelector(".ventana.dup-rst")?.textContent.includes("en VTA-0205"));
+  document.querySelectorAll(".velo").forEach((v) => v.remove());
   [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Justificar")).click();
   await esperar(5);
   assert.deepEqual(llamadas.find(([f]) => f === "duplicado_marcar")[1],
@@ -635,4 +638,37 @@ test("Compradores: responde una oferta con contraoferta", async () => {
   const r = llam.find(([f]) => f === "oferta_responder");
   assert.equal(r[1].p_estatus, "CONTRAOFERTA");
   assert.equal(r[1].p_contra, 0.14);
+});
+
+test("Ventas duplicadas: clic en una venta abre la ventana y restituye en esa venta", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, a) => {
+      llam.push([fn, a]);
+      if (fn === "ventas_duplicadas") return [{ tipo: "Grupal", clave: "G199051", n_ventas: 2, revision: "Pendiente", integrantes_repetidos: 6,
+        ventas: [{ folio: "VTA-0180", comprador: "LUIS HERNANDEZ", visible: true }, { folio: "VTA-0214", comprador: "ARROYO SALGADO", visible: true }] }];
+      if (fn === "validar_restitucion") return { tipo: "Grupal", clave: "G199051", buscado: "G199051", capital: 20000, integrantes: 6, dias: 100,
+        estados: "México", vendido: true, bloqueado: false, en_base: true };
+      if (fn === "sugerir_restitucion") return [{ clave: "G555", integrantes: 5, estados: "México", municipios: "X", dias: 90, capital: 20500, diferencia: 500 }];
+      if (fn === "aplicar_restitucion") return { id_restitucion: "RST-0009", original: "G199051", reemplazo: "G555", diferencia: 500, id_propuesta: "RST-0009", propuesta_nueva: true };
+      return null;
+    },
+    perfil: { rol: "admin" },
+  });
+  const c = cont();
+  await (await import("../modulos/duplicados/duplicados.js")).default.montar(c, ctx);
+  [...c.querySelectorAll("button")].find((b) => b.textContent.startsWith("VTA-0214")).click();
+  await esperar(10);
+  const ven = document.querySelector(".ventana.dup-rst");
+  assert.ok(ven, "abre la ventana");
+  assert.ok(ven.textContent.includes("Se queda en") && ven.textContent.includes("VTA-0180"));
+  [...ven.querySelectorAll("button")].find((b) => b.textContent === "Usar este").click();
+  await esperar(5);
+  [...document.querySelectorAll(".ventana button")].find((b) => b.textContent === "Aplicar").click();
+  await esperar(10);
+  const ap = llam.find(([f]) => f === "aplicar_restitucion");
+  assert.equal(ap[1].p_folio, "VTA-0214");
+  assert.equal(ap[1].p_motivo, "Venta duplicada");
+  assert.ok(!document.querySelector(".ventana.dup-rst"), "se cierra al aplicar");
+  document.querySelectorAll(".velo").forEach((v) => v.remove());
 });
