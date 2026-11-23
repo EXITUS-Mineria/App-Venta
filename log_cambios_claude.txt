@@ -1,42 +1,15 @@
-=== 23/11/2026 17:33:58.36 === 
-From https://github.com/EXITUS-Mineria/App-Venta
- * branch            main       -> FETCH_HEAD
-Preparing worktree (detached HEAD cd8710b)
-HEAD is now at cd8710b Merge pull request #10 from EXITUS-Mineria/Cambios
-Applying: Portal: interés de otros compradores, ofertas de precio, lealtad y casos de éxito; exclusiones SIGE/pagos/lista negra
+=== 23/11/2026 17:36:59.29 publicar Cambios === 
+## Cambios...origin/Cambios [ahead 18]
+ M log_cambios_claude.txt
+?? PUBLICAR_CAMBIOS.bat
 remote: 
-remote: Create a pull request for 'claude/portal-lealtad-exclusiones' on GitHub by visiting:        
-remote:      https://github.com/EXITUS-Mineria/App-Venta/pull/new/claude/portal-lealtad-exclusiones        
+remote: Create a pull request for 'Cambios' on GitHub by visiting:        
+remote:      https://github.com/EXITUS-Mineria/App-Venta/pull/new/Cambios        
 remote: 
 To https://github.com/EXITUS-Mineria/App-Venta.git
- * [new branch]      HEAD -> claude/portal-lealtad-exclusiones
---- rama subida: claude/portal-lealtad-exclusiones 
-From https://github.com/EXITUS-Mineria/App-Venta
- * branch            claude/portal-lealtad-exclusiones -> FETCH_HEAD
---- rama local actual: Cambios 
-warning: in the working copy of 'log_cambios_claude.txt', LF will be replaced by CRLF the next time Git touches it
-Merge made by the 'ort' strategy.
- Servicio_Web/README.md                             |   5 +-
- Servicio_Web/sitio/modulos/cargas/cargas.js        | 109 +++-
- Servicio_Web/sitio/modulos/cargas/exclusiones.js   |  79 +++
- .../sitio/modulos/compradores/compradores.css      |   2 +-
- .../sitio/modulos/compradores/compradores.js       |  10 +-
- Servicio_Web/sitio/modulos/compradores/extras.js   | 177 ++++++
- Servicio_Web/sitio/modulos/juridico/documentos.js  | 113 ++++
- Servicio_Web/sitio/modulos/juridico/juridico.css   | 109 ++++
- Servicio_Web/sitio/modulos/juridico/juridico.js    | 423 ++++++++++++++
- Servicio_Web/sitio/modulos/portal/portal.css       |  19 +
- Servicio_Web/sitio/modulos/portal/portal.js        | 108 +++-
- Servicio_Web/sitio/pruebas/modulos.test.mjs        | 117 ++++
- Servicio_Web/supabase/modulos/30_juridico.sql      | 526 ++++++++++++++++++
- .../modulos/42_portal_lealtad_exclusiones.sql      | 607 +++++++++++++++++++++
- 14 files changed, 2391 insertions(+), 13 deletions(-)
- create mode 100644 Servicio_Web/sitio/modulos/cargas/exclusiones.js
- create mode 100644 Servicio_Web/sitio/modulos/compradores/extras.js
- create mode 100644 Servicio_Web/sitio/modulos/juridico/documentos.js
- create mode 100644 Servicio_Web/sitio/modulos/juridico/juridico.css
- create mode 100644 Servicio_Web/sitio/modulos/juridico/juridico.js
- create mode 100644 Servicio_Web/supabase/modulos/30_juridico.sql
- create mode 100644 Servicio_Web/supabase/modulos/42_portal_lealtad_exclusiones.sql
---- merge aplicado en Cambios 
+ * [new branch]      Cambios -> Cambios
+branch 'Cambios' set up to track 'origin/Cambios'.
 OK 
+## Cambios...origin/Cambios
+ M log_cambios_claude.txt
+?? PUBLICAR_CAMBIOS.bat
