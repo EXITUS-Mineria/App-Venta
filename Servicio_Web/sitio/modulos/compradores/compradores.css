@@ -33,3 +33,7 @@
 .cmp-barra-fondo { height: 8px; background: var(--fondo, #F3F4F6); border-radius: 999px; overflow: hidden; }
 .cmp-barra-fondo span { display: block; height: 100%; background: var(--rojo, #B01217); }
 .cmp-ventas { margin: 0; padding-left: 18px; font-size: .85rem; max-height: 180px; overflow: auto; }
+/* detalle del comprador abierto debajo de su renglón */
+.tabla tr.abierta td { background: var(--rojo-suave, #FBE9EA); font-weight: 600; }
+.tabla tr.cmp-det-fila > td { padding: 0; background: var(--fondo, #F3F4F6); white-space: normal; }
+.cmp-det-en-linea { padding: 12px 16px 14px; border-left: 4px solid var(--rojo, #B01217); background: var(--blanco, #fff); margin: 0 0 6px; cursor: default; }

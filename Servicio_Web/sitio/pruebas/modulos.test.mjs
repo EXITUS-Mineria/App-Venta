@@ -787,3 +787,19 @@ test("Portal: Tienda muestra recomendados y paquetes y pide una propuesta", asyn
   assert.deepEqual(llam.find(([f]) => f === "portal_pedir_paquete")[1].p.paquete_id, 5);
   assert.ok(c.textContent.includes("solicitud #77"));
 });
+
+test("Compras del año: el detalle se abre debajo del comprador tocado y se cierra al tocarlo otra vez", async () => {
+  const fila2 = (n) => ({ clave: `N:${n}`, comprador: n, registrado: false, ventas: 1, capital: 100, monto: 20, centavos: 0.2, meses: Array(12).fill(0),
+    estados: [{ estado: "Mexico", capital: 100, creditos: 1 }], municipios: [], detalle: [{ folio: `F-${n}` }] });
+  const ctx = await ctxMontaje({ rpc: (fn) => (fn === "compradores_resumen" ? [fila2("AAA"), fila2("BBB")] : fn.endsWith("_lista") ? [] : null), esAdmin: true });
+  const { comprasPorComprador } = await import("../modulos/compradores/analisis.js");
+  const c = cont();
+  await comprasPorComprador(ctx, c, { maestro: true });
+  fila(c, "BBB").click();
+  const filas = [...c.querySelectorAll("tbody > tr")];
+  const iB = filas.findIndex((r) => r.textContent.includes("BBB") && r.dataset.id);
+  assert.ok(filas[iB + 1].classList.contains("cmp-det-fila"), "el detalle va justo debajo");
+  assert.ok(filas[iB + 1].textContent.includes("F-BBB"));
+  fila(c, "BBB").click();
+  assert.equal(c.querySelector(".cmp-det-fila"), null, "se cierra al tocarlo otra vez");
+});

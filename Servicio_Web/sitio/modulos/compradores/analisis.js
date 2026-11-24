@@ -27,8 +27,11 @@ export async function comprasPorComprador(ctx, cuerpo, { irTienda, maestro } = {
     h("option", { value: "" }, "Todos los años"));
   const buscar = h("input", { class: "campo", placeholder: "🔍 Comprador, estado o municipio", oninput: () => pintar() });
   const kC = kpi("Compradores"), kV = kpi("Ventas"), kM = kpi("Monto comprado"), kP = kpi("Precio promedio");
-  const panel = h("div", { class: "tarjeta cmp-panel", hidden: true });
-  let datos = [];
+  // El detalle se abre en un renglón debajo del comprador que se toca (otro clic lo cierra)
+  const panel = h("div", { class: "cmp-panel cmp-det-en-linea" });
+  const celdaDet = h("td", { colSpan: 9 }, panel);
+  const filaDet = h("tr", { class: "cmp-det-fila" }, celdaDet);
+  let datos = [], abierto = null;
   const t = tabla([
     { clave: "comprador", titulo: "Comprador", formato: (v, f) => h("span", {}, h("b", {}, v),
         f.nivel ? h("span", { class: "cmp-est e-ATENDIDA", style: { marginLeft: "6px" } }, `🏅 ${f.nivel}`) : null,
@@ -44,7 +47,24 @@ export async function comprasPorComprador(ctx, cuerpo, { irTienda, maestro } = {
     { clave: "tipo_principal", titulo: "Tipo" },
     { clave: "ultima", titulo: "Última compra" },
   ], { idFila: (f) => f.clave, vacio: "Sin ventas vendidas en el periodo" });
-  t.el.addEventListener("click", (e) => { const f = t.filaDe(e.target.closest("tbody tr")); if (f) detalle(f); });
+  t.el.addEventListener("click", (e) => {
+    if (e.target.closest(".cmp-det-fila")) return;
+    const tr = e.target.closest("tbody tr"), f = t.filaDe(tr);
+    if (!f) return;
+    if (abierto === f.clave) { cerrar(); return; }
+    abierto = f.clave; detalle(f); colocar();
+    filaDet.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+  });
+  // al ordenar, la tabla se vuelve a pintar: se recoloca el detalle debajo de su comprador
+  t.el.addEventListener("click", (e) => { if (e.target.closest("thead")) setTimeout(colocar, 0); });
+  function colocar() {
+    t.el.querySelectorAll("tbody tr.abierta").forEach((x) => x.classList.remove("abierta"));
+    const tr = abierto == null ? null : [...t.el.querySelectorAll("tbody tr[data-id]")].find((x) => x.dataset.id === abierto);
+    if (!tr) { filaDet.remove(); return; }
+    tr.classList.add("abierta");
+    tr.after(filaDet);
+  }
+  function cerrar() { abierto = null; colocar(); }
 
   cuerpo.replaceChildren(
     h("div", { class: "kpis" }, kC.el, kV.el, kM.el, kP.el),
@@ -54,9 +74,8 @@ export async function comprasPorComprador(ctx, cuerpo, { irTienda, maestro } = {
         h("div", { style: { flex: "1 1 220px" } }, buscar),
         h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, onclick: () => exportar() }, "⬇ Exportar"),
         h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, onclick: () => cargar() }, "⟳")),
-      h("div", { class: "nota", style: { marginBottom: "6px" } }, "Ventas «Vendida» del Funnel. Zonas por capital de los créditos vendidos. Clic en un comprador para ver su detalle."),
-      t.el),
-    panel);
+      h("div", { class: "nota", style: { marginBottom: "6px" } }, "Ventas «Vendida» del Funnel. Zonas por capital de los créditos vendidos. Toca un comprador para ver su detalle debajo; tócalo otra vez para cerrarlo."),
+      t.el));
 
   async function cargar() {
     try {
@@ -64,7 +83,7 @@ export async function comprasPorComprador(ctx, cuerpo, { irTienda, maestro } = {
         ...f, ventas: Number(f.ventas), capital: Number(f.capital), monto: Number(f.monto), centavos: f.centavos == null ? null : Number(f.centavos),
         meses: (f.meses || []).map(Number), capitalZonas: (f.estados || []).reduce((s, e) => s + Number(e.capital || 0), 0) }));
     } catch (e) { toast(e.message, "mal"); return; }
-    panel.hidden = true;
+    abierto = null;
     pintar();
   }
   function filtrados() {
@@ -80,6 +99,7 @@ export async function comprasPorComprador(ctx, cuerpo, { irTienda, maestro } = {
     kM.set(dinero(monto), selAnio.value ? `en ${selAnio.value}` : "todos los años");
     kP.set(cent(cap ? monto / cap : null), "monto / capital");
     t.setFilas(v);
+    colocar();
   }
   function detalle(f) {
     const total = f.capitalZonas || 1;
@@ -87,11 +107,10 @@ export async function comprasPorComprador(ctx, cuerpo, { irTienda, maestro } = {
       h("span", { class: "cmp-barra-txt" }, etiqueta(x)), h("span", { class: "cmp-barra-fondo" }, h("span", { style: { width: `${pct(x.capital, total)}%` } })),
       h("small", {}, `${pct(x.capital, total)}% · ${numero(x.creditos)} créd.`))));
     const est = (f.estados || [])[0];
-    panel.hidden = false;
     panel.replaceChildren(
       h("div", { class: "fila", style: { justifyContent: "space-between" } },
         h("h3", { style: { margin: 0 } }, f.comprador, f.nivel ? ` · 🏅 ${f.nivel}` : ""),
-        h("button", { class: "btn btn-secundario btn-chico", style: { flex: "0 0 auto" }, onclick: () => { panel.hidden = true; } }, "✖")),
+        h("button", { class: "btn btn-secundario btn-chico", style: { flex: "0 0 auto" }, title: "Cerrar detalle", onclick: () => cerrar() }, "✖")),
       h("div", { class: "nota" }, `${numero(f.ventas)} compra(s) · ${dinero(f.monto)} por ${dinero(f.capital)} de capital (${cent(f.centavos)}) · ` +
         `primera ${f.primera || "—"}, última ${f.ultima || "—"} · vendedor(es): ${f.vendedores || "—"}`),
       h("div", { class: "cmp-det-grid" },
@@ -107,7 +126,6 @@ export async function comprasPorComprador(ctx, cuerpo, { irTienda, maestro } = {
           municipios: (f.municipios || []).filter((m) => m.estado === est.estado).slice(0, 6).map((m) => m.municipio),
           capital_objetivo: Math.round(f.capital / Math.max(1, f.ventas) / 1000) * 1000, centavos: f.centavos }) },
           "🛍️ Armar paquete con sus zonas")) : null);
-    panel.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
   }
   function exportar() {
     const v = filtrados();
