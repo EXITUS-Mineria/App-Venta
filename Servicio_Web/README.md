@@ -44,7 +44,10 @@ Servicio_Web/
 │       ├── 26_estados_oficiales.sql ← mismo nombre de estado en todas las bases (también en cada carga)
 │       ├── 27_portal_seleccion.sql ← el comprador elige con qué créditos se queda; lo demás regresa a disponible
 │       ├── 28_colonia.sql        ← la carga toma la columna Colonia cuando las bases la traigan
-│       └── 29_plazos_etapas.sql  ← etapas y plazos (días) que ve el comprador en «Mis compras»
+│       ├── 29_plazos_etapas.sql  ← etapas y plazos (días) que ve el comprador en «Mis compras»
+│       ├── …                     ← 30–41: jurídico, restituciones, histórico de ventas, dashboard, duplicadas
+│       └── 42_portal_lealtad_exclusiones.sql ← exclusiones (promesas SIGE, pagos, lista negra) con interruptores;
+│                                   portal: interés de otros compradores, ofertas de precio, lealtad, casos de éxito
 │   └── functions/enviar-propuesta/ ← Edge Function: aviso por correo (Microsoft 365) y Excel interno
 ├── cargar_supabase.py         ← aplica SQL, sube bases, migra apartados, da admin
 ├── CARGAR_SUPABASE.bat
