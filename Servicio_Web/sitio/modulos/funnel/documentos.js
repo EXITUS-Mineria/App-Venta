@@ -1,7 +1,8 @@
 // ============================================================
 // Documentos del Funnel (Supabase Storage, bucket privado "documentos-venta")
 //  - tipo "comprobante_pago": comprobante del pago de la venta.
-//  - tipo "comprador": documentos del comprador (PDF, fotos, Word).
+//  - tipo "comprador": otros documentos del comprador (PDF, fotos, Word, Excel).
+//  - ine, comprobante_fiscal, comprobante_domicilio, alta_comprador, nda: carpeta del cliente (ver carpeta.js).
 // Las fotos se comprimen en el navegador (máx. 1800 px, JPEG) para ocupar poco espacio.
 // Para ver un archivo se crea una liga temporal de 5 minutos; no hay ligas públicas.
 // ============================================================
@@ -10,16 +11,18 @@ const MAX_BYTES = 10 * 1024 * 1024;
 const TIPOS_OK = {
   "application/pdf": "PDF", "image/jpeg": "Foto", "image/png": "Foto", "image/webp": "Foto", "image/heic": "Foto", "image/heif": "Foto",
   "application/msword": "Word", "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "Word",
+  "application/vnd.ms-excel": "Excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "Excel", "text/csv": "CSV",
 };
 const ACEPTA = ".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,.doc,.docx,application/pdf,image/*,application/msword," +
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document,.xls,.xlsx,.csv";
 
 function tipoMime(file) {
   if (file.type && TIPOS_OK[file.type]) return file.type;
   const ext = (file.name.split(".").pop() || "").toLowerCase();
   return { pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", heic: "image/heic",
     heif: "image/heif", doc: "application/msword",
-    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }[ext] || file.type || "";
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", xls: "application/vnd.ms-excel",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", csv: "text/csv" }[ext] || file.type || "";
 }
 
 const limpio = (n) => n.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w.\-]+/g, "_").slice(-90);
@@ -44,7 +47,7 @@ async function comprimir(file, mime) {
  * Bloque de documentos de una venta.
  * ctx, folio, tipo ("comprobante_pago" | "comprador"), editable, titulo, alConteo(n) tras subir o borrar
  */
-export function bloqueDocumentos(ctx, { folio, tipo, editable, titulo, ayuda, alConteo }) {
+export function bloqueDocumentos(ctx, { folio, tipo, editable, titulo, ayuda, alConteo, compacto }) {
   const { h, toast, confirmar, fecha } = ctx.ui;
   const lista = h("ul", { class: "doc-lista" }, h("li", { class: "doc-vacio" }, "Cargando…"));
   const input = h("input", { type: "file", accept: ACEPTA, multiple: true, hidden: true, onchange: () => subir([...input.files]) });
@@ -55,9 +58,9 @@ export function bloqueDocumentos(ctx, { folio, tipo, editable, titulo, ayuda, al
     ondragover: (e) => { e.preventDefault(); zona.classList.add("sobre"); },
     ondragleave: () => zona.classList.remove("sobre"),
     ondrop: (e) => { e.preventDefault(); zona.classList.remove("sobre"); subir([...e.dataTransfer.files]); } },
-    h("b", {}, "⬆ Cargar archivos"), h("span", {}, " · arrastra aquí o da clic · PDF, fotos o Word (máx. 10 MB)")) : null;
+    h("b", {}, "⬆ Cargar"), compacto ? null : h("span", {}, " · arrastra aquí o da clic · PDF, fotos, Word o Excel (máx. 10 MB)")) : null;
 
-  const el = h("div", { class: "doc-bloque" },
+  const el = h("div", { class: `doc-bloque${compacto ? " doc-compacto" : ""}`, "data-tipo": tipo },
     h("div", { class: "doc-enc" }, h("b", {}, titulo), estado), ayuda ? h("div", { class: "nota" }, ayuda) : null,
     lista, zona, input);
 
@@ -66,10 +69,10 @@ export function bloqueDocumentos(ctx, { folio, tipo, editable, titulo, ayuda, al
     const { data, error } = await ctx.sb.from("funnel_documentos").select("*").eq("folio", folio).eq("tipo", tipo).order("fecha");
     if (error) { lista.replaceChildren(h("li", { class: "doc-vacio" }, error.message)); return; }
     estado.textContent = data.length ? `${data.length} archivo${data.length === 1 ? "" : "s"}` : "";
-    if (iniciado) alConteo?.(data.length);
+    if (iniciado || compacto) alConteo?.(data.length);
     iniciado = true;
     lista.replaceChildren(...(data.length ? data.map((d) => h("li", {},
-      h("span", { class: "doc-ico" }, d.mime === "application/pdf" ? "📄" : (d.mime || "").startsWith("image/") ? "🖼" : "📝"),
+      h("span", { class: "doc-ico" }, d.mime === "application/pdf" ? "📄" : (d.mime || "").startsWith("image/") ? "🖼" : /sheet|excel|csv/.test(d.mime || "") ? "📊" : "📝"),
       h("a", { href: "#", title: "Abrir (liga temporal)", onclick: (e) => { e.preventDefault(); abrir(d); } }, d.nombre),
       h("small", {}, ` ${peso(d.bytes)} · ${d.subido_por || ""} · ${fecha(d.fecha)}`),
       editable ? h("button", { class: "btn btn-secundario btn-chico", title: "Borrar", onclick: () => borrar(d) }, "🗑") : null))
@@ -89,7 +92,7 @@ export function bloqueDocumentos(ctx, { folio, tipo, editable, titulo, ayuda, al
     let ok = 0;
     for (const file of files) {
       const mime = tipoMime(file);
-      if (!TIPOS_OK[mime]) { toast(`${file.name}: sólo PDF, fotos (JPG/PNG/WEBP/HEIC) o Word.`, "mal", 7000); continue; }
+      if (!TIPOS_OK[mime]) { toast(`${file.name}: sólo PDF, fotos (JPG/PNG/WEBP/HEIC), Word o Excel.`, "mal", 7000); continue; }
       estado.textContent = `Subiendo ${file.name}…`;
       const c = await comprimir(file, mime);
       if (c.blob.size > MAX_BYTES) { toast(`${file.name}: pesa ${peso(c.blob.size)}; el máximo es 10 MB.`, "mal", 7000); continue; }

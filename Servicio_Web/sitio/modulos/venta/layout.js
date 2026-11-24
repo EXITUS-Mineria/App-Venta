@@ -5,7 +5,8 @@ const META = [
   "DiasPromedioMoraPropuesta", "EstatusPropuesta", "Comprador",
 ];
 
-export async function descargarLayout(ctx, propuesta) {
+/** Arma la base final (layout Funnel) sin descargarla: { nombre, columnas, filas }. */
+export async function armarLayout(ctx, propuesta) {
   const filas = await ctx.rpc("layout_propuesta", { p_id: propuesta.id_propuesta });
   if (!filas?.length) throw new Error("La propuesta no tiene detalle.");
 
@@ -36,8 +37,13 @@ export async function descargarLayout(ctx, propuesta) {
     Comprador: propuesta.comprador || "",
   }));
   // Nombre con la nomenclatura de la venta y el comprador: VTA-0300_Comprador_BaseFinal.csv
-  ctx.ui.descargarCSV(nombreArchivo(propuesta, "BaseFinal"), todas, salida, "latin1");
-  return salida.length;
+  return { nombre: nombreArchivo(propuesta, "BaseFinal"), columnas: todas, filas: salida };
+}
+
+export async function descargarLayout(ctx, propuesta) {
+  const { nombre, columnas, filas } = await armarLayout(ctx, propuesta);
+  ctx.ui.descargarCSV(nombre, columnas, filas, "latin1");
+  return filas.length;
 }
 
 /** Nombre de archivo con folio y comprador: VTA-0301_Jonathan_Caballero_Propuesta.csv */

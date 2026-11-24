@@ -46,8 +46,10 @@ Servicio_Web/
 │       ├── 28_colonia.sql        ← la carga toma la columna Colonia cuando las bases la traigan
 │       ├── 29_plazos_etapas.sql  ← etapas y plazos (días) que ve el comprador en «Mis compras»
 │       ├── …                     ← 30–41: jurídico, restituciones, histórico de ventas, dashboard, duplicadas
-│       └── 42_portal_lealtad_exclusiones.sql ← exclusiones (promesas SIGE, pagos, lista negra) con interruptores;
+│       ├── 42_portal_lealtad_exclusiones.sql ← exclusiones (promesas SIGE, pagos, lista negra) con interruptores;
 │                                   portal: interés de otros compradores, ofertas de precio, lealtad, casos de éxito
+│       ├── 43_restitucion_en_venta.sql ← restituir en la venta elegida (Ventas duplicadas)
+│       └── 44_expediente_venta.sql ← carpeta del cliente (INE, fiscal, domicilio, alta, pago, NDA) y aviso a expedientes
 │   └── functions/enviar-propuesta/ ← Edge Function: aviso por correo (Microsoft 365) y Excel interno
 ├── cargar_supabase.py         ← aplica SQL, sube bases, migra apartados, da admin
 ├── CARGAR_SUPABASE.bat

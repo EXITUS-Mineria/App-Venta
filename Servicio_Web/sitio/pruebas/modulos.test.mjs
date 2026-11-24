@@ -672,3 +672,54 @@ test("Ventas duplicadas: clic en una venta abre la ventana y restituye en esa ve
   assert.ok(!document.querySelector(".ventana.dup-rst"), "se cierra al aplicar");
   document.querySelectorAll(".velo").forEach((v) => v.remove());
 });
+
+// ---------- Carpeta del cliente y aviso a expedientes ----------
+test("Carpeta del cliente: apartados por documento, avance y aviso a expedientes", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, a) => { llam.push([fn, a]); return fn === "expedientes_aviso_datos" ? { aviso: null, para: ["exp@x.mx"], saludo: "Pamela Ingrid" } : null; },
+    filas: (t) => (t === "funnel_documentos" ? [{ id: 1, folio: "VTA-0400", tipo: "ine", nombre: "INE.pdf", ruta: "VTA-0400/ine/1_INE.pdf", mime: "application/pdf" }] : []),
+  });
+  let cuerpo = null;
+  ctx.sb.functions.invoke = async (_, { body }) => { cuerpo = body; return { data: { ok: true, para: ["exp@x.mx"], registros: 12 }, error: null }; };
+  const { bloqueCarpeta, DOCS_CARPETA, nombreCarpeta } = await import("../modulos/funnel/carpeta.js");
+  const f = { folio: "VTA-0400", comprador: "José Pérez & Asoc.", estatus_venta: "Vendida", id_propuesta: "VTA-0400" };
+  const el = bloqueCarpeta(ctx, f, { editable: true });
+  document.body.append(el);
+  await esperar(10);
+  assert.equal(el.querySelectorAll(".car-item .doc-bloque").length, DOCS_CARPETA.length);
+  for (const [k] of DOCS_CARPETA) assert.ok(el.querySelector(`.doc-bloque[data-tipo="${k}"]`), k);
+  assert.ok(el.textContent.includes("Layout para solicitud de expedientes") && el.textContent.includes("Base final"));
+  assert.ok(el.querySelector(".car-prog").textContent.includes("de 6"));
+  assert.equal(nombreCarpeta(f), "VTA-0400_Jose_Perez_Asoc.");
+  [...el.querySelectorAll("button")].find((b) => b.textContent.includes("Avisar a expedientes")).click();
+  await esperar(10);
+  assert.deepEqual(cuerpo, { accion: "expedientes", folio: "VTA-0400" });
+  el.remove();
+});
+
+test("Aviso a expedientes sin correo de Microsoft 365: ofrece mandarlo desde Outlook", async () => {
+  const ctx = await ctxMontaje({ rpc: () => null });
+  ctx.sb.functions.invoke = async () => ({ data: null, error: { message: "x", context: { json: async () => ({ error: "No configurado", sin_configurar: true }) } } });
+  let pregunta = null;
+  ctx.ui = { ...ctx.ui, confirmar: async (t, m) => { pregunta = m; return false; } };
+  const { avisarExpedientes } = await import("../modulos/funnel/carpeta.js");
+  const ok = await avisarExpedientes(ctx, { folio: "VTA-0400" });
+  assert.equal(ok, false);
+  assert.ok(pregunta.includes("Outlook"));
+});
+
+test("Portal ⚙️: guarda el correo y saludo de expedientes", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({ rpc: (fn, a) => { llam.push([fn, a]); return fn === "config_lista"
+    ? [{ clave: "expedientes_aviso", valor: true }, { clave: "expedientes_correo", valor: "" }, { clave: "expedientes_nombre", valor: "Pamela Ingrid" }] : null; } });
+  const { ajustesPortal } = await import("../modulos/compradores/extras.js");
+  const c = cont();
+  await ajustesPortal(ctx, c);
+  const correo = c.querySelector('[data-clave="expedientes_correo"]');
+  correo.value = "pamela@exitus.test";
+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Guardar")).click();
+  await esperar(5);
+  assert.ok(llam.some(([f, a]) => f === "config_guardar" && a.p_clave === "expedientes_correo" && a.p_valor === "pamela@exitus.test"));
+  assert.ok(llam.some(([f, a]) => f === "config_guardar" && a.p_clave === "expedientes_nombre" && a.p_valor === "Pamela Ingrid"));
+});

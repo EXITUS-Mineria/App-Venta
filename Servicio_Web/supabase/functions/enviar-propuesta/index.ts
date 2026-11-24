@@ -4,6 +4,9 @@
 //                        publicada (sólo la liga al portal, SIN archivo). Es la que usa la página.
 //   accion "descargar" → regresa el Excel de la propuesta (uso interno; no se guarda en ningún lado)
 //   accion "enviar"    → (anterior) manda el Excel por correo y registra el envío
+//   accion "expedientes" → avisa a expedientes (correo en config «expedientes_correo») que la venta se vendió,
+//                        con el layout para solicitud de expedientes adjunto; copia a quien lo manda
+//   accion "layout_expedientes" → regresa ese layout en Excel (para la carpeta del cliente)
 // Permisos: los valida la base con la sesión del usuario (vendedor dueño, auxiliar o maestros).
 // Secretos (Supabase › Edge Functions › Secrets), los da TI:
 //   MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET  (registro de app en Azure con permiso Mail.Send de aplicación)
@@ -41,6 +44,21 @@ function armarExcel(folio: string, comprador: string, filas: any[]) {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Propuesta");
   return { base64: XLSX.write(wb, { type: "base64", bookType: "xlsx" }) as string, total: Math.round(total * 100) / 100 };
+}
+
+function layoutExpedientes(folio: string, filas: any[]) {
+  const enc = ["Folio venta", "Comprador", "Fecha venta", "Tipo", "vGroupId", "Grupo", "vReference", "iCredId", "iPersonId",
+    "Nombre", "Estado", "Municipio", "Sucursal", "Capital", "Expediente"];
+  const aoa: any[][] = [enc, ...filas.map((f) => [f.folio, f.comprador || "", f.fecha_venta || "", f.tipo, f.vgroupid || "", f.grupo || "",
+    f.vreference, f.icredid || "", f.ipersonid || "", f.nombre || "", f.estado || "", f.municipio || "", f.sucursal || "",
+    f.capital == null ? "" : Number(f.capital), f.expediente || ""])];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"] = [11, 26, 11, 7, 10, 18, 16, 10, 10, 30, 16, 20, 30, 12, 14].map((w) => ({ wch: w }));
+  ws["!autofilter"] = { ref: `A1:O${1 + filas.length}` };
+  for (let r = 2; r <= 1 + filas.length; r++) { const c = ws[`N${r}`]; if (c) c.z = "$#,##0.00"; }
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Solicitud expedientes");
+  return { archivo: `${folio}_Solicitud_Expedientes.xlsx`, base64: XLSX.write(wb, { type: "base64", bookType: "xlsx" }) as string };
 }
 
 async function tokenGraph() {
@@ -94,6 +112,52 @@ Deno.serve(async (req) => {
       });
       if (!r.ok) { const d = await r.json().catch(() => ({})); return json({ error: `No se pudo enviar: ${d?.error?.message || r.status}` }, 502); }
       return json({ ok: true, para });
+    }
+
+    if (accion === "layout_expedientes" || accion === "expedientes") {
+      const { data: lay, error: eL } = await sb.rpc("expedientes_layout", { p_folio: folio });
+      if (eL) return json({ error: eL.message }, 403);
+      if (!lay?.length) return json({ error: `${folio} no tiene créditos para pedir expedientes` }, 400);
+      const x = layoutExpedientes(folio, lay);
+      if (accion === "layout_expedientes") return json({ ...x, registros: lay.length });
+
+      const { data: d, error: eD } = await sb.rpc("expedientes_aviso_datos", { p_folio: folio });
+      if (eD) return json({ error: eD.message }, 403);
+      const para: string[] = (d.para || []).filter((c: string) => CORREO.test(c));
+      if (!para.length) return json({ error: "Falta el correo de expedientes: captúralo en Compradores › ⚙️ Portal.", sin_correo: true }, 400);
+      const token = await tokenGraph();
+      if (!token) return json({ error: "El envío de correo aún no está configurado (faltan los datos de Microsoft 365 en Supabase).", sin_configurar: true, para }, 503);
+      const firma = d.yo_nombre || d.yo_correo || "Exitus Credit";
+      const nCred = lay.length, nGrupos = new Set(lay.filter((f: any) => f.vgroupid).map((f: any) => f.vgroupid)).size;
+      const cuerpo = `<p>${esc(d.saludo || "Hola")}, buen día:</p>` +
+        `<p>Se concretó la venta <b>${esc(folio)}</b>${d.comprador ? ` al comprador <b>${esc(d.comprador)}</b>` : ""}` +
+        ` (${nCred} créditos${nGrupos ? ` en ${nGrupos} grupos` : ""}${d.capital ? `, capital ${dinero(Number(d.capital))}` : ""}).</p>` +
+        `<p>Te pido por favor tu apoyo con el envío de los expedientes. Adjunto el layout para la solicitud de expedientes.</p>` +
+        `<p>Saludos,<br>${esc(firma)}<br>Exitus Credit</p>`;
+      const remitente = Deno.env.get("MS_REMITENTE")!;
+      const r = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(remitente)}/sendMail`, {
+        method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: {
+            subject: `Solicitud de expedientes · venta ${folio}${d.comprador ? ` · ${d.comprador}` : ""}`,
+            body: { contentType: "HTML", content: cuerpo },
+            toRecipients: para.map((a) => ({ emailAddress: { address: a } })),
+            ccRecipients: d.yo_correo && CORREO.test(d.yo_correo) ? [{ emailAddress: { address: d.yo_correo } }] : [],
+            replyTo: d.yo_correo ? [{ emailAddress: { address: d.yo_correo, name: firma } }] : [],
+            attachments: [{ "@odata.type": "#microsoft.graph.fileAttachment", name: x.archivo,
+              contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", contentBytes: x.base64 }],
+          },
+          saveToSentItems: true,
+        }),
+      });
+      if (!r.ok) {
+        const e = await r.json().catch(() => ({}));
+        const msg = `No se pudo enviar: ${e?.error?.message || r.status}`;
+        await sb.rpc("expedientes_aviso_marcar", { p_folio: folio, p_para: para.join("; "), p_error: msg });
+        return json({ error: msg }, 502);
+      }
+      await sb.rpc("expedientes_aviso_marcar", { p_folio: folio, p_para: para.join("; "), p_error: null });
+      return json({ ok: true, para, registros: nCred });
     }
 
     const { data: filas, error } = await sb.rpc("propuesta_para_comprador", { p_folio: folio });
