@@ -1,5 +1,6 @@
 // ============================================================
 // Compradores · 📊 Compras del año y 🛍️ Tienda de paquetes
+//  🧺 Paquetes automáticos de $10,000 por estado/municipio y 🔥 ofertas en estados sin venta reciente (46_*.sql)
 //  📊 Cuánto nos ha comprado cada comprador (ventas «Vendida» del Funnel), mes a mes, a qué precio
 //     y en qué zonas compra (estados y municipios por capital). Vendedor: sólo sus ventas.
 //  🛍️ Paquetes pre-armados que el comprador ve en su portal (Tienda). La disponibilidad se calcula
@@ -156,9 +157,10 @@ export async function tiendaAdmin(ctx, cuerpo, maestro, prefill = null) {
   ], { vacio: "Aún no hay paquetes. Arma el primero." });
   if (edita) t.el.addEventListener("click", (e) => { const p = t.filaDe(e.target.closest("tbody tr")); if (p) editar(p); });
 
-  cuerpo.replaceChildren(h("div", { class: "tarjeta" },
+  const cajaAuto = h("div", { class: "tarjeta" }, h("div", { class: "nota" }, "Calculando paquetes automáticos…"));
+  cuerpo.replaceChildren(cajaAuto, h("div", { class: "tarjeta" },
     h("div", { class: "fila", style: { justifyContent: "flex-start", marginBottom: "8px" } },
-      h("h3", { style: { margin: 0, flex: "0 0 auto" } }, "🛍️ Tienda del portal"),
+      h("h3", { style: { margin: 0, flex: "0 0 auto" } }, "📦 Paquetes especiales"),
       h("span", { class: "nota", style: { flex: "1 1 auto" } }, "Paquetes que ven los compradores en su Tienda, además de recomendaciones automáticas por sus compras anteriores. La disponibilidad se calcula al momento; nada se aparta."),
       edita ? h("button", { class: "btn btn-marca", style: { flex: "0 0 auto" }, onclick: () => editar(null) }, "＋ Nuevo paquete") : null),
     t.el), form);
@@ -224,4 +226,56 @@ export async function tiendaAdmin(ctx, cuerpo, maestro, prefill = null) {
   }
   await cargar();
   if (prefill && edita) editar(null);
+  paquetesAutoAdmin(ctx, cajaAuto, maestro);
+}
+
+/** ⚙️ Paquetes automáticos de $10,000 y 🔥 estados sin venta reciente (ofertas). */
+async function paquetesAutoAdmin(ctx, caja, maestro) {
+  const { h, tabla, dinero, numero, toast } = ctx.ui;
+  let r;
+  try { r = await ctx.rpc("tienda_resumen"); } catch (e) { caja.replaceChildren(h("div", { class: "nota" }, e.message)); return; }
+  if (!r) { caja.replaceChildren(); return; }
+  const campo = (v, extra = {}) => h("input", { class: "campo", type: "number", value: v, disabled: !maestro, style: { width: "100px" }, ...extra });
+  const fAct = h("input", { type: "checkbox", checked: !!r.activo, disabled: !maestro });
+  const fMonto = campo(Number(r.monto_paquete), { min: 1000, step: 1000 });
+  const fC = campo(Number(r.centavos) * 100, { min: 1, max: 99, step: "0.5" });
+  const fO = campo(Number(r.centavos_oferta) * 100, { min: 1, max: 99, step: "0.5" });
+  const fD = campo(Number(r.oferta_dias), { min: 7, max: 730, step: 1 });
+  const capTxt = (cent) => `≈ ${dinero(Number(fMonto.value) / (Number(cent) / 100 || 1))} de capital por paquete`;
+  const tN = h("small", { class: "nota" }), tO = h("small", { class: "nota" });
+  const recalc = () => { tN.textContent = capTxt(fC.value); tO.textContent = capTxt(fO.value); };
+  [fMonto, fC, fO].forEach((x) => x.addEventListener("input", recalc)); recalc();
+  const t = tabla([
+    { clave: "estado", titulo: "Estado", formato: (v, e) => h("span", {}, e.con_venta ? "" : "🔥 ", h("b", {}, v)) },
+    { clave: "con_venta", titulo: "Precio", formato: (v) => (v ? "Normal" : h("span", { class: "cmp-est e-NUEVA" }, "Oferta")) },
+    { clave: "ventas", titulo: "Ventas (histórico)", num: true, formato: (v) => numero(v) },
+    { clave: "ultima", titulo: "Última venta", formato: (v) => v || "Nunca" },
+    { clave: "vendido", titulo: "Capital vendido", num: true, formato: (v) => dinero(v) },
+    { clave: "jyp", titulo: "Disponible JyP", num: true, formato: (v) => dinero(v || 0) },
+    { clave: "grupal", titulo: "Disponible Grupal", num: true, formato: (v) => dinero(v || 0) },
+    { clave: "paquetes", titulo: "Paquetes", num: true, formato: (v) => numero(v) },
+  ], { idFila: (e) => e.estado, vacio: "Sin cartera disponible" });
+  t.setFilas((r.estados || []).map((e) => ({ ...e, ventas: Number(e.ventas), vendido: Number(e.vendido), jyp: Number(e.jyp || 0), grupal: Number(e.grupal || 0), paquetes: Number(e.paquetes) })));
+  const nOf = (r.estados || []).filter((e) => !e.con_venta).length;
+  const guardar = async () => {
+    try {
+      for (const [k, v] of [["tienda_paquetes_auto", fAct.checked], ["tienda_monto_paquete", Number(fMonto.value)],
+        ["tienda_centavos", Number(fC.value) / 100], ["tienda_centavos_oferta", Number(fO.value) / 100], ["tienda_oferta_dias", Number(fD.value)]]) {
+        await ctx.rpc("config_guardar", { p_clave: k, p_valor: v });
+      }
+      toast("Paquetes automáticos guardados.", "bien"); paquetesAutoAdmin(ctx, caja, maestro);
+    } catch (e) { toast(e.message, "mal", 8000); }
+  };
+  caja.replaceChildren(
+    h("h3", { style: { margin: "0 0 4px" } }, "🧺 Paquetes automáticos por estado y municipio"),
+    h("div", { class: "nota" }, "El sistema arma solo paquetes de valor de compra fijo en cada municipio con cartera disponible (JyP y Grupal). " +
+      `🔥 Ofertas: estados sin ventas en los últimos ${numero(r.oferta_dias)} días se ofrecen más baratos para abrir mercado (${numero(nOf)} estado(s) hoy).`),
+    h("div", { class: "fila", style: { justifyContent: "flex-start", flexWrap: "wrap", gap: "14px", margin: "10px 0", alignItems: "flex-end" } },
+      h("label", {}, fAct, " Mostrar en la Tienda"),
+      h("label", {}, h("span", { class: "etiqueta" }, "Valor de compra ($)"), fMonto),
+      h("label", {}, h("span", { class: "etiqueta" }, "Precio normal (¢)"), fC, tN),
+      h("label", {}, h("span", { class: "etiqueta" }, "🔥 Precio oferta (¢)"), fO, tO),
+      h("label", {}, h("span", { class: "etiqueta" }, "Oferta si no hay venta en (días)"), fD),
+      maestro ? h("button", { class: "btn btn-marca", onclick: guardar }, "💾 Guardar") : null),
+    t.el);
 }
