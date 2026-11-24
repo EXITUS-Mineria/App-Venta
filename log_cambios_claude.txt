@@ -1,0 +1,15 @@
+=== 23/11/2026 17:36:59.29 publicar Cambios === 
+## Cambios...origin/Cambios [ahead 18]
+ M log_cambios_claude.txt
+?? PUBLICAR_CAMBIOS.bat
+remote: 
+remote: Create a pull request for 'Cambios' on GitHub by visiting:        
+remote:      https://github.com/EXITUS-Mineria/App-Venta/pull/new/Cambios        
+remote: 
+To https://github.com/EXITUS-Mineria/App-Venta.git
+ * [new branch]      Cambios -> Cambios
+branch 'Cambios' set up to track 'origin/Cambios'.
+OK 
+## Cambios...origin/Cambios
+ M log_cambios_claude.txt
+?? PUBLICAR_CAMBIOS.bat

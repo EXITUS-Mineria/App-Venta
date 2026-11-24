@@ -1,0 +1,32 @@
+﻿==== 11/19/2026 11:53:30 ====
+1) Temporales de Claude
+  Papelera: cambios_claude.patch
+  Papelera: EJECUTAR_CAMBIOS_CLAUDE.bat
+  Papelera: SUBIR_CAMBIOS_CLAUDE_2.bat
+  Papelera: SUBIR_CAMBIOS_CLAUDE_3.bat
+  Papelera: SUBIR_CAMBIOS_CLAUDE_4.bat
+  Papelera: TRAER_CAMBIOS_CLAUDE.bat
+  Papelera: log_cambios_claude.txt
+2) Compilados viejos
+  Papelera: build
+  Papelera: dist
+3) Bases duplicadas y viejas
+  Papelera: Base Grupal-LPCORCOB-209.csv
+  Papelera: Base Grupal-LPCORCOB-209-2.csv
+  Papelera: Base GrupalPasada.csv
+  Papelera: Base JyPPasada.csv
+4) Respaldos y propuestas sueltas
+  Papelera: Respaldo_v6
+  Papelera: PV-20261112-133034-5E5FBA.csv
+  Papelera: PV-20261117-144447-9C6B36.csv
+  Papelera: PV-20261117-144921-D65D50.csv
+5) Git: quitar temporales del commit de tu rama y borrar los stash de Claude
+  rama: Cambios
+[Cambios 82f39bf] Quitar archivos temporales de Claude
+ 2 files changed, 690 deletions(-)
+ delete mode 100644 EJECUTAR_CAMBIOS_CLAUDE.bat
+ delete mode 100644 cambios_claude.patch
+Dropped stash@{0} (94e962c8834890c17f007ccb1d0a2cf9e83c7251)
+LISTO
+  Papelera: LIMPIEZA_CLAUDE.bat
+  Papelera: LIMPIEZA_CLAUDE.ps1

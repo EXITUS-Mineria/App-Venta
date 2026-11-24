@@ -8,3 +8,13 @@
 .dup-justificado { background: var(--fondo); color: var(--texto-2); border: 1px solid var(--borde); }
 .dup-restituido { background: #E8F5E9; color: var(--bien); }
 tr.dup-fila-pend td:first-child { box-shadow: inset 3px 0 0 var(--rojo); }
+
+/* Ventana de restitución */
+.ventana.dup-rst { width: min(980px, 100%); }
+.dup-rst-enc { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.dup-rst-x { background: none; border: 0; color: inherit; font-size: 1rem; cursor: pointer; }
+.dup-rst-cuerpo { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.dup-rst-cuerpo footer { padding: 0; }
+.dup-rst-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px 14px; align-items: end; }
+.dup-rst-grid .ancho { grid-column: 1 / -1; }
+.dup-rst-chk { padding-bottom: 8px; }

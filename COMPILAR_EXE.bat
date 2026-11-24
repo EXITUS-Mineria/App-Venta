@@ -2,10 +2,10 @@
 setlocal
 cd /d "%~dp0"
 
-title Compilar Venta de Cartera v9
+title Compilar Venta de Cartera v10
 
 echo ================================================
-echo      VENTA DE CARTERA v9 - COMPILAR EXE
+echo      VENTA DE CARTERA v10 - COMPILAR EXE
 echo ================================================
 echo.
 

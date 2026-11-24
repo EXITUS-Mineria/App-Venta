@@ -159,7 +159,9 @@ export default {
       lblPart.textContent = partidas.length ? `${numero(lista.length)} de ${numero(partidas.length)}${rest ? ` · ${rest} ya restituidas` : ""}` : "";
     }
     // llegada desde el módulo «Ventas duplicadas» (sólo admin): elige la venta, el grupo y el motivo
+    let folioDuplicado = null, claveDuplicado = null;   // venta elegida en «Ventas duplicadas»: ahí se registra la restitución
     async function restituirDuplicado(f, folio) {
+      folioDuplicado = folio || null; claveDuplicado = String(f.clave || "").toUpperCase();
       if (folio) await elegirVenta(folio);
       if (!selVenta.value) inBuscaVenta.value = "";
       if (!f.restituido) selMotivo.value = "Venta duplicada";
@@ -307,12 +309,13 @@ export default {
       try {
         const r = await ctx.rpc("aplicar_restitucion", { p_original: original.clave, p_reemplazo: c.clave,
           p_motivo: selMotivo.value, p_comentario: inComentario.value.trim(),
-          p_capital_original: original.sinCapital ? original.capital : null });
+          p_capital_original: original.sinCapital ? original.capital : null,
+          p_folio: folioDuplicado && original.clave.toUpperCase() === claveDuplicado ? folioDuplicado : null });
         await avisar(`Restitución ${r.id_restitucion}`,
           `${r.original} → ${r.reemplazo}\nDiferencia: ${dinero(r.diferencia)}\nPropuesta: ${r.id_propuesta}` +
           (r.propuesta_nueva ? " (nueva, APROBADA)" : "") +
           "\n\nSe avisó al validador y al auxiliar de venta para generar la sub base.");
-        inTexto.value = ""; inComentario.value = ""; selMotivo.value = ""; original = null;
+        inTexto.value = ""; inComentario.value = ""; selMotivo.value = ""; original = null; folioDuplicado = null;
         cajaCapital.hidden = true; inCapital.value = "";
         ficha.className = "rst-ficha vacia"; ficha.textContent = "Escribe la vReference o el grupo y da clic en Validar.";
         tCand.setFilas([]); lblCand.textContent = ""; actualizarBoton();
