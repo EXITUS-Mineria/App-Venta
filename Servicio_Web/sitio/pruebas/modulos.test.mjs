@@ -723,3 +723,67 @@ test("Portal ⚙️: guarda el correo y saludo de expedientes", async () => {
   assert.ok(llam.some(([f, a]) => f === "config_guardar" && a.p_clave === "expedientes_correo" && a.p_valor === "pamela@exitus.test"));
   assert.ok(llam.some(([f, a]) => f === "config_guardar" && a.p_clave === "expedientes_nombre" && a.p_valor === "Pamela Ingrid"));
 });
+
+// ---------- Compras por comprador y Tienda ----------
+test("Compradores: compras del año, zonas y armar paquete con sus zonas", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, a) => {
+      llam.push([fn, a]);
+      if (fn === "compradores_resumen") return [{ clave: "N:ARROYO", comprador: "ARROYO SALGADO", registrado: false, ventas: 7, capital: 1248610, monto: 254000,
+        centavos: 0.2034, meses: [0, 0, 47000, 34000, 43000, 0, 0, 30000, 35000, 35000, 30000, 0], tipo_principal: "Grupal", primera: "2026-03-02", ultima: "2026-11-10",
+        estados: [{ estado: "Mexico", capital: 1000000, creditos: 200 }, { estado: "Puebla", capital: 248610, creditos: 40 }],
+        municipios: [{ municipio: "Ixtapaluca", estado: "Mexico", capital: 365795, creditos: 32 }], detalle: [{ folio: "VTA-0214", fecha: "2026-11-10", tipo: "Grupal", capital: 150000, monto: 30000 }] }];
+      if (fn === "paquetes_lista") return [];
+      if (fn === "paquete_vista_previa") return { capital: 500000, creditos: 80, grupos: 12, municipios: 1, dias: 120 };
+      return fn.endsWith("_lista") ? [] : null;
+    },
+    esAdmin: true, perfil: { rol: "admin" },
+  });
+  const c = cont();
+  await (await import("../modulos/compradores/compradores.js")).default.montar(c, ctx);
+  [...c.querySelectorAll(".cmp-tabs button")].find((b) => b.textContent.includes("Compras del año")).click();
+  await esperar(10);
+  assert.equal(llam.find(([f]) => f === "compradores_resumen")[1].p_anio, new Date().getFullYear());
+  assert.ok(c.textContent.includes("ARROYO SALGADO") && c.textContent.includes("Mexico 80%"));
+  assert.ok(c.querySelectorAll(".cmp-mes-col").length >= 12);
+  fila(c, "ARROYO SALGADO").click();
+  assert.ok(c.textContent.includes("Municipios recurrentes") && c.textContent.includes("VTA-0214"));
+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Armar paquete con sus zonas")).click();
+  await esperar(10);
+  const tit = c.querySelector(".cmp-panel input.campo");
+  assert.ok(tit.value.includes("Grupal Mexico"));
+  assert.ok(c.textContent.includes("Disponible hoy con esos filtros"));
+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Guardar")).click();
+  await esperar(5);
+  const g = llam.find(([f]) => f === "paquete_guardar")[1].p;
+  assert.equal(g.tipo, "Grupal"); assert.deepEqual(g.estados, ["Mexico"]); assert.deepEqual(g.municipios, ["Ixtapaluca"]);
+});
+
+test("Portal: Tienda muestra recomendados y paquetes y pide una propuesta", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, a) => {
+      llam.push([fn, a]);
+      if (fn === "portal_tienda") return { descuento_centavos: 0.01, mi_centavos: 0.2, mi_capital_promedio: 200000,
+        recomendados: [{ tipo: "Grupal", estado: "Mexico", municipios: ["Ixtapaluca"], ventas: 3, capital_comprado: 600000,
+          disponible: { capital: 900000, creditos: 150, grupos: 20, dias: 200 }, disponible_estado: { capital: 5000000, creditos: 900, grupos: 120 } }],
+        populares: [],
+        paquetes: [{ id: 5, titulo: "JyP Veracruz 90+", tipo: "JyP", estados: ["Veracruz"], municipios: [], capital: 1000000, centavos: 0.15,
+          centavos_lealtad: 0.14, destacado: true, disponible: { capital: 3000000, creditos: 400, dias: 300 } }] };
+      if (fn === "portal_pedir_paquete") return 77;
+      return null;
+    },
+    perfil: { rol: "comprador", nombre: "ACME" },
+  });
+  const { modulos } = await import("../modulos/portal/portal.js");
+  const c = cont();
+  await modulos.find((m) => m.id === "tienda").montar(c, ctx);
+  assert.ok(c.textContent.includes("Para ti, según tus compras") && c.textContent.includes("Grupos en Mexico"));
+  assert.ok(c.textContent.includes("JyP Veracruz 90+") && c.textContent.includes("14 ¢ con tu nivel"));
+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Lo quiero")).click();
+  [...c.querySelectorAll("button")].find((b) => b.textContent === "Pedir propuesta").click();
+  await esperar(5);
+  assert.deepEqual(llam.find(([f]) => f === "portal_pedir_paquete")[1].p.paquete_id, 5);
+  assert.ok(c.textContent.includes("solicitud #77"));
+});

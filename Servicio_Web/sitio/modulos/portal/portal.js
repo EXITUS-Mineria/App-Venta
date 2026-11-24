@@ -2,9 +2,11 @@
 // PORTAL DEL COMPRADOR (rol "comprador")
 // Lo carga el núcleo en lugar de modulos.json. Sólo usa funciones portal_* de la base,
 // que devuelven únicamente los datos del comprador con sesión.
-//   🏠 Inicio (nivel de lealtad y casos de éxito) · 🛒 Solicitar nueva compra
+//   🏠 Inicio (nivel de lealtad y casos de éxito) · 🛍️ Tienda (tienda.js) · 🛒 Solicitar nueva compra
 //   📋 Mis propuestas (interés de otros compradores y oferta de precio) · ✅ Mis compras
 // ============================================================
+import { tienda } from "./tienda.js";
+
 const BUCKET = "documentos-venta";
 const css = (ctx) => ctx.ui.cargarCSS(new URL("./portal.css", import.meta.url).href);
 const fechaCorta = (d) => (d ? new Date(d.length === 10 ? `${d}T12:00:00` : d).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }) : "");
@@ -93,6 +95,7 @@ async function verDetalle(ctx, folio, destino, { seleccionable = false, precio =
   };
 }
 
+
 // ---------- 🏠 Inicio ----------
 const inicio = {
   id: "inicio", titulo: "Inicio", icono: "🏠", roles: ["comprador"],
@@ -112,6 +115,7 @@ const inicio = {
         h("div", { class: "nota" }, d.comprador,
           d.vendedor ? ` · Tu ejecutivo: ${d.vendedor}${d.vendedor_correo ? ` (${d.vendedor_correo})` : ""}` : "")),
       h("div", { class: "pt-menu" },
+        tarjeta("tienda", "🛍️", "Tienda de cartera", "Paquetes listos y zonas como las que ya compraste."),
         tarjeta("solicitar", "🛒", "Solicitar nueva compra", "Dinos qué cartera buscas y te armamos una propuesta.",
           d.solicitudes_abiertas ? `${numero(d.solicitudes_abiertas)} solicitud(es) en curso` : null),
         tarjeta("propuestas", "📋", "Mis propuestas", "Revisa el detalle de cada propuesta y acéptala o recházala.",
@@ -542,4 +546,4 @@ const compras = {
   },
 };
 
-export const modulos = [inicio, solicitar, propuestas, compras];
+export const modulos = [inicio, tienda, solicitar, propuestas, compras];

@@ -49,7 +49,8 @@ Servicio_Web/
 │       ├── 42_portal_lealtad_exclusiones.sql ← exclusiones (promesas SIGE, pagos, lista negra) con interruptores;
 │                                   portal: interés de otros compradores, ofertas de precio, lealtad, casos de éxito
 │       ├── 43_restitucion_en_venta.sql ← restituir en la venta elegida (Ventas duplicadas)
-│       └── 44_expediente_venta.sql ← carpeta del cliente (INE, fiscal, domicilio, alta, pago, NDA) y aviso a expedientes
+│       ├── 44_expediente_venta.sql ← carpeta del cliente (INE, fiscal, domicilio, alta, pago, NDA) y aviso a expedientes
+│       └── 45_compradores_tienda.sql ← compras del año por comprador, zonas recurrentes y Tienda de paquetes del portal
 │   └── functions/enviar-propuesta/ ← Edge Function: aviso por correo (Microsoft 365) y Excel interno
 ├── cargar_supabase.py         ← aplica SQL, sube bases, migra apartados, da admin
 ├── CARGAR_SUPABASE.bat
