@@ -173,5 +173,34 @@ export async function ajustesPortal(ctx, cuerpo) {
       } }),
       h("div", { style: { flex: "1 1 auto" } }, h("b", {}, t), h("div", { class: "nota" }, d),
         cfg[k]?.actualizado_por ? h("div", { class: "nota" }, `Último cambio: ${cfg[k].actualizado_por} · ${fecha(cfg[k].actualizado)}`) : null))),
-    h("div", { class: "nota" }, "Las exclusiones de cartera (promesas, pagos, lista negra) se prenden en 🗂️ Bases.")));
+    h("div", { class: "nota" }, "Las exclusiones de cartera (promesas, pagos, lista negra) se prenden en 🗂️ Bases.")),
+    avisoExpedientes(ctx, cfg));
+}
+
+/** 📂 Aviso a expedientes cuando una venta pasa a Vendida (correo con el layout de solicitud de expedientes). */
+function avisoExpedientes(ctx, cfg) {
+  const { h, toast } = ctx.ui;
+  const val = (k, d = "") => (cfg[k]?.valor ?? d);
+  const chk = h("input", { type: "checkbox", checked: val("expedientes_aviso", true) === true });
+  const correo = h("input", { class: "campo", "data-clave": "expedientes_correo", value: val("expedientes_correo"), placeholder: "correo@exitus… (varios separados por coma)" });
+  const nombre = h("input", { class: "campo", "data-clave": "expedientes_nombre", value: val("expedientes_nombre", "Pamela Ingrid"), placeholder: "Nombre para el saludo" });
+  const guardar = async () => {
+    const lista = correo.value.split(",").map((x) => x.trim()).filter(Boolean);
+    if (lista.some((x) => !/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(x))) { toast("Revisa el correo de expedientes.", "mal"); return; }
+    try {
+      await ctx.rpc("config_guardar", { p_clave: "expedientes_correo", p_valor: lista.join(", ") });
+      await ctx.rpc("config_guardar", { p_clave: "expedientes_nombre", p_valor: nombre.value.trim() });
+      await ctx.rpc("config_guardar", { p_clave: "expedientes_aviso", p_valor: chk.checked });
+      toast("Aviso a expedientes guardado.", "bien");
+    } catch (e) { toast(e.message, "mal", 8000); }
+  };
+  return h("div", { class: "tarjeta", style: { maxWidth: "760px" } },
+    h("h3", { style: { margin: "0 0 6px" } }, "📂 Aviso a expedientes"),
+    h("div", { class: "nota" }, "Cuando una venta pasa a Vendida se manda un correo a expedientes («<nombre>, buen día: …») con el layout para solicitud de expedientes adjunto, con copia a quien la marcó."),
+    h("label", { class: "fila", style: { justifyContent: "flex-start", gap: "8px", margin: "8px 0" } }, chk, "Avisar automáticamente al pasar a Vendida"),
+    h("div", { class: "cmp-grid" },
+      h("label", { class: "ancho" }, h("span", { class: "etiqueta" }, "Correo de expedientes"), correo),
+      h("label", {}, h("span", { class: "etiqueta" }, "Saludo"), nombre)),
+    h("div", { class: "fila", style: { justifyContent: "flex-end", marginTop: "8px" } },
+      h("button", { class: "btn btn-marca", style: { flex: "0 0 auto" }, onclick: guardar }, "💾 Guardar")));
 }

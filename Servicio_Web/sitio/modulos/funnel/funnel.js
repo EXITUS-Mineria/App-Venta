@@ -4,10 +4,11 @@
 // Las ventas de la página (VTA-####) entran solas al apartar la propuesta.
 // Propuesta y Base final de las ventas de la página se GENERAN al presionar el botón (no se guardan).
 // Las ventas migradas de SharePoint conservan sus ligas y adjuntos (ligas, no copias).
+// 📁 Carpeta del cliente (carpeta.js): documentos por tipo, ZIP y aviso a expedientes al pasar a Vendida.
 // ============================================================
 import { descargarLayout, descargarPropuestaCSV } from "../venta/layout.js";
-import { bloqueDocumentos } from "./documentos.js";
 import { bloqueEnvio } from "./envio.js";
+import { bloqueCarpeta, avisarExpedientes } from "./carpeta.js";
 
 const OPC = {
   tipo: ["J&P", "Grupal", "Dual"],
@@ -139,6 +140,19 @@ export default {
       const f = t.filaDe(e.target.closest("tbody tr")); if (f) abrir(f);
     });
 
+    // Ventas vendidas cuyo aviso a expedientes no se ha podido mandar
+    const avisosPend = h("div", { class: "fun-pend", hidden: true });
+    async function revisarPendientes() {
+      let pend = [];
+      try { pend = (await ctx.rpc("expedientes_pendientes")) || []; } catch { pend = []; }
+      avisosPend.hidden = !pend.length;
+      if (!pend.length) return;
+      avisosPend.replaceChildren(h("span", {}, `📧 ${pend.length} venta(s) vendida(s) sin aviso a expedientes: `),
+        ...pend.slice(0, 8).map((p) => h("button", { class: "btn btn-secundario btn-chico", title: p.error || "Pendiente de enviar",
+          onclick: async () => { const f = datos.find((x) => x.folio === p.folio) || { folio: p.folio, comprador: p.comprador };
+            await avisarExpedientes(ctx, f); revisarPendientes(); } }, `${p.folio}${p.comprador ? " · " + p.comprador : ""}`)));
+    }
+
     const raiz = h("div", { class: "fun" },
       h("div", { class: "fun-izq" },
         h("div", { class: "kpis" }, kV.el, kC.el, kM.el, kA.el),
@@ -155,7 +169,7 @@ export default {
               onclick: () => reasignarFiltradas() }, "👤 Reasignar") : null,
             h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, onclick: () => exportar() }, "⬇ Exportar"),
             h("button", { class: "btn btn-secundario", style: { flex: "0 0 auto" }, onclick: () => cargar() }, "⟳")),
-          panelReasignar,
+          panelReasignar, avisosPend,
           t.el)),
       det);
     cont.append(raiz, listaVend);
@@ -174,6 +188,7 @@ export default {
       selMes.value = meses.includes(pm) ? pm : ""; selVend.value = vends.includes(pv) ? pv : "";
       listaVend.replaceChildren(...vends.map((v) => h("option", { value: v })));
       pintar();
+      revisarPendientes();
       if (abierta) { const f = datos.find((x) => x.folio === abierta.folio); if (f) abrir(f); }
     }
 
@@ -275,18 +290,13 @@ export default {
           h("button", { class: "btn btn-secundario btn-chico", onclick: cerrar }, "✖")),
         h("div", { class: "fun-avance" }, pasos(f), h("span", { class: "nota" }, `Actualizado ${new Date(f.actualizado).toLocaleString("es-MX")} · ${f.actualizado_por || ""}`)),
         bloqueResponsable(f),
-        ...SECCIONES.map(([titulo, esVenta, lista, docs]) => h("section", { class: "fun-sec" },
+        ...SECCIONES.map(([titulo, esVenta, lista]) => h("section", { class: "fun-sec" },
           h("h4", {}, titulo),
           h("div", { class: "fun-grid" }, ...lista.filter(([clave]) => !(clave === "comprobante_pago" && !f[clave])).map(([clave, etiqueta, tipo]) =>
             h("label", {}, h("span", { class: "etiqueta" }, etiqueta), control(clave, tipo, esVenta ? editaVenta : editaTodo)))),
-          titulo === "🧾 Venta" && f.id_propuesta ? bloqueEnvio(ctx, f, { editable: editaTodo, alEnviar: () => cargar() }) : null,
-          docs ? bloqueDocumentos(ctx, { folio: f.folio, tipo: docs, editable: editaTodo, titulo: "🧾 Comprobante de pago",
-            ayuda: "Sube el comprobante del pago (PDF o foto). Se puede subir más de uno si el pago fue parcial.",
-            alConteo: (n) => { f.n_comprobantes = n; t.redibujar(); } }) : null)),
-        h("section", { class: "fun-sec" }, h("h4", {}, "📂 Documentos del comprador"),
-          bloqueDocumentos(ctx, { folio: f.folio, tipo: "comprador", editable: editaTodo, titulo: "Expediente del comprador",
-            ayuda: "Identificación, acta constitutiva, poderes, comprobante de domicilio, contrato firmado… (PDF, fotos o Word).",
-            alConteo: (n) => { f.n_documentos = n; t.redibujar(); } })),
+          titulo === "🧾 Venta" && f.id_propuesta ? bloqueEnvio(ctx, f, { editable: editaTodo, alEnviar: () => cargar() }) : null)),
+        bloqueCarpeta(ctx, f, { editable: editaTodo,
+          alConteo: (cual, n) => { if (cual === "comprobantes") f.n_comprobantes = n; else f.n_documentos = n; t.redibujar(); } }),
         bloqueComentarios(f),
         adjuntos.length ? h("section", { class: "fun-sec" }, h("h4", {}, `📎 Adjuntos en SharePoint (${adjuntos.length})`),
           h("ul", { class: "fun-adj" }, ...adjuntos.map((a) => h("li", {}, h("a", { href: a.url, target: "_blank", rel: "noopener" }, a.nombre))))) : null,
@@ -302,7 +312,12 @@ export default {
         if (!Object.keys(cambios).length) { toast("No hay cambios."); return; }
         if (cambios.estatus_venta === "Vendida" && !cambios.fecha_venta && !f.fecha_venta) cambios.fecha_venta = hoy();
         btnGuardar.disabled = true;
-        try { await ctx.rpc("funnel_guardar", { p_folio: f.folio, p_datos: cambios }); toast(`${f.folio} actualizada.`, "bien"); await cargar(); }
+        try {
+          await ctx.rpc("funnel_guardar", { p_folio: f.folio, p_datos: cambios }); toast(`${f.folio} actualizada.`, "bien");
+          // recién vendida: aviso a expedientes (Pamela) con el layout para solicitud de expedientes
+          if (cambios.estatus_venta === "Vendida" && f.estatus_venta !== "Vendida") avisarExpedientes(ctx, f, { silencioso: true }).then(() => revisarPendientes());
+          await cargar();
+        }
         catch (e) { toast(e.message, "mal", 8000); btnGuardar.disabled = false; }
       }
     }

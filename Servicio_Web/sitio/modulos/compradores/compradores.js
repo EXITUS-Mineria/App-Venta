@@ -3,11 +3,13 @@
 //  🛒 Solicitudes: lo que piden los compradores desde su portal (vendedor / auxiliar las atienden).
 //  🏢 Catálogo: datos del comprador, nombres con que aparece en el Funnel (alias) y accesos al portal.
 //     Editar y dar accesos: sólo validador / admin. Los demás lo consultan.
+//  📊 Compras del año por comprador y zonas recurrentes · 🛍️ Tienda de paquetes (analisis.js)
 //  💰 Ofertas de precio de los compradores · 🏅 Lealtad · 📰 Casos de éxito (noticias del portal)
 //  ⚙️ Portal: interruptores de lo que ve el comprador (validador / admin). Ver extras.js.
 // ============================================================
 import { claveAleatoria } from "../../nucleo/ui.js";
 import { ofertas, lealtad, noticias, ajustesPortal } from "./extras.js";
+import { comprasPorComprador, tiendaAdmin } from "./analisis.js";
 
 const clave = (t) => (t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/\s+/g, " ").trim();
 const palabras = (t) => clave(t).split(" ").filter((w) => w.length >= 3);
@@ -28,10 +30,12 @@ export default {
     const tabs = h("div", { class: "segmentado cmp-tabs" });
     const cuerpo = h("div");
     cont.append(tabs, cuerpo);
-    const pintarTabs = () => tabs.replaceChildren(...[["solicitudes", "🛒 Solicitudes"], ["ofertas", "💰 Ofertas"], ["catalogo", "🏢 Catálogo y accesos"], ["lealtad", "🏅 Lealtad"],
+    const pintarTabs = () => tabs.replaceChildren(...[["compras", "📊 Compras del año"], ["solicitudes", "🛒 Solicitudes"], ["ofertas", "💰 Ofertas"], ["tienda", "🛍️ Tienda"], ["catalogo", "🏢 Catálogo y accesos"], ["lealtad", "🏅 Lealtad"],
       ["noticias", "📰 Casos de éxito"], ["plazos", "⏱ Plazos"], ...(maestro ? [["portal", "⚙️ Portal"]] : [])]
       .map(([k, t]) => h("button", { class: pestana === k ? "activo" : "", onclick: () => { pestana = k; pintarTabs(); mostrar(); } }, t)));
-    const extras = { ofertas, lealtad, noticias, portal: ajustesPortal };
+    const irTienda = (prefill) => { pestana = "tienda"; pintarTabs(); tiendaAdmin(ctx, cuerpo, maestro, prefill); };
+    const extras = { ofertas, lealtad, noticias, portal: ajustesPortal, tienda: tiendaAdmin,
+      compras: (c, cu, m) => comprasPorComprador(c, cu, { irTienda, maestro: m }) };
     const mostrar = () => (pestana === "solicitudes" ? solicitudes() : pestana === "plazos" ? plazos()
       : extras[pestana] ? extras[pestana](ctx, cuerpo, maestro) : catalogo());
 

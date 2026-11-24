@@ -95,3 +95,21 @@
 .fun-coment-enc .btn-x { margin-left: auto; border: 0; background: none; cursor: pointer; font-size: .8rem; opacity: .6; }
 .fun-coment-enc .btn-x:hover { opacity: 1; }
 .fun-coment-txt { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .9rem; }
+
+/* 📁 Carpeta del cliente */
+.car-enc { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.car-enc h4 { margin: 0; }
+.car-prog { font-size: .78rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--rojo-suave); color: var(--rojo-oscuro); }
+.car-prog.ok { background: var(--ok-bg-suave, #E8F5E9); color: var(--bien); }
+.car-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; margin: 8px 0; }
+.car-item { display: flex; gap: 6px; align-items: flex-start; }
+.car-item > .doc-bloque { flex: 1; margin-top: 0; }
+.car-marca { flex: 0 0 auto; font-size: 1rem; line-height: 1.9; }
+.car-gen { border: 1px dashed var(--borde); border-radius: var(--radio); padding: 8px 10px; background: var(--fondo); }
+.doc-compacto { padding: 6px 8px; }
+.doc-compacto .doc-zona { padding: 4px; }
+.doc-compacto .doc-lista { margin: 4px 0; }
+.car-aviso { margin-top: 8px; }
+.car-acc { gap: 6px; justify-content: flex-start; flex-wrap: wrap; margin-top: 6px; }
+.fun-pend { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; padding: 8px 10px; border-radius: var(--radio);
+  background: #FFF6DD; color: #7A5A00; font-size: .85rem; }

@@ -7,17 +7,18 @@
 // ============================================================
 let catalogo = null;   // compradores activos (se carga una vez por sesión del módulo)
 
-async function llamar(ctx, body) {
+export async function llamar(ctx, body) {
   const { data, error } = await ctx.sb.functions.invoke("enviar-propuesta", { body });
   if (!error) return data;
   let d = null;
   try { d = await error.context.json(); } catch { /* sin cuerpo */ }
   const e = new Error(d?.error || error.message || "No se pudo contactar el servicio de correo");
   e.sinConfigurar = !!d?.sin_configurar;
+  e.sinCorreo = !!d?.sin_correo;
   throw e;
 }
 
-function bajar(nombre, base64) {
+export function bajar(nombre, base64) {
   const bin = atob(base64), u8 = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
   const url = URL.createObjectURL(new Blob([u8], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));

@@ -15,3 +15,25 @@
 .cmp-est.e-NUEVA { background: var(--rojo-suave); color: var(--rojo); }
 .cmp-est.e-EN-PROCESO { background: var(--aviso-bg); color: var(--aviso-texto-2); }
 .cmp-est.e-ATENDIDA { background: var(--ok-bg-2); color: var(--bien); }
+
+/* 📊 Compras por comprador */
+.cmp-mes { display: inline-flex; align-items: flex-end; gap: 2px; height: 26px; min-width: 96px; }
+.cmp-mes-col { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; width: 6px; }
+.cmp-mes-col span { display: block; width: 100%; background: var(--rojo, #B01217); border-radius: 2px 2px 0 0; }
+.cmp-mes.grande { height: 150px; gap: 6px; width: 100%; }
+.cmp-mes.grande .cmp-mes-col { flex: 1; width: auto; }
+.cmp-mes.grande .cmp-mes-col small { font-size: .66rem; color: var(--texto-2, #666); }
+.cmp-mes.grande .cmp-mes-col i { font-style: normal; font-size: .7rem; color: var(--texto-2, #666); margin-top: 2px; }
+.cmp-zonas { display: inline-flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.cmp-chip { font-size: .74rem; padding: 1px 8px; border-radius: 999px; background: var(--fondo, #F3F4F6); border: 1px solid var(--borde, #D9DDE3); white-space: nowrap; }
+.cmp-det-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 10px 0; }
+.cmp-det-grid h4, .cmp-panel h4 { margin: 0 0 6px; }
+.cmp-barras { display: flex; flex-direction: column; gap: 5px; }
+.cmp-barra { display: grid; grid-template-columns: minmax(90px, 1.2fr) 1fr auto; gap: 6px; align-items: center; font-size: .82rem; }
+.cmp-barra-fondo { height: 8px; background: var(--fondo, #F3F4F6); border-radius: 999px; overflow: hidden; }
+.cmp-barra-fondo span { display: block; height: 100%; background: var(--rojo, #B01217); }
+.cmp-ventas { margin: 0; padding-left: 18px; font-size: .85rem; max-height: 180px; overflow: auto; }
+/* detalle del comprador abierto debajo de su renglón */
+.tabla tr.abierta td { background: var(--rojo-suave, #FBE9EA); font-weight: 600; }
+.tabla tr.cmp-det-fila > td { padding: 0; background: var(--fondo, #F3F4F6); white-space: normal; }
+.cmp-det-en-linea { padding: 12px 16px 14px; border-left: 4px solid var(--rojo, #B01217); background: var(--blanco, #fff); margin: 0 0 6px; cursor: default; }

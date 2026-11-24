@@ -672,3 +672,134 @@ test("Ventas duplicadas: clic en una venta abre la ventana y restituye en esa ve
   assert.ok(!document.querySelector(".ventana.dup-rst"), "se cierra al aplicar");
   document.querySelectorAll(".velo").forEach((v) => v.remove());
 });
+
+// ---------- Carpeta del cliente y aviso a expedientes ----------
+test("Carpeta del cliente: apartados por documento, avance y aviso a expedientes", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, a) => { llam.push([fn, a]); return fn === "expedientes_aviso_datos" ? { aviso: null, para: ["exp@x.mx"], saludo: "Pamela Ingrid" } : null; },
+    filas: (t) => (t === "funnel_documentos" ? [{ id: 1, folio: "VTA-0400", tipo: "ine", nombre: "INE.pdf", ruta: "VTA-0400/ine/1_INE.pdf", mime: "application/pdf" }] : []),
+  });
+  let cuerpo = null;
+  ctx.sb.functions.invoke = async (_, { body }) => { cuerpo = body; return { data: { ok: true, para: ["exp@x.mx"], registros: 12 }, error: null }; };
+  const { bloqueCarpeta, DOCS_CARPETA, nombreCarpeta } = await import("../modulos/funnel/carpeta.js");
+  const f = { folio: "VTA-0400", comprador: "José Pérez & Asoc.", estatus_venta: "Vendida", id_propuesta: "VTA-0400" };
+  const el = bloqueCarpeta(ctx, f, { editable: true });
+  document.body.append(el);
+  await esperar(10);
+  assert.equal(el.querySelectorAll(".car-item .doc-bloque").length, DOCS_CARPETA.length);
+  for (const [k] of DOCS_CARPETA) assert.ok(el.querySelector(`.doc-bloque[data-tipo="${k}"]`), k);
+  assert.ok(el.textContent.includes("Layout para solicitud de expedientes") && el.textContent.includes("Base final"));
+  assert.ok(el.querySelector(".car-prog").textContent.includes("de 6"));
+  assert.equal(nombreCarpeta(f), "VTA-0400_Jose_Perez_Asoc.");
+  [...el.querySelectorAll("button")].find((b) => b.textContent.includes("Avisar a expedientes")).click();
+  await esperar(10);
+  assert.deepEqual(cuerpo, { accion: "expedientes", folio: "VTA-0400" });
+  el.remove();
+});
+
+test("Aviso a expedientes sin correo de Microsoft 365: ofrece mandarlo desde Outlook", async () => {
+  const ctx = await ctxMontaje({ rpc: () => null });
+  ctx.sb.functions.invoke = async () => ({ data: null, error: { message: "x", context: { json: async () => ({ error: "No configurado", sin_configurar: true }) } } });
+  let pregunta = null;
+  ctx.ui = { ...ctx.ui, confirmar: async (t, m) => { pregunta = m; return false; } };
+  const { avisarExpedientes } = await import("../modulos/funnel/carpeta.js");
+  const ok = await avisarExpedientes(ctx, { folio: "VTA-0400" });
+  assert.equal(ok, false);
+  assert.ok(pregunta.includes("Outlook"));
+});
+
+test("Portal ⚙️: guarda el correo y saludo de expedientes", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({ rpc: (fn, a) => { llam.push([fn, a]); return fn === "config_lista"
+    ? [{ clave: "expedientes_aviso", valor: true }, { clave: "expedientes_correo", valor: "" }, { clave: "expedientes_nombre", valor: "Pamela Ingrid" }] : null; } });
+  const { ajustesPortal } = await import("../modulos/compradores/extras.js");
+  const c = cont();
+  await ajustesPortal(ctx, c);
+  const correo = c.querySelector('[data-clave="expedientes_correo"]');
+  correo.value = "pamela@exitus.test";
+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Guardar")).click();
+  await esperar(5);
+  assert.ok(llam.some(([f, a]) => f === "config_guardar" && a.p_clave === "expedientes_correo" && a.p_valor === "pamela@exitus.test"));
+  assert.ok(llam.some(([f, a]) => f === "config_guardar" && a.p_clave === "expedientes_nombre" && a.p_valor === "Pamela Ingrid"));
+});
+
+// ---------- Compras por comprador y Tienda ----------
+test("Compradores: compras del año, zonas y armar paquete con sus zonas", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, a) => {
+      llam.push([fn, a]);
+      if (fn === "compradores_resumen") return [{ clave: "N:ARROYO", comprador: "ARROYO SALGADO", registrado: false, ventas: 7, capital: 1248610, monto: 254000,
+        centavos: 0.2034, meses: [0, 0, 47000, 34000, 43000, 0, 0, 30000, 35000, 35000, 30000, 0], tipo_principal: "Grupal", primera: "2026-03-02", ultima: "2026-11-10",
+        estados: [{ estado: "Mexico", capital: 1000000, creditos: 200 }, { estado: "Puebla", capital: 248610, creditos: 40 }],
+        municipios: [{ municipio: "Ixtapaluca", estado: "Mexico", capital: 365795, creditos: 32 }], detalle: [{ folio: "VTA-0214", fecha: "2026-11-10", tipo: "Grupal", capital: 150000, monto: 30000 }] }];
+      if (fn === "paquetes_lista") return [];
+      if (fn === "paquete_vista_previa") return { capital: 500000, creditos: 80, grupos: 12, municipios: 1, dias: 120 };
+      return fn.endsWith("_lista") ? [] : null;
+    },
+    esAdmin: true, perfil: { rol: "admin" },
+  });
+  const c = cont();
+  await (await import("../modulos/compradores/compradores.js")).default.montar(c, ctx);
+  [...c.querySelectorAll(".cmp-tabs button")].find((b) => b.textContent.includes("Compras del año")).click();
+  await esperar(10);
+  assert.equal(llam.find(([f]) => f === "compradores_resumen")[1].p_anio, new Date().getFullYear());
+  assert.ok(c.textContent.includes("ARROYO SALGADO") && c.textContent.includes("Mexico 80%"));
+  assert.ok(c.querySelectorAll(".cmp-mes-col").length >= 12);
+  fila(c, "ARROYO SALGADO").click();
+  assert.ok(c.textContent.includes("Municipios recurrentes") && c.textContent.includes("VTA-0214"));
+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Armar paquete con sus zonas")).click();
+  await esperar(10);
+  const tit = c.querySelector(".cmp-panel input.campo");
+  assert.ok(tit.value.includes("Grupal Mexico"));
+  assert.ok(c.textContent.includes("Disponible hoy con esos filtros"));
+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Guardar")).click();
+  await esperar(5);
+  const g = llam.find(([f]) => f === "paquete_guardar")[1].p;
+  assert.equal(g.tipo, "Grupal"); assert.deepEqual(g.estados, ["Mexico"]); assert.deepEqual(g.municipios, ["Ixtapaluca"]);
+});
+
+test("Portal: Tienda muestra recomendados y paquetes y pide una propuesta", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, a) => {
+      llam.push([fn, a]);
+      if (fn === "portal_tienda") return { descuento_centavos: 0.01, mi_centavos: 0.2, mi_capital_promedio: 200000,
+        recomendados: [{ tipo: "Grupal", estado: "Mexico", municipios: ["Ixtapaluca"], ventas: 3, capital_comprado: 600000,
+          disponible: { capital: 900000, creditos: 150, grupos: 20, dias: 200 }, disponible_estado: { capital: 5000000, creditos: 900, grupos: 120 } }],
+        populares: [],
+        paquetes: [{ id: 5, titulo: "JyP Veracruz 90+", tipo: "JyP", estados: ["Veracruz"], municipios: [], capital: 1000000, centavos: 0.15,
+          centavos_lealtad: 0.14, destacado: true, disponible: { capital: 3000000, creditos: 400, dias: 300 } }] };
+      if (fn === "portal_pedir_paquete") return 77;
+      return null;
+    },
+    perfil: { rol: "comprador", nombre: "ACME" },
+  });
+  const { modulos } = await import("../modulos/portal/portal.js");
+  const c = cont();
+  await modulos.find((m) => m.id === "tienda").montar(c, ctx);
+  assert.ok(c.textContent.includes("Para ti, según tus compras") && c.textContent.includes("Grupos en Mexico"));
+  assert.ok(c.textContent.includes("JyP Veracruz 90+") && c.textContent.includes("14 ¢ con tu nivel"));
+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Lo quiero")).click();
+  [...c.querySelectorAll("button")].find((b) => b.textContent === "Pedir propuesta").click();
+  await esperar(5);
+  assert.deepEqual(llam.find(([f]) => f === "portal_pedir_paquete")[1].p.paquete_id, 5);
+  assert.ok(c.textContent.includes("solicitud #77"));
+});
+
+test("Compras del año: el detalle se abre debajo del comprador tocado y se cierra al tocarlo otra vez", async () => {
+  const fila2 = (n) => ({ clave: `N:${n}`, comprador: n, registrado: false, ventas: 1, capital: 100, monto: 20, centavos: 0.2, meses: Array(12).fill(0),
+    estados: [{ estado: "Mexico", capital: 100, creditos: 1 }], municipios: [], detalle: [{ folio: `F-${n}` }] });
+  const ctx = await ctxMontaje({ rpc: (fn) => (fn === "compradores_resumen" ? [fila2("AAA"), fila2("BBB")] : fn.endsWith("_lista") ? [] : null), esAdmin: true });
+  const { comprasPorComprador } = await import("../modulos/compradores/analisis.js");
+  const c = cont();
+  await comprasPorComprador(ctx, c, { maestro: true });
+  fila(c, "BBB").click();
+  const filas = [...c.querySelectorAll("tbody > tr")];
+  const iB = filas.findIndex((r) => r.textContent.includes("BBB") && r.dataset.id);
+  assert.ok(filas[iB + 1].classList.contains("cmp-det-fila"), "el detalle va justo debajo");
+  assert.ok(filas[iB + 1].textContent.includes("F-BBB"));
+  fila(c, "BBB").click();
+  assert.equal(c.querySelector(".cmp-det-fila"), null, "se cierra al tocarlo otra vez");
+});
