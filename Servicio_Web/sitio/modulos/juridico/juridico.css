@@ -5,10 +5,10 @@
 .jur-izq .tabla tbody tr { cursor: pointer; }
 
 /* Pestañas */
-.jur-pestanas { display: flex; gap: 4px; border-bottom: 1px solid var(--linea); }
-.jur-tab { background: none; border: 0; border-bottom: 3px solid transparent; padding: 6px 12px; font-weight: 700; color: var(--texto-2); cursor: pointer; font-size: .9rem; }
+.jur-pestanas { display: flex; gap: 2px; border-bottom: 1px solid var(--borde); overflow-x: auto; }
+.jur-tab { background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 10px 14px; font-weight: 500; color: var(--tinta-3); cursor: pointer; white-space: nowrap; }
 .jur-tab:hover { color: var(--tinta); }
-.jur-tab.activo { color: var(--rojo); border-bottom-color: var(--rojo); }
+.jur-tab.activo { color: var(--tinta); border-bottom-color: var(--acento); }
 
 /* Embudo por etapa con sus opciones */
 .jur-embudo { display: grid; grid-template-columns: .7fr 1fr 1.25fr 1fr 1.35fr; gap: 6px; }

@@ -27,7 +27,7 @@ export default {
     ctx.ui.cargarCSS(new URL("./compradores.css", import.meta.url).href);
     const maestro = ctx.esAdmin;
     let pestana = "solicitudes";
-    const tabs = h("div", { class: "segmentado cmp-tabs" });
+    const tabs = h("div", { class: "segmentado pestanas cmp-tabs", role: "tablist" });
     const cuerpo = h("div");
     cont.append(tabs, cuerpo);
     const pintarTabs = () => tabs.replaceChildren(...[["compras", "📊 Compras del año"], ["solicitudes", "🛒 Solicitudes"], ["ofertas", "💰 Ofertas"], ["tienda", "🛍️ Tienda"], ["catalogo", "🏢 Catálogo y accesos"], ["lealtad", "🏅 Lealtad"],

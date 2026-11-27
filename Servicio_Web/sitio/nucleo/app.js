@@ -11,6 +11,21 @@ import * as ui from "./ui.js";
 const { h } = ui;
 const app = document.getElementById("app");
 
+// Íconos de línea del sistema (24×24, trazo 1.75; toman el color del texto). Ver nucleo/iconos/.
+const SVG = {
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  salir: '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17-5-5 5-5"/><path d="M5 12h12"/>',
+  campana: '<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  derecha: '<path d="m9 6 6 6-6 6"/>',
+};
+function icono(nombre) {
+  const el = h("span", { class: "ic", "aria-hidden": "true" });
+  el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${SVG[nombre] || ""}</svg>`;
+  return el;
+}
+const iniciales = (t) => String(t || "").replace(/[@.].*$/, "").split(/[\s._-]+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join("") || "U";
+const sello = () => String(CONFIG.EMPRESA || "Exitus Credit").split(/\s+/).slice(0, 2).map((p) => p[0]).join("").toUpperCase();
+
 const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true },
 });
@@ -47,10 +62,10 @@ const rpc = (funcion, args = {}) => ui.rpcPaginado(sb, funcion, args, traducir);
 
 // ---------- Login ----------
 function pantallaLogin(mensaje = "") {
-  const correo = h("input", { class: "campo", type: "email", autocomplete: "username", required: true });
-  const clave = h("input", { class: "campo", type: "password", autocomplete: "current-password", required: true });
-  const error = h("div", { class: "error" }, mensaje);
-  const boton = h("button", { class: "btn btn-marca", type: "submit", style: { width: "100%", marginTop: "14px" } }, "Entrar");
+  const correo = h("input", { class: "campo", id: "login-correo", type: "email", autocomplete: "username", required: true });
+  const clave = h("input", { class: "campo", id: "login-clave", type: "password", autocomplete: "current-password", required: true });
+  const error = h("div", { class: "error", role: "alert" }, mensaje);
+  const boton = h("button", { class: "btn btn-marca", type: "submit" }, "Entrar");
 
   const form = h("form", {
     onsubmit: async (e) => {
@@ -62,10 +77,10 @@ function pantallaLogin(mensaje = "") {
       else iniciar();
     },
   },
-  h("label", { class: "etiqueta" }, "Correo"), correo,
-  h("label", { class: "etiqueta" }, "Contraseña"), clave,
+  h("label", { class: "etiqueta", for: "login-correo" }, "Correo"), correo,
+  h("label", { class: "etiqueta", for: "login-clave" }, "Contraseña"), clave,
   boton, error,
-  h("div", { style: { marginTop: "10px" } }, h("a", {
+  h("div", { class: "login-ayuda" }, h("a", {
     onclick: async () => {
       if (!correo.value.trim()) { error.textContent = "Escribe tu correo y vuelve a dar clic."; return; }
       const { error: err } = await sb.auth.resetPasswordForEmail(correo.value.trim(), { redirectTo: location.origin });
@@ -73,8 +88,15 @@ function pantallaLogin(mensaje = "") {
     },
   }, "¿Olvidaste tu contraseña?")));
 
-  app.replaceChildren(h("div", { class: "login" }, h("div", { class: "caja" },
-    h("header", {}, h("b", {}, `💼 ${CONFIG.SISTEMA}`), h("span", {}, CONFIG.EMPRESA)), form)));
+  app.replaceChildren(h("div", { class: "login" },
+    h("section", { class: "login-marca" },
+      h("div", { class: "marca" }, h("div", { class: "marca-sello" }, sello()),
+        h("div", { class: "marca-txt" }, h("b", {}, CONFIG.SISTEMA), h("span", {}, CONFIG.EMPRESA))),
+      h("div", { class: "login-titulo" }, h("h1", {}, CONFIG.SISTEMA),
+        h("p", {}, "Propuestas, revisión, funnel y portal de compradores de cartera en un solo lugar.")),
+      h("div", { class: "login-pie" }, `© ${new Date().getFullYear()} ${CONFIG.EMPRESA}`)),
+    h("section", { class: "login-form" }, h("div", { class: "login-caja" },
+      h("h2", {}, "Iniciar sesión"), h("p", {}, "Entra con tu correo y contraseña."), form))));
   correo.focus();
 }
 
@@ -119,7 +141,7 @@ const MAESTROS = ["admin", "validador"];
 function campana() {
   const cuenta = h("span", { class: "campana-cuenta", hidden: true });
   const lista = h("div", { class: "campana-lista", hidden: true });
-  const boton = h("button", { class: "btn-oscuro campana", title: "Avisos", "aria-label": "Avisos", "aria-expanded": "false", onclick: (e) => { e.stopPropagation(); alternar(); } }, "🔔", cuenta);
+  const boton = h("button", { class: "btn-barra campana", title: "Avisos", "aria-label": "Avisos", "aria-expanded": "false", onclick: (e) => { e.stopPropagation(); alternar(); } }, icono("campana"), cuenta);
   const el = h("div", { class: "campana-caja" }, boton, lista);
   let datos = [];
   let reloj = null;   // propio de esta campana: no lo comparte otra sesión
@@ -193,7 +215,8 @@ async function iniciar() {
 
   const modulos = await cargarModulos(perfil);
   const contenido = h("main", { class: "contenido" });
-  const nav = h("nav");
+  const nav = h("nav", { class: "menu", "aria-label": "Módulos" });
+  const migaModulo = h("b");
 
   cerrarSesion();
   const avisos = campana();
@@ -213,6 +236,8 @@ async function iniciar() {
     try { moduloActual?.desmontar?.(); } catch { /* ignorar */ }
     moduloActual = mod;
     nav.querySelectorAll("a").forEach((a) => a.classList.toggle("activo", a.dataset.id === mod.id));
+    migaModulo.textContent = mod.titulo;
+    lateral.classList.remove("abierto"); veloMenu.classList.remove("visible");
     // Cada pantalla se monta en su propia caja: si un módulo anterior termina de cargar tarde,
     // lo que agregue cae en su caja vieja (ya fuera de la página) y no se mezcla con la nueva.
     const caja = h("div", { class: "modulo-caja" });
@@ -225,21 +250,35 @@ async function iniciar() {
     });
   }
 
-  for (const m of modulos) nav.append(h("a", { href: `#/${m.id}`, "data-id": m.id }, `${m.icono || ""} ${m.titulo}`));
+  for (const m of modulos) nav.append(h("a", { href: `#/${m.id}`, "data-id": m.id }, h("span", { class: "mi", "aria-hidden": "true" }, m.icono || "•"), h("span", {}, m.titulo)));
 
-  app.replaceChildren(
-    h("header", { class: "enc" },
-      h("div", { class: "marca" }, h("b", {}, perfil.rol === "comprador" ? "💼 Portal de compradores" : `💼 ${CONFIG.SISTEMA}`),
-        h("span", {}, CONFIG.EMPRESA)),
-      nav,
-      h("div", { class: "derecha" },
-        avisos.el,
-        h("button", { class: "btn-oscuro", title: "Letra más chica", "aria-label": "Disminuir tamaño de letra", onclick: () => cambiarEscala(-1) }, "A−"),
-        h("button", { class: "btn-oscuro", title: "Letra más grande", "aria-label": "Aumentar tamaño de letra", onclick: () => cambiarEscala(1) }, "A+"),
-        h("div", { class: "usuario" }, h("b", {}, `👤 ${perfil.nombre || perfil.email}`),
-          h("span", {}, ROLES[perfil.rol] || perfil.rol)),
-        h("button", { class: "btn-oscuro", onclick: async () => { cerrarSesion(); await sb.auth.signOut(); location.hash = ""; pantallaLogin(); } }, "Salir"))),
-    contenido);
+  const titulo = perfil.rol === "comprador" ? "Portal de compradores" : CONFIG.SISTEMA;
+  const lateral = h("aside", { class: "lateral" },
+    h("div", { class: "marca" }, h("div", { class: "marca-sello" }, sello()),
+      h("div", { class: "marca-txt" }, h("b", {}, titulo), h("span", {}, CONFIG.EMPRESA))),
+    nav,
+    h("div", { class: "lateral-pie" }, h("span", {}, "Tamaño de letra"),
+      h("span", { class: "escala" },
+        h("button", { title: "Letra más chica", "aria-label": "Disminuir tamaño de letra", onclick: () => cambiarEscala(-1) }, "A−"),
+        h("button", { title: "Letra más grande", "aria-label": "Aumentar tamaño de letra", onclick: () => cambiarEscala(1) }, "A+"))));
+  const veloMenu = h("div", { class: "velo-menu", onclick: () => { lateral.classList.remove("abierto"); veloMenu.classList.remove("visible"); } });
+  const nombre = perfil.nombre || perfil.email;
+
+  app.replaceChildren(h("div", { class: "app" },
+    lateral,
+    h("div", { class: "principal" },
+      h("header", { class: "barra" },
+        h("button", { class: "btn-barra btn-menu", title: "Menú", "aria-label": "Abrir menú",
+          onclick: () => { lateral.classList.add("abierto"); veloMenu.classList.add("visible"); } }, icono("menu")),
+        h("div", { class: "migas" }, h("span", {}, titulo), icono("derecha"), migaModulo),
+        h("div", { class: "derecha" },
+          avisos.el,
+          h("div", { class: "usuario" }, h("div", { class: "avatar", "aria-hidden": "true" }, iniciales(nombre)),
+            h("div", { class: "usuario-txt" }, h("b", {}, nombre), h("span", {}, ROLES[perfil.rol] || perfil.rol))),
+          h("button", { class: "btn-barra", title: "Salir", "aria-label": "Salir",
+            onclick: async () => { cerrarSesion(); await sb.auth.signOut(); location.hash = ""; pantallaLogin(); } }, icono("salir"), h("span", {}, "Salir")))),
+      veloMenu,
+      contenido)));
 
   window.onhashchange = mostrar;
   mostrar();
