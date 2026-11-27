@@ -869,3 +869,88 @@ test("Carpeta: los documentos del comprador se comparten entre sus ventas; el pa
   assert.ok(el.textContent.includes("Documentos del comprador") && el.textContent.includes("De esta venta"));
   el.remove();
 });
+
+// ---------- Brokers ----------
+const AVANCE = (est) => ({ tipos: ["ine", "comprobante_fiscal", "comprobante_domicilio", "alta_comprador", "nda"].map((t) => ({ tipo: t, estatus: est })),
+  subidos: est === "falta" ? 0 : 5, aprobados: est === "aprobado" ? 5 : 0, requeridos: 5 });
+const RESUMEN = {
+  tarifas: { JyP: 0.14, Grupal: 0.26 },
+  tipos: [{ tipo: "JyP", creditos: 10, grupos: 0, capital: 100000, dias: 200, estados: 1, municipios: 2, precio: 14000 },
+    { tipo: "Grupal", creditos: 20, grupos: 4, capital: 200000, dias: 120, estados: 1, municipios: 1, precio: 52000 }],
+  mora: [{ tipo: "JyP", tramo: "0-90", creditos: 10, capital: 100000 }],
+  estados: [{ clave: "GUERRERO", estado: "Guerrero", jyp: { creditos: 10, capital: 100000 }, grupal: { creditos: 20, grupos: 4, capital: 200000 }, capital: 300000,
+    municipios: [{ clave: "ACAPULCO DE JUAREZ", municipio: "Acapulco De Juarez", jyp: 60000, grupal: 200000, creditos: 25 }, { clave: "IGUALA", municipio: "Iguala", jyp: 40000, grupal: 0, creditos: 5 }] }],
+};
+const SIM = { creditos: 30, grupos: 4, capital: 300000, monto: 66000, dias: 150, tarifas: { JyP: 0.14, Grupal: 0.26 },
+  por_tipo: [{ tipo: "JyP", creditos: 10, grupos: 0, capital: 100000, centavos: 0.14, monto: 14000 }, { tipo: "Grupal", creditos: 20, grupos: 4, capital: 200000, centavos: 0.26, monto: 52000 }],
+  lineas: [{ tipo: "Grupal", estado: "Guerrero", municipio: "Acapulco De Juarez", creditos: 20, grupos: 4, capital: 200000, dias: 120, monto: 52000 }] };
+
+test("Broker: inicio muestra la validación pendiente y sus documentos", async () => {
+  const ctx = await ctxMontaje({ perfil: { rol: "broker" }, rpc: (fn) => (fn === "broker_inicio" ? { id: 3, broker: "BRK SA", estatus: "documentos", avance: AVANCE("falta"), tarifas: { JyP: 0.14, Grupal: 0.26 }, propuestas: 0 } : null) });
+  const { modulos } = await import("../modulos/brokers/portal.js");
+  assert.deepEqual(modulos.map((m) => m.id), ["b_inicio", "b_cartera", "b_inversion", "b_propuestas", "b_documentos"]);
+  const c = cont();
+  await modulos[0].montar(c, ctx);
+  assert.ok(c.textContent.includes("Documentos pendientes"));
+  assert.ok(c.textContent.includes("$0.14") && c.textContent.includes("$0.26"));
+  assert.equal(c.querySelectorAll(".brk-check li").length, 5);
+  c.remove();
+});
+
+test("Broker: resumen de cartera JyP y Grupal, municipios debajo del estado", async () => {
+  const ctx = await ctxMontaje({ perfil: { rol: "broker" }, rpc: (fn) => (fn === "broker_resumen_cartera" ? RESUMEN : null) });
+  const { modulos } = await import("../modulos/brokers/portal.js");
+  const c = cont();
+  await modulos[1].montar(c, ctx);
+  assert.ok(c.textContent.includes("Capital disponible") && /300,000/.test(c.textContent));
+  assert.ok(/66,000/.test(c.textContent), "inversión a tarifa");
+  fila(c, "Guerrero").dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.ok(c.querySelector(".brk-det").textContent.includes("Iguala"));
+  c.remove();
+});
+
+test("Broker: la propuesta de inversión se arma sola al elegir estado y no se envía sin validar", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({ perfil: { rol: "broker" }, rpc: (fn, a) => { llam.push([fn, a]);
+    return fn === "broker_resumen_cartera" ? RESUMEN : fn === "broker_inicio" ? { id: 3, estatus: "revision", avance: AVANCE("pendiente"), tarifas: RESUMEN.tarifas } : fn === "broker_simular" ? SIM : null; } });
+  const { modulos } = await import("../modulos/brokers/portal.js");
+  const c = cont();
+  await modulos[2].montar(c, ctx);
+  const chk = c.querySelector(".brk-est input");
+  chk.checked = true; chk.dispatchEvent(new window.Event("change"));
+  await esperar(400);
+  const sim = llam.find(([f]) => f === "broker_simular");
+  assert.deepEqual(sim[1].p.estados, ["GUERRERO"]);
+  assert.deepEqual(sim[1].p.tipos, ["JyP", "Grupal"]);
+  assert.ok(/66,000/.test(c.querySelector(".brk-resultado").textContent));
+  assert.ok(c.textContent.includes("aún no está validada"));
+  assert.ok([...c.querySelectorAll("button")].find((b) => b.textContent === "Enviar propuesta").disabled);
+  // elegir un municipio
+  [...c.querySelectorAll(".pt-chip")].find((b) => b.textContent === "Iguala").click();
+  await esperar(400);
+  assert.deepEqual(llam.filter(([f]) => f === "broker_simular").at(-1)[1].p.municipios, ["GUERRERO|IGUALA"]);
+  c.remove();
+});
+
+test("Brokers (interno): el detalle se abre debajo del broker y permite aprobar documentos", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({ esAdmin: true, rpc: (fn, a) => { llam.push([fn, a]);
+    if (fn === "brokers_lista") return [{ id: 3, nombre: "BRK SA", estatus: "revision", avance: AVANCE("pendiente"), accesos: [], abiertas: 0, monto_aceptado: 0 }];
+    if (fn === "broker_documentos") return [{ id: 11, tipo: "ine", nombre: "INE.pdf", ruta: "BRK-3/ine/1_INE.pdf", estatus: "pendiente", bytes: 1000, fecha: "2026-11-27T10:00:00Z" }];
+    return null; } });
+  const mod = (await import("../modulos/brokers/brokers.js")).default;
+  const c = cont();
+  await mod.montar(c, ctx);
+  const tr = fila(c, "BRK SA");
+  tr.querySelector("td").dispatchEvent(new window.Event("click", { bubbles: true }));
+  await esperar(10);
+  const det = c.querySelector("tr.brk-det");
+  assert.equal(det.previousElementSibling, tr, "detalle debajo del broker tocado");
+  assert.ok(llam.some(([f, a]) => f === "broker_documentos" && a.p_broker === 3));
+  const validar = [...det.querySelectorAll("button")].find((b) => b.textContent === "Validar broker");
+  assert.ok(validar.disabled, "sin los 5 aprobados no se valida");
+  [...det.querySelectorAll("button")].find((b) => b.textContent === "Aprobar").click();
+  await esperar(10);
+  assert.ok(llam.some(([f, a]) => f === "broker_revisar_documento" && a.p_id === 11 && a.p_estatus === "aprobado"));
+  c.remove();
+});

@@ -1,0 +1,50 @@
+/* Brokers: portal del broker y módulo interno */
+.brk { display: flex; flex-direction: column; gap: 14px; }
+.brk-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .78rem; font-weight: 600; background: var(--neutro-bg); color: var(--tinta-2); white-space: nowrap; }
+.brk-pill.pend { background: var(--rojo-suave); color: var(--rojo); }
+.brk-pill.proc { background: var(--aviso-bg); color: var(--aviso-texto-2); }
+.brk-pill.ok { background: var(--ok-bg-2); color: var(--bien); }
+.brk-pill.no { background: var(--mal-bg); color: var(--rojo-oscuro); }
+.brk-pill.gris { background: var(--neutro-bg); color: var(--tinta-3); }
+.brk-motivo { margin: 8px 0; padding: 8px 12px; border-left: 3px solid var(--rojo); background: var(--rojo-suave); border-radius: 6px; font-size: .9rem; }
+.brk-aviso { border-left: 4px solid var(--alerta); }
+.brk-check { list-style: none; padding: 0; margin: 10px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px; }
+.brk-check li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--borde); border-radius: var(--r); background: var(--panel); }
+.brk-docs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+.brk-doc { border: 1px solid var(--borde); border-top: 3px solid var(--borde); border-radius: var(--r); padding: 10px 12px; background: var(--panel); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.brk-doc.s-aprobado { border-top-color: var(--bien); }
+.brk-doc.s-rechazado { border-top-color: var(--rojo); }
+.brk-doc.s-pendiente { border-top-color: var(--alerta); }
+.brk-doc-enc { display: flex; justify-content: space-between; gap: 8px; width: 100%; align-items: center; }
+.brk-doc .doc-lista { width: 100%; margin: 0; }
+.brk-doc .doc-lista li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.brk-acc { display: inline-flex; gap: 4px; }
+.brk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 10px 0; }
+.brk-grid .ancho { grid-column: 1 / -1; }
+.brk-sec { margin-top: 14px; border-top: 1px solid var(--borde); padding-top: 10px; }
+.brk-sec h4 { margin: 0 0 8px; }
+.brk-accesos { margin: 0 0 8px; padding-left: 18px; }
+.brk-accesos .bloq { color: var(--tinta-3); }
+.brk-ficha:not([hidden]) { border: 1px solid var(--borde); border-radius: var(--r); padding: 14px; margin-bottom: 12px; background: var(--panel); }
+tr.brk-det > td { background: var(--panel-2); padding: 14px; cursor: default; }
+.brk .tabla tbody tr { cursor: pointer; }
+tr.brk-revisar td:first-child { box-shadow: inset 3px 0 0 var(--alerta); }
+.brk-munis { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
+.brk-muni { display: flex; flex-direction: column; padding: 6px 8px; border: 1px solid var(--borde); border-radius: 6px; background: var(--panel); font-size: .86rem; }
+.brk-muni span { color: var(--tinta-3); }
+.brk-arma { display: grid; grid-template-columns: minmax(300px, 420px) 1fr; gap: 14px; align-items: start; }
+.brk-arma > .tarjeta:last-child { position: sticky; top: 12px; }
+.brk-tipo { display: inline-flex; align-items: center; gap: 4px; }
+.brk-estados { display: flex; flex-direction: column; gap: 2px; max-height: 300px; overflow: auto; margin-top: 6px; border: 1px solid var(--borde); border-radius: var(--r); padding: 4px; }
+.brk-est { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 5px 8px; border-radius: 6px; cursor: pointer; }
+.brk-est:hover { background: var(--panel-2); }
+.brk-est.sel { background: var(--rojo-suave); }
+.brk-est small { color: var(--tinta-3); font-variant-numeric: tabular-nums; }
+.brk-enviar { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; align-items: flex-end; }
+.brk-enviar textarea { width: 100%; resize: vertical; }
+.brk-prop .kpis { margin-bottom: 10px; }
+.kpi.destacado { border-top: 3px solid var(--rojo); }
+@media (max-width: 760px) {
+  .brk-arma { grid-template-columns: 1fr; }
+  .brk-arma > .tarjeta:last-child { position: static; }
+}
