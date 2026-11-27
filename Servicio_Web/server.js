@@ -6,6 +6,10 @@ const path = require("path");
 
 const RAIZ = path.join(__dirname, "sitio");
 const PUERTO = process.env.PORT || 8080;
+// Quién puede mostrar este sistema dentro de su página (iframe).
+// Sólo el propio sitio y los portales listados en la variable PORTAL_ORIGENES de Railway,
+// separados por coma. Ej.: https://portal-exitus.up.railway.app
+const MARCOS = ["'self'", ...(process.env.PORTAL_ORIGENES || "").split(/[\s,]+/).filter(Boolean)].join(" ");
 const TIPOS = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8",
@@ -27,7 +31,7 @@ http.createServer((req, res) => {
     "Cache-Control": ext === ".html" || ext === ".json" || ext === ".js" ? "no-cache" : "public, max-age=3600",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "same-origin",
-    "X-Frame-Options": "DENY",
+    "Content-Security-Policy": `frame-ancestors ${MARCOS}`,
   });
   fs.createReadStream(archivo).pipe(res);
 }).listen(PUERTO, () => console.log(`Venta de Cartera web en el puerto ${PUERTO}`));
