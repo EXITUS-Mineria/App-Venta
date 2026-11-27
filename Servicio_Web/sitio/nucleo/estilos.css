@@ -102,7 +102,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .menu-tit { padding: 6px 10px 4px; color: var(--lateral-tenue); font-size: .82rem; font-weight: 500; }
 .menu a { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: var(--r); color: var(--lateral-txt); text-decoration: none;
   font-size: .96rem; position: relative; transition: var(--transicion); }
-.menu a .mi { width: 20px; text-align: center; flex: none; filter: grayscale(.2); }
+.menu a .ic { width: 18px; height: 18px; color: #FFFFFF; opacity: .78; transition: opacity var(--dur-micro); }
+.menu a:hover .ic, .menu a.activo .ic { opacity: 1; }
 .menu a:hover { background: var(--lateral-2); color: #fff; }
 .menu a.activo { background: var(--lateral-2); color: #fff; font-weight: 500; }
 .menu a.activo::before { content: ""; position: absolute; left: -10px; top: 7px; bottom: 7px; width: 3px; border-radius: 0 3px 3px 0; background: var(--acento); }

@@ -30,8 +30,8 @@ export default {
     const tabs = h("div", { class: "segmentado pestanas cmp-tabs", role: "tablist" });
     const cuerpo = h("div");
     cont.append(tabs, cuerpo);
-    const pintarTabs = () => tabs.replaceChildren(...[["compras", "📊 Compras del año"], ["solicitudes", "🛒 Solicitudes"], ["ofertas", "💰 Ofertas"], ["tienda", "🛍️ Tienda"], ["catalogo", "🏢 Catálogo y accesos"], ["lealtad", "🏅 Lealtad"],
-      ["noticias", "📰 Casos de éxito"], ["plazos", "⏱ Plazos"], ...(maestro ? [["portal", "⚙️ Portal"]] : [])]
+    const pintarTabs = () => tabs.replaceChildren(...[["compras", "Compras del año"], ["solicitudes", "Solicitudes"], ["ofertas", "Ofertas"], ["tienda", "Tienda"], ["catalogo", "Catálogo y accesos"], ["lealtad", "Lealtad"],
+      ["noticias", "Casos de éxito"], ["plazos", "Plazos"], ...(maestro ? [["portal", "Portal"]] : [])]
       .map(([k, t]) => h("button", { class: pestana === k ? "activo" : "", onclick: () => { pestana = k; pintarTabs(); mostrar(); } }, t)));
     const irTienda = (prefill) => { pestana = "tienda"; pintarTabs(); tiendaAdmin(ctx, cuerpo, maestro, prefill); };
     const extras = { ofertas, lealtad, noticias, portal: ajustesPortal, tienda: tiendaAdmin,
