@@ -36,13 +36,17 @@ const SVG = {
   carrito: '<circle cx="9" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/><path d="M2 3h3l2.6 12.4a1.5 1.5 0 0 0 1.5 1.1h8.8a1.5 1.5 0 0 0 1.5-1.1L21 7H6"/>',
   documento: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h7M9 17h5"/>',
   bolsa: '<path d="M5 8h14l-1 13H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+  maletin: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/>',
+  inversion: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+  carpeta: '<path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   punto: '<circle cx="12" cy="12" r="3"/>',
 };
 // Ícono de línea de cada módulo del menú (por id). Los módulos nuevos usan «punto» si no están aquí.
 const ICONO_MODULO = {
   venta: "venta", propuesta_ia: "ia", bitacora: "bitacora", funnel: "funnel", dashboard: "grafica", compradores: "edificio",
   restituciones: "restituir", duplicados: "duplicados", revision: "control", subbases: "capas", usuarios: "usuarios",
-  cargas: "base", juridico: "juridico", ejemplo: "plantilla",
+  cargas: "base", juridico: "juridico", ejemplo: "plantilla", brokers: "maletin",
+  b_inicio: "inicio", b_cartera: "grafica", b_inversion: "inversion", b_propuestas: "documento", b_documentos: "carpeta",
   inicio: "inicio", tienda: "bolsa", solicitar: "carrito", propuestas: "documento", compras: "control",
 };
 /** Quita emojis al inicio de un texto (títulos y pestañas al estilo sobrio). */
@@ -141,6 +145,8 @@ async function pantallaNuevaClave() {
 async function cargarModulos(perfil) {
   // Compradores: sólo su portal (Inicio, Solicitar nueva compra, Mis propuestas, Mis compras)
   if (perfil.rol === "comprador") return (await import(new URL("../modulos/portal/portal.js", import.meta.url))).modulos;
+  // Brokers: sólo su portal (Inicio, Resumen de cartera, Propuesta de inversión, Mis propuestas, Mis documentos)
+  if (perfil.rol === "broker") return (await import(new URL("../modulos/brokers/portal.js", import.meta.url))).modulos;
   const resp = await fetch(new URL("../modulos/modulos.json", import.meta.url), { cache: "no-store" });
   const lista = (await resp.json()).modulos.filter((m) => m.activo !== false);
   // Se importan en paralelo (los módulos son independientes) y se conserva el orden del menú.
@@ -162,7 +168,7 @@ let moduloActual = null;
 let avisosActual = null;    // campana montada de la sesión vigente
 let cerrarCampana = null;   // cierra la lista de avisos al dar clic fuera (se reemplaza en cada sesión)
 
-export const ROLES = { vendedor: "Vendedor", validador: "Validador (maestro)", auxiliar: "Auxiliar de venta", control_doc: "Control documental", admin: "Administrador", comprador: "Comprador" };
+export const ROLES = { vendedor: "Vendedor", validador: "Validador (maestro)", auxiliar: "Auxiliar de venta", control_doc: "Control documental", admin: "Administrador", comprador: "Comprador", broker: "Broker" };
 // Usuarios maestros: ven todos los módulos y pueden todo (incluye dar de alta usuarios)
 const MAESTROS = ["admin", "validador"];
 
@@ -281,7 +287,7 @@ async function iniciar() {
 
   for (const m of modulos) nav.append(h("a", { href: `#/${m.id}`, "data-id": m.id }, icono(ICONO_MODULO[m.id] || "punto"), h("span", {}, sinEmoji(m.titulo))));
 
-  const titulo = perfil.rol === "comprador" ? "Portal de compradores" : CONFIG.SISTEMA;
+  const titulo = perfil.rol === "comprador" ? "Portal de compradores" : perfil.rol === "broker" ? "Portal de brokers" : CONFIG.SISTEMA;
   const lateral = h("aside", { class: "lateral" },
     h("div", { class: "marca" }, h("div", { class: "marca-sello" }, sello()),
       h("div", { class: "marca-txt" }, h("b", {}, titulo), h("span", {}, CONFIG.EMPRESA))),

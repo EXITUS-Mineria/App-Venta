@@ -32,6 +32,11 @@
       "activo": true
     },
     {
+      "id": "brokers",
+      "archivo": "brokers/brokers.js",
+      "activo": true
+    },
+    {
       "id": "restituciones",
       "archivo": "restituciones/restituciones.js",
       "activo": true

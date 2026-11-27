@@ -52,7 +52,8 @@ Servicio_Web/
 │       ├── 44_expediente_venta.sql ← carpeta del cliente (INE, fiscal, domicilio, alta, pago, NDA) y aviso a expedientes
 │       ├── 45_compradores_tienda.sql ← compras del año por comprador, zonas recurrentes y Tienda de paquetes del portal
 │       ├── 46_tienda_paquetes_auto.sql ← paquetes de $10,000 por estado/municipio, ofertas en estados sin venta reciente, carrito
-│       └── 47_documentos_por_comprador.sql ← documentos del comprador compartidos entre sus ventas (por venta sólo el pago)
+│       ├── 47_documentos_por_comprador.sql ← documentos del comprador compartidos entre sus ventas (por venta sólo el pago)
+│       └── 48_brokers.sql ← brokers: alta, validación de documentos, resumen de cartera y propuesta de inversión ($0.14 JyP / $0.26 Grupal)
 │   └── functions/enviar-propuesta/ ← Edge Function: aviso por correo (Microsoft 365) y Excel interno
 ├── cargar_supabase.py         ← aplica SQL, sube bases, migra apartados, da admin
 ├── CARGAR_SUPABASE.bat

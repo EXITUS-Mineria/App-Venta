@@ -8,16 +8,16 @@
 // Para ver un archivo se crea una liga temporal de 5 minutos; no hay ligas públicas.
 // ============================================================
 export const BUCKET = "documentos-venta";
-const MAX_BYTES = 10 * 1024 * 1024;
-const TIPOS_OK = {
+export const MAX_BYTES = 10 * 1024 * 1024;
+export const TIPOS_OK = {
   "application/pdf": "PDF", "image/jpeg": "Foto", "image/png": "Foto", "image/webp": "Foto", "image/heic": "Foto", "image/heif": "Foto",
   "application/msword": "Word", "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "Word",
   "application/vnd.ms-excel": "Excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "Excel", "text/csv": "CSV",
 };
-const ACEPTA = ".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,.doc,.docx,application/pdf,image/*,application/msword," +
+export const ACEPTA = ".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,.doc,.docx,application/pdf,image/*,application/msword," +
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document,.xls,.xlsx,.csv";
 
-function tipoMime(file) {
+export function tipoMime(file) {
   if (file.type && TIPOS_OK[file.type]) return file.type;
   const ext = (file.name.split(".").pop() || "").toLowerCase();
   return { pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", heic: "image/heic",
@@ -26,11 +26,11 @@ function tipoMime(file) {
     xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", csv: "text/csv" }[ext] || file.type || "";
 }
 
-const limpio = (n) => n.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w.\-]+/g, "_").slice(-90);
-const peso = (b) => (b == null ? "" : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`);
+export const limpio = (n) => n.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w.\-]+/g, "_").slice(-90);
+export const peso = (b) => (b == null ? "" : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`);
 
 /** Fotos JPG/PNG/WEBP: reduce a 1800 px y JPEG 82 % si así pesa menos. HEIC, PDF y Word se suben tal cual. */
-async function comprimir(file, mime) {
+export async function comprimir(file, mime) {
   if (!["image/jpeg", "image/png", "image/webp"].includes(mime) || file.size < 350 * 1024) return { blob: file, mime, nombre: file.name };
   try {
     const bmp = await createImageBitmap(file);
