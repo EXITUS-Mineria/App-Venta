@@ -113,3 +113,4 @@
 .car-acc { gap: 6px; justify-content: flex-start; flex-wrap: wrap; margin-top: 6px; }
 .fun-pend { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; padding: 8px 10px; border-radius: var(--radio);
   background: #FFF6DD; color: #7A5A00; font-size: .85rem; }
+.car-sub { margin: 14px 0 2px; font-size: .96rem; font-weight: 600; }

@@ -803,3 +803,69 @@ test("Compras del año: el detalle se abre debajo del comprador tocado y se cier
   fila(c, "BBB").click();
   assert.equal(c.querySelector(".cmp-det-fila"), null, "se cierra al tocarlo otra vez");
 });
+
+test("Tienda: paquetes de $10,000 por estado/municipio, ofertas y carrito", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({ rpc: (fn, a) => { llam.push([fn, a]); return fn === "portal_pedir_carrito" ? { solicitudes: [91, 92] } : null; } });
+  const cat = { activo: true, monto_paquete: 10000, centavos: 0.15, centavos_oferta: 0.1, capital_paquete: 66667, capital_paquete_oferta: 100000, descuento_centavos: 0,
+    estados: [
+      { tipo: "JyP", estado: "Guerrero", oferta: true, paquetes: 40, capital: 4100000, dias: 900, municipios: [{ municipio: "Acapulco De Juarez", paquetes: 12, creditos: 300, capital: 1250000, dias: 800 }] },
+      { tipo: "JyP", estado: "Mexico", oferta: false, paquetes: 30, capital: 2000000, dias: 700, municipios: [{ municipio: "Chalco", paquetes: 5, creditos: 80, capital: 340000, dias: 600 }] },
+      { tipo: "Grupal", estado: "Mexico", oferta: false, paquetes: 9, capital: 600000, dias: 300, municipios: [{ municipio: "Ixtapaluca", paquetes: 3, creditos: 40, grupos: 6, capital: 210000, dias: 250 }] }] };
+  const { paquetesAuto } = await import("../modulos/portal/tienda.js");
+  const c = cont();
+  paquetesAuto(ctx, c, cat);
+  assert.ok(c.textContent.includes("Ofertas") && c.textContent.includes("Guerrero"));
+  // oferta → municipios del estado
+  c.querySelector(".td-of").click();
+  assert.ok(c.textContent.includes("Acapulco De Juarez") && c.textContent.includes("100,000"));
+  c.querySelector(".td-muni input").value = "2";
+  [...c.querySelectorAll(".td-muni button")].find((b) => b.textContent.includes("Agregar")).click();
+  // otro estado normal
+  const sel = c.querySelector(".td-filtros select"); sel.value = "Mexico"; sel.dispatchEvent(new window.Event("change"));
+  assert.ok(c.textContent.includes("Chalco"));
+  [...c.querySelectorAll(".td-muni button")].find((b) => b.textContent.includes("Agregar")).click();
+  assert.ok(c.querySelector(".td-carrito").textContent.includes("2 paquete(s)") || c.querySelector(".td-carrito").textContent.includes("3 paquete(s)"));
+  [...c.querySelectorAll(".td-carrito button")].find((b) => b.textContent === "Pedir propuesta").click();
+  await esperar(5);
+  const p = llam.find(([f]) => f === "portal_pedir_carrito")[1].p_lineas;
+  assert.deepEqual(p, [{ tipo: "JyP", estado: "Guerrero", municipio: "Acapulco De Juarez", paquetes: 2 }, { tipo: "JyP", estado: "Mexico", municipio: "Chalco", paquetes: 1 }]);
+  assert.ok(c.textContent.includes("#91, #92"));
+});
+
+test("Compradores › Tienda: configura paquetes automáticos y ve estados en oferta", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({ rpc: (fn, a) => { llam.push([fn, a]);
+    if (fn === "tienda_resumen") return { activo: true, monto_paquete: 10000, centavos: 0.15, centavos_oferta: 0.1, oferta_dias: 90,
+      estados: [{ estado: "Guerrero", con_venta: false, ventas: 1, ultima: "2026-04-12", vendido: 27932, jyp: 4000000, grupal: 900000, capital: 4900000, paquetes: 49 },
+                { estado: "Mexico", con_venta: true, ventas: 59, ultima: "2026-11-20", vendido: 15000000, jyp: 1000, grupal: 2000, capital: 3000, paquetes: 0 }] };
+    return fn.endsWith("_lista") ? [] : null; }, esAdmin: true });
+  const { tiendaAdmin } = await import("../modulos/compradores/analisis.js");
+  const c = cont();
+  await tiendaAdmin(ctx, c, true);
+  await esperar(10);
+  assert.ok(c.textContent.includes("Paquetes automáticos") && c.textContent.includes("Guerrero") && c.textContent.includes("Oferta"));
+  assert.ok(/100,000(\.00)? de capital por paquete/.test(c.textContent));
+  [...c.querySelectorAll("button")].find((b) => b.textContent.includes("Guardar")).click();
+  await esperar(10);
+  assert.ok(llam.some(([f, a]) => f === "config_guardar" && a.p_clave === "tienda_centavos_oferta" && a.p_valor === 0.1));
+});
+
+test("Carpeta: los documentos del comprador se comparten entre sus ventas; el pago es por venta", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, a) => { llam.push([fn, a]);
+      return fn === "comprador_documentos" ? (a.p_tipo === "ine" ? [{ id: 9, folio: "VTA-0200", tipo: "ine", nombre: "INE.pdf", ruta: "VTA-0200/ine/1_INE.pdf", mime: "application/pdf", bytes: 1000 }] : []) : null; },
+    filas: () => [],
+  });
+  const { bloqueCarpeta } = await import("../modulos/funnel/carpeta.js");
+  const el = bloqueCarpeta(ctx, { folio: "VTA-0400", comprador: "ACME", estatus_venta: "Vendida" }, { editable: true });
+  document.body.append(el);
+  await esperar(10);
+  const ine = el.querySelector('.doc-bloque[data-tipo="ine"]');
+  assert.ok(ine.textContent.includes("INE.pdf") && ine.textContent.includes("subido en VTA-0200"));
+  assert.ok(llam.some(([f, a]) => f === "comprador_documentos" && a.p_tipo === "nda"));
+  assert.ok(!llam.some(([f, a]) => f === "comprador_documentos" && a.p_tipo === "comprobante_pago"), "el pago no se comparte");
+  assert.ok(el.textContent.includes("Documentos del comprador") && el.textContent.includes("De esta venta"));
+  el.remove();
+});

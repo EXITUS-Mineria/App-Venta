@@ -1,8 +1,9 @@
 // ============================================================
 // 📁 CARPETA DEL CLIENTE de una venta (Funnel)
 //  Documentos que se suben (bucket privado "documentos-venta"):
-//    INE · Constancia de situación fiscal · Comprobante de domicilio · Formato de alta del comprador ·
-//    Comprobante de pago · NDA (+ otros documentos del comprador)
+//    👤 del COMPRADOR (una sola vez; aplican a todas sus ventas): INE · Constancia de situación fiscal ·
+//       Comprobante de domicilio · Formato de alta del comprador · NDA · otros
+//    🧾 de la VENTA: Comprobante de pago
 //  Documentos que se GENERAN al descargar (no se guardan):
 //    Layout para solicitud de expedientes (Excel) · Base final (CSV Latin-1)
 //  «⬇ Descargar carpeta (ZIP)» arma todo en el navegador: <folio>_<comprador>/01_INE/…
@@ -68,8 +69,11 @@ export async function descargarCarpeta(ctx, f, alAvance = () => {}) {
   const zip = new JSZip();
   const raiz = nombreCarpeta(f);
   const faltan = [];
-  const { data: docs, error } = await ctx.sb.from("funnel_documentos").select("*").eq("folio", f.folio).order("fecha");
+  // pago: de esta venta · documentos del comprador: los de todas sus ventas
+  const { data: pagos, error } = await ctx.sb.from("funnel_documentos").select("*").eq("folio", f.folio).eq("tipo", "comprobante_pago").order("fecha");
   if (error) throw new Error(error.message);
+  const delComprador = (await ctx.rpc("comprador_documentos", { p_folio: f.folio })) || [];
+  const docs = [...(pagos || []), ...delComprador];
   const carpetaDe = Object.fromEntries([...DOCS_CARPETA.map(([k, , c]) => [k, c]), ["comprador", "09_Otros_documentos"]]);
   let i = 0;
   for (const d of docs || []) {
@@ -129,13 +133,15 @@ export function bloqueCarpeta(ctx, f, { editable, alConteo }) {
     progreso.textContent = `${listos} de ${DOCS_CARPETA.length} documentos`;
     progreso.className = `car-prog ${listos === DOCS_CARPETA.length ? "ok" : ""}`;
   };
-  const filas = DOCS_CARPETA.map(([k, titulo]) => {
+  const item = ([k, titulo]) => {
     const marca = h("span", { class: "car-marca" }, "⬜");
-    const bloque = bloqueDocumentos(ctx, { folio: f.folio, tipo: k, editable, titulo, compacto: true,
+    const bloque = bloqueDocumentos(ctx, { folio: f.folio, tipo: k, editable, titulo, compacto: true, porComprador: k !== "comprobante_pago",
       alConteo: (n) => { conteo[k] = n; marca.textContent = n ? "✅" : "⬜"; pintarProgreso();
         if (k === "comprobante_pago") alConteo?.("comprobantes", n); } });
     return h("div", { class: "car-item" }, marca, bloque);
-  });
+  };
+  const docsComprador = DOCS_CARPETA.filter(([k]) => k !== "comprobante_pago").map(item);
+  const docsVenta = DOCS_CARPETA.filter(([k]) => k === "comprobante_pago").map(item);
   const btnZip = h("button", { class: "btn btn-marca", onclick: async () => {
     btnZip.disabled = true;
     try {
@@ -169,12 +175,16 @@ export function bloqueCarpeta(ctx, f, { editable, alConteo }) {
 
   return h("section", { class: "fun-sec car" },
     h("div", { class: "car-enc" }, h("h4", {}, "📁 Carpeta del cliente"), progreso),
-    h("div", { class: "nota" }, "Sube cada documento en su apartado. El layout para solicitud de expedientes y la base final se generan al descargar."),
-    h("div", { class: "car-lista" }, ...filas,
+    h("div", { class: "nota" }, "El layout para solicitud de expedientes y la base final se generan al descargar."),
+    h("h5", { class: "car-sub" }, `👤 Documentos del comprador${f.comprador ? ` · ${f.comprador}` : ""}`),
+    h("div", { class: "nota" }, "Se suben una sola vez y aplican a todas sus ventas (los que ya subiste en otra venta aparecen aquí)."),
+    h("div", { class: "car-lista" }, ...docsComprador),
+    bloqueDocumentos(ctx, { folio: f.folio, tipo: "comprador", editable, titulo: "📂 Otros documentos del comprador", porComprador: true,
+      ayuda: "Acta constitutiva, poderes, contrato firmado… (PDF, fotos, Word o Excel).", alConteo: (n) => alConteo?.("documentos", n) }),
+    h("h5", { class: "car-sub" }, "🧾 De esta venta"),
+    h("div", { class: "car-lista" }, ...docsVenta,
       h("div", { class: "car-item car-gen" }, h("span", { class: "car-marca" }, "⚙️"), h("div", {}, h("b", {}, "Layout para solicitud de expedientes"), h("div", { class: "nota" }, "Excel con los créditos de la venta (se genera)"))),
       h("div", { class: "car-item car-gen" }, h("span", { class: "car-marca" }, "⚙️"), h("div", {}, h("b", {}, "Base final"), h("div", { class: "nota" }, f.id_propuesta ? "CSV layout Funnel (se genera)" : "CSV del archivo de la venta (histórico) + liga de SharePoint")))),
-    bloqueDocumentos(ctx, { folio: f.folio, tipo: "comprador", editable, titulo: "📂 Otros documentos del comprador",
-      ayuda: "Acta constitutiva, poderes, contrato firmado… (PDF, fotos, Word o Excel).", alConteo: (n) => alConteo?.("documentos", n) }),
     estadoAviso,
     h("div", { class: "fila car-acc" }, btnZip, btnLayout, btnAviso, avance));
 }

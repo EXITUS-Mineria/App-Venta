@@ -1,15 +1,39 @@
-=== 23/11/2026 17:36:59.29 publicar Cambios === 
-## Cambios...origin/Cambios [ahead 18]
- M log_cambios_claude.txt
-?? PUBLICAR_CAMBIOS.bat
-remote: 
-remote: Create a pull request for 'Cambios' on GitHub by visiting:        
-remote:      https://github.com/EXITUS-Mineria/App-Venta/pull/new/Cambios        
-remote: 
+=== 27/11/2026 14:07:33.25 iconos === 
+From https://github.com/EXITUS-Mineria/App-Venta
+ * branch            Cambios    -> FETCH_HEAD
+Preparing worktree (detached HEAD da5b347)
+HEAD is now at da5b347 Estilos del Sistema de Capital Humano: login, menú lateral, barra y pestañas
+Applying: Menú: íconos de línea blancos en lugar de emojis; pestañas de Compradores sin emojis
 To https://github.com/EXITUS-Mineria/App-Venta.git
- * [new branch]      Cambios -> Cambios
-branch 'Cambios' set up to track 'origin/Cambios'.
-OK 
+   da5b347..24ba200  HEAD -> Cambios
+Saved working directory and index state On Cambios: claude: server.js local
+From https://github.com/EXITUS-Mineria/App-Venta
+ * branch            Cambios    -> FETCH_HEAD
+Updating da5b347..24ba200
+Fast-forward
+ .../sitio/modulos/compradores/compradores.js       |  4 +--
+ Servicio_Web/sitio/nucleo/app.js                   | 35 ++++++++++++++++++++--
+ Servicio_Web/sitio/nucleo/estilos.css              |  3 +-
+ 3 files changed, 36 insertions(+), 6 deletions(-)
+On branch Cambios
+Your branch is up to date with 'origin/Cambios'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   Servicio_Web/server.js
+	modified:   log_cambios_claude.txt
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	SUBIR_ICONOS.bat
+	claude_iconos.patch
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Dropped refs/stash@{0} (d36a6a6c46f1fee23afbe8ac5ff6b7399adcd961)
 ## Cambios...origin/Cambios
+ M Servicio_Web/server.js
  M log_cambios_claude.txt
-?? PUBLICAR_CAMBIOS.bat
+?? SUBIR_ICONOS.bat
+?? claude_iconos.patch
+OK 
