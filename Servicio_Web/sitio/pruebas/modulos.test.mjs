@@ -850,3 +850,22 @@ test("Compradores › Tienda: configura paquetes automáticos y ve estados en of
   await esperar(10);
   assert.ok(llam.some(([f, a]) => f === "config_guardar" && a.p_clave === "tienda_centavos_oferta" && a.p_valor === 0.1));
 });
+
+test("Carpeta: los documentos del comprador se comparten entre sus ventas; el pago es por venta", async () => {
+  const llam = [];
+  const ctx = await ctxMontaje({
+    rpc: (fn, a) => { llam.push([fn, a]);
+      return fn === "comprador_documentos" ? (a.p_tipo === "ine" ? [{ id: 9, folio: "VTA-0200", tipo: "ine", nombre: "INE.pdf", ruta: "VTA-0200/ine/1_INE.pdf", mime: "application/pdf", bytes: 1000 }] : []) : null; },
+    filas: () => [],
+  });
+  const { bloqueCarpeta } = await import("../modulos/funnel/carpeta.js");
+  const el = bloqueCarpeta(ctx, { folio: "VTA-0400", comprador: "ACME", estatus_venta: "Vendida" }, { editable: true });
+  document.body.append(el);
+  await esperar(10);
+  const ine = el.querySelector('.doc-bloque[data-tipo="ine"]');
+  assert.ok(ine.textContent.includes("INE.pdf") && ine.textContent.includes("subido en VTA-0200"));
+  assert.ok(llam.some(([f, a]) => f === "comprador_documentos" && a.p_tipo === "nda"));
+  assert.ok(!llam.some(([f, a]) => f === "comprador_documentos" && a.p_tipo === "comprobante_pago"), "el pago no se comparte");
+  assert.ok(el.textContent.includes("Documentos del comprador") && el.textContent.includes("De esta venta"));
+  el.remove();
+});

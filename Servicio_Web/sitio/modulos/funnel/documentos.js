@@ -3,6 +3,7 @@
 //  - tipo "comprobante_pago": comprobante del pago de la venta.
 //  - tipo "comprador": otros documentos del comprador (PDF, fotos, Word, Excel).
 //  - ine, comprobante_fiscal, comprobante_domicilio, alta_comprador, nda: carpeta del cliente (ver carpeta.js).
+//  - porComprador: lista también los subidos en otras ventas del mismo comprador (se suben una sola vez).
 // Las fotos se comprimen en el navegador (máx. 1800 px, JPEG) para ocupar poco espacio.
 // Para ver un archivo se crea una liga temporal de 5 minutos; no hay ligas públicas.
 // ============================================================
@@ -47,7 +48,7 @@ async function comprimir(file, mime) {
  * Bloque de documentos de una venta.
  * ctx, folio, tipo ("comprobante_pago" | "comprador"), editable, titulo, alConteo(n) tras subir o borrar
  */
-export function bloqueDocumentos(ctx, { folio, tipo, editable, titulo, ayuda, alConteo, compacto }) {
+export function bloqueDocumentos(ctx, { folio, tipo, editable, titulo, ayuda, alConteo, compacto, porComprador }) {
   const { h, toast, confirmar, fecha } = ctx.ui;
   const lista = h("ul", { class: "doc-lista" }, h("li", { class: "doc-vacio" }, "Cargando…"));
   const input = h("input", { type: "file", accept: ACEPTA, multiple: true, hidden: true, onchange: () => subir([...input.files]) });
@@ -66,7 +67,11 @@ export function bloqueDocumentos(ctx, { folio, tipo, editable, titulo, ayuda, al
 
   let iniciado = false;
   async function cargar() {
-    const { data, error } = await ctx.sb.from("funnel_documentos").select("*").eq("folio", folio).eq("tipo", tipo).order("fecha");
+    // porComprador: también los que se subieron en otras ventas del mismo comprador (se suben una sola vez)
+    let data, error;
+    if (porComprador) {
+      try { data = (await ctx.rpc("comprador_documentos", { p_folio: folio, p_tipo: tipo })) || []; } catch (e) { error = e; }
+    } else ({ data, error } = await ctx.sb.from("funnel_documentos").select("*").eq("folio", folio).eq("tipo", tipo).order("fecha"));
     if (error) { lista.replaceChildren(h("li", { class: "doc-vacio" }, error.message)); return; }
     estado.textContent = data.length ? `${data.length} archivo${data.length === 1 ? "" : "s"}` : "";
     if (iniciado || compacto) alConteo?.(data.length);
@@ -74,7 +79,7 @@ export function bloqueDocumentos(ctx, { folio, tipo, editable, titulo, ayuda, al
     lista.replaceChildren(...(data.length ? data.map((d) => h("li", {},
       h("span", { class: "doc-ico" }, d.mime === "application/pdf" ? "📄" : (d.mime || "").startsWith("image/") ? "🖼" : /sheet|excel|csv/.test(d.mime || "") ? "📊" : "📝"),
       h("a", { href: "#", title: "Abrir (liga temporal)", onclick: (e) => { e.preventDefault(); abrir(d); } }, d.nombre),
-      h("small", {}, ` ${peso(d.bytes)} · ${d.subido_por || ""} · ${fecha(d.fecha)}`),
+      h("small", {}, ` ${peso(d.bytes)} · ${d.subido_por || ""} · ${fecha(d.fecha)}${d.folio && d.folio !== folio ? ` · subido en ${d.folio}` : ""}`),
       editable ? h("button", { class: "btn btn-secundario btn-chico", title: "Borrar", onclick: () => borrar(d) }, "🗑") : null))
       : [h("li", { class: "doc-vacio" }, editable ? "Sin archivos todavía." : "Sin archivos.")]));
   }
